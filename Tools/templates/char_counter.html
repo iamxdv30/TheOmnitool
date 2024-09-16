@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Character Counter For Defect</h1>
+<form method="POST" action="{{ url_for('char_counter') }}">
+    <textarea name="text" rows="10" cols="50">{{ input_text | default('') }}</textarea>
+    <br>
+    <button type="submit">Count Characters</button>
+</form>
+
+{% if total_characters is defined %}
+    <p>Total Characters: {{ total_characters }}</p>
+    <p>{{ excess_message }}</p>
+{% endif %}
+{% endblock %}

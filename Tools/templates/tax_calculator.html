@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Tax Calculator</h1>
+
+<div class="clearfix">
+    <div class="form-container">
+        <form method="POST" action="{{ url_for('tax_calculator_route') }}" id="tax_form" novalidate>
+            <!-- Item Count -->
+            <label for="item_count">Number of Line Items:</label>
+            <input type="number" name="item_count" id="item_count" value="{{ data.get('item_count', 1) }}" min="1" required><br><br>
+
+            <!-- Discount Section -->
+            <h3>Discount Items</h3>
+            <label for="has_discount">Is there a discount? (Y/N):</label>
+            <select name="has_discount" id="has_discount">
+                <option value="N" {% if data.get('has_discount', 'N') == 'N' %}selected{% endif %}>No</option>
+                <option value="Y" {% if data.get('has_discount', 'N') == 'Y' %}selected{% endif %}>Yes</option>
+            </select><br><br>
+
+            <div id="discount_section" style="display: {% if data.get('has_discount', 'N') == 'Y' %}block{% else %}none{% endif %};">
+                <label for="discount_count">Number of Discount Items:</label>
+                <input type="number" name="discount_count" id="discount_count"
+                    value="{{ data.get('discount_count', '1') }}" min="1"
+                    {% if data.get('has_discount', 'N') == 'Y' %}required{% endif %}
+                    {% if data.get('has_discount', 'N') == 'N' %}disabled{% endif %}>
+                <br><br>
+
+                <label for="is_discount_taxable">Is Discount Taxable? (Y/N):</label>
+                <select name="is_discount_taxable" id="is_discount_taxable" {% if data.get('has_discount', 'N') == 'N' %}disabled{% endif %}>
+                    <option value="N" {% if data.get('is_discount_taxable', 'N') == 'N' %}selected{% endif %}>No</option>
+                    <option value="Y" {% if data.get('is_discount_taxable', 'N') == 'Y' %}selected{% endif %}>Yes</option>
+                </select><br><br>
+
+                <div id="discount_items">
+                    <!-- Discount items will be dynamically added here -->
+                </div>
+            </div>
+
+            <!-- Line Items Section -->
+            <h3>Line Items</h3>
+            <div id="line_items">
+                <!-- Line items will be dynamically added here -->
+            </div>
+
+            <!-- Shipping Section -->
+            <h3>Shipping</h3>
+            <label for="has_shipping">Is there shipping cost? (Y/N):</label>
+            <select name="has_shipping" id="has_shipping">
+                <option value="N" {% if data.get('has_shipping', 'N') == 'N' %}selected{% endif %}>No</option>
+                <option value="Y" {% if data.get('has_shipping', 'N') == 'Y' %}selected{% endif %}>Yes</option>
+            </select><br><br>
+
+            <div id="shipping_section" style="display: {% if data.get('has_shipping', 'N') == 'Y' %}block{% else %}none{% endif %};">
+                <label for="shipping_cost">Shipping Cost:</label>
+                <input type="number" name="shipping_cost" id="shipping_cost" value="{{ data.get('shipping_cost', '') }}" step="0.01"><br><br>
+
+                <label for="shipping_taxable">Is Shipping Taxable? (Y/N):</label>
+                <select name="shipping_taxable" id="shipping_taxable">
+                    <option value="N" {% if data.get('shipping_taxable', 'N') == 'N' %}selected{% endif %}>No</option>
+                    <option value="Y" {% if data.get('shipping_taxable', 'N') == 'Y' %}selected{% endif %}>Yes</option>
+                </select><br><br>
+
+                <div id="shipping_tax_rate_section" style="display: {% if data.get('shipping_taxable', 'N') == 'Y' %}block{% else %}none{% endif %};">
+                    <label for="shipping_tax_rate">Shipping Tax Rate (%):</label>
+                    <input type="number" name="shipping_tax_rate" id="shipping_tax_rate" value="{{ data.get('shipping_tax_rate', '') }}" step="0.01"><br><br>
+                </div>
+            </div>
+
+            <button type="submit">Calculate Tax</button>
+        </form>
+    </div>
+
+    {% if result %}
+    <div class="result-container">
+        <h2>Results</h2>
+        <p><strong>Item Total:</strong> {{ result.item_total }}</p>
+        <p><strong>Discount Total:</strong> {{ result.discount_total }}</p>
+        <p><strong>Total Tax:</strong> {{ result.total_tax }}</p>
+        <p><strong>Total Amount:</strong> {{ result.total_amount }}</p>
+
+        <div class="tax-breakdown">
+            <h3>Tax Breakdown:</h3>
+            <ul>
+                {% for tax in result.tax_breakdown %}
+                    <li>Tax for Item {{ tax.item }}: {{ tax.tax }}</li>
+                {% endfor %}
+                {% if result.shipping_tax > 0 %}
+                    <li>Shipping Tax: {{ result.shipping_tax }}</li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    // JavaScript to dynamically handle form fields
+    document.addEventListener('DOMContentLoaded', function() {
+        function toggleDiscountSection() {
+            const hasDiscount = document.getElementById('has_discount').value;
+            const discountSection = document.getElementById('discount_section');
+            const discountCountInput = document.getElementById('discount_count');
+            const isDiscountTaxableSelect = document.getElementById('is_discount_taxable');
+            const discountItemsDiv = document.getElementById('discount_items');
+    
+            if (hasDiscount === 'Y') {
+                discountSection.style.display = 'block';
+                discountCountInput.disabled = false;
+                discountCountInput.required = true;
+                isDiscountTaxableSelect.disabled = false;
+                if (!discountCountInput.value || discountCountInput.value <= 0) {
+                    discountCountInput.value = '1'; // Set default valid value
+                }
+                createDiscountItems(); // Create discount items dynamically
+            } else {
+                discountSection.style.display = 'none';
+                discountCountInput.disabled = true;
+                discountCountInput.required = false;
+                discountCountInput.value = ''; // Clear the value to prevent validation error
+                isDiscountTaxableSelect.disabled = true;
+                discountItemsDiv.innerHTML = ''; // Clear any discount items from the DOM
+            }
+        }
+    
+        function toggleShippingSection() {
+            const hasShipping = document.getElementById('has_shipping').value;
+            const shippingSection = document.getElementById('shipping_section');
+            const shippingCostInput = document.getElementById('shipping_cost');
+            if (hasShipping === 'Y') {
+                shippingSection.style.display = 'block';
+                shippingCostInput.disabled = false;
+                shippingCostInput.required = true;
+            } else {
+                shippingSection.style.display = 'none';
+                shippingCostInput.disabled = true;
+                shippingCostInput.required = false;
+                shippingCostInput.value = '';
+            }
+            toggleShippingTaxRateSection(); // Ensure shipping tax rate section updates
+        }
+    
+        function toggleShippingTaxRateSection() {
+            const shippingTaxable = document.getElementById('shipping_taxable').value;
+            const shippingTaxRateSection = document.getElementById('shipping_tax_rate_section');
+            const shippingTaxRateInput = document.getElementById('shipping_tax_rate');
+            if (shippingTaxable === 'Y') {
+                shippingTaxRateSection.style.display = 'block';
+                shippingTaxRateInput.disabled = false;
+                shippingTaxRateInput.required = true;
+            } else {
+                shippingTaxRateSection.style.display = 'none';
+                shippingTaxRateInput.disabled = true;
+                shippingTaxRateInput.required = false;
+                shippingTaxRateInput.value = '';
+            }
+        }
+    
+        function createLineItems() {
+            const itemCount = document.getElementById('item_count').value;
+            const lineItemsDiv = document.getElementById('line_items');
+            lineItemsDiv.innerHTML = '';
+            for (let i = 1; i <= itemCount; i++) {
+                lineItemsDiv.innerHTML += `
+                    <div class="line-item-group">
+                        <h4>Item ${i}</h4>
+                        <label for="item_price_${i}">Price:</label>
+                        <input type="number" name="item_price_${i}" id="item_price_${i}" step="0.01" required>
+                        <label for="item_tax_rate_${i}">Tax Rate (%):</label>
+                        <input type="number" name="item_tax_rate_${i}" id="item_tax_rate_${i}" step="0.01" required>
+                    </div><br>
+                `;
+            }
+        }
+    
+        function createDiscountItems() {
+            const discountCountInput = document.getElementById('discount_count');
+            const discountCount = discountCountInput.value;
+            const discountItemsDiv = document.getElementById('discount_items');
+            discountItemsDiv.innerHTML = '';
+    
+            if (!discountCount || discountCount <= 0) {
+                return; // Do not create inputs if discount count is invalid
+            }
+    
+            const isTaxable = document.getElementById('is_discount_taxable').value;
+            for (let i = 1; i <= discountCount; i++) {
+                discountItemsDiv.innerHTML += `
+                    <div class="line-item-group">
+                        <h4>Discount Item ${i}</h4>
+                        <label for="discount_price_${i}">Price:</label>
+                        <input type="number" name="discount_price_${i}" id="discount_price_${i}" step="0.01" required>
+                        ${isTaxable === 'Y' ? `
+                        <label for="discount_tax_rate_${i}">Tax Rate (%):</label>
+                        <input type="number" name="discount_tax_rate_${i}" id="discount_tax_rate_${i}" step="0.01" required>
+                        ` : ''}
+                    </div><br>
+                `;
+            }
+        }
+    
+        // Event Listeners
+        document.getElementById('has_discount').addEventListener('change', function() {
+            toggleDiscountSection();
+        });
+    
+        document.getElementById('has_shipping').addEventListener('change', function() {
+            toggleShippingSection();
+        });
+    
+        document.getElementById('shipping_taxable').addEventListener('change', function() {
+            toggleShippingTaxRateSection();
+        });
+    
+        document.getElementById('item_count').addEventListener('input', function() {
+            createLineItems();
+        });
+    
+        document.getElementById('discount_count').addEventListener('input', function() {
+            createDiscountItems();
+        });
+    
+        document.getElementById('is_discount_taxable').addEventListener('change', function() {
+            createDiscountItems();
+        });
+    
+        // Initialize sections based on current form values
+        toggleDiscountSection();
+        toggleShippingSection();
+        toggleShippingTaxRateSection();
+        createLineItems();
+        createDiscountItems();
+    });
+    </script>
+{% endblock %}
+
+
+

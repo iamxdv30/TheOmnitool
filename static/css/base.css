@@ -1,0 +1,110 @@
+/* Ensure dropdown submenu shows on the right */
+.dropdown-submenu {
+    position: relative;
+}
+
+.dropdown-submenu .dropdown-menu {
+    top: 0;
+    left: 100%; /* Makes the submenu open to the right */
+    margin-top: -1px;
+    display: none; /* Hidden by default */
+    position: absolute; /* Ensures it's positioned relative to the parent */
+}
+
+/* Show submenu when parent is hovered or clicked */
+.dropdown-submenu:hover .dropdown-menu {
+    display: block;
+}
+
+/* static/styles.css */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+}
+
+h1 {
+    color: #333;
+}
+
+p {
+    color: #666;
+}
+
+.button {
+    display: inline-block;
+    padding: 10px 20px;
+    margin: 10px 0;
+    background-color: #007bff;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+.button:hover {
+    background-color: #0056b3;
+}
+
+
+/* Default light theme */
+body.light-theme {
+    background-color: #ffffff;
+    color: #000000;
+}
+
+/* Dark theme */
+body.dark-theme {
+    background-color: #333333;
+    color: #ffffff;
+}
+
+/* Default light theme heading */
+.theme-heading.light-theme {
+    color: #000000; /* Black text for light theme */
+    font-size: 20px;
+    font-weight: bold;
+    text-align: center;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    font-family: 'Arial', sans-serif;
+
+}
+
+/* Dark theme heading */
+.theme-heading.dark-theme {
+    color: #ffffff; /* White text for dark theme */
+    font-size: 20px;
+    font-weight: bold;
+    text-align: center;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    font-family: 'Arial', sans-serif;
+}
+
+
+/* Smooth transitions */
+body {
+    transition: background-color 0.3s, color 0.3s;
+}
+
+
+.theme-toggle {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 5px 10px; /* Adjusted padding */
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    font-size: 14px; /* Adjusted font size */
+    width: 70px; /* Set width for 1x1 size */
+    height: 40px; /* Set height for 1x1 size */
+}
+
+.theme-toggle:hover {
+    background-color: #0056b3;
+}

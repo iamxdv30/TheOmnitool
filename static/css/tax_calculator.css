@@ -1,0 +1,132 @@
+/* General Styles */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+h1 {
+    text-align: center; /* Aligning the heading to center */
+    font-weight: bold;
+    padding: 10px;
+    margin: 10px 0; /* Adjusted margin for better alignment with form */
+}
+
+h3 {
+    font-weight: bold;
+    font-size: 18px;
+    text-align: center;
+}
+
+h4 {
+    text-align: left;
+    font-size: 16px;
+}
+
+form {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 15px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    background-color: #f9f9f9;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+input, select {
+    width: calc(25% - 10px); /* Adjusted width for better alignment */
+    padding: 10px;
+    margin-bottom: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.line-item-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.line-item-group input {
+    margin-right: 5px; /* Adjusted margin for spacing */
+}
+
+.line-item-tax-rate {
+    width: 30%; /* Adjusted width for tax rate input */
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+/* Responsive Styles */
+@media (max-width: 600px) {
+    form {
+        padding: 10px;
+    }
+
+    input, select, button {
+        padding: 8px;
+    }
+}
+
+/* New Styles for Result Container */
+.result-container {
+    float: left;
+    width: 30%;
+    margin-left: 20px;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.form-container {
+    float: left;
+    width: 50%;
+}
+
+.tax-breakdown {
+    margin-top: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    float: left; /* Changed from right to left */
+    width: 45%;
+    margin-right: 20px; /* Changed from margin-left to margin-right */
+    padding: 20px;
+}
+
+.tax-breakdown ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.tax-breakdown li {
+    margin-bottom: 5px;
+}
+
+/* Clearfix to handle floats */
+.clearfix::after {
+    content: "";
+    clear: both;
+    display: table;
+}
