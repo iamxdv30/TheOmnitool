@@ -46,7 +46,6 @@ p {
     background-color: #0056b3;
 }
 
-
 /* Default light theme */
 body.light-theme {
     background-color: #ffffff;
@@ -68,7 +67,6 @@ body.dark-theme {
     margin-top: 20px;
     margin-bottom: 20px;
     font-family: 'Arial', sans-serif;
-
 }
 
 /* Dark theme heading */
@@ -82,13 +80,12 @@ body.dark-theme {
     font-family: 'Arial', sans-serif;
 }
 
-
 /* Smooth transitions */
 body {
     transition: background-color 0.3s, color 0.3s;
 }
 
-
+/* Theme toggle button styles */
 .theme-toggle {
     position: fixed;
     top: 10px;
@@ -96,15 +93,16 @@ body {
     background-color: #007bff;
     color: white;
     border: none;
-    padding: 5px 10px; /* Adjusted padding */
+    padding: 5px 10px;
     border-radius: 5px;
     cursor: pointer;
     transition: background-color 0.3s;
-    font-size: 14px; /* Adjusted font size */
-    width: 70px; /* Set width for 1x1 size */
-    height: 40px; /* Set height for 1x1 size */
+    font-size: 14px;
+    width: 100px;
+    height: 40px;
 }
 
 .theme-toggle:hover {
     background-color: #0056b3;
 }
+
