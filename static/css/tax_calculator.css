@@ -76,7 +76,7 @@
 .tax-calculator .calculate-btn {
     width: 100%;
     padding: 10px;
-    background-color: #007bff;
+    background-color: #38b000;
     color: white;
     border: none;
     border-radius: 5px;
@@ -85,7 +85,7 @@
 }
 
 .tax-calculator .calculate-btn:hover {
-    background-color: #0056b3;
+    background-color: #008000;
 }
 
 /* Responsive Styles */
@@ -173,9 +173,9 @@ body.dark-theme .tax-calculator .calculate-btn {
 }
 
 body.dark-theme .tax-calculator .calculate-btn {
-    background-color: #007bff;
+    background-color: #38b000;
 }
 
 body.dark-theme .tax-calculator .calculate-btn:hover {
-    background-color: #0056b3;
+    background-color: #008000;
 }

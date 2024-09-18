@@ -1,0 +1,46 @@
+.login-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Noto Sans Mono', monospace;
+    margin: 100px auto; /* Centers container vertically */
+    background-color: #f9f9f9;
+    border: 1px solid #ccc;
+    padding: 20px;
+    max-width: 400px; /* Sets a maximum width for the container */
+    width: 100%; /* Ensures it scales well with the screen */
+    border-radius: 10px;
+}
+
+.login-container h1 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+.login-container form {
+    display: flex;
+    flex-direction: column;
+    width: 100%; /* Make the form take up the full width of the container */
+}
+
+.login-container form input {
+    width: 100%; /* Ensures inputs take up the full form width */
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 0.25rem;
+}
+
+.login-container form button {
+    background-color: #38b000;
+    color: white;
+    width: 100%;
+    padding: 0.5rem;
+    border: none;
+    border-radius: 0.25rem;
+}
+
+.login-container form button:hover {
+    background-color: #008000;
+}

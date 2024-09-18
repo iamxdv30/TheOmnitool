@@ -7,12 +7,12 @@
 }
 .light-theme {
     font-family: 'Noto Sans Mono', monospace;
-    background-color: #508D4E;
+    background-color: #f6fff8;
 }
 
 /* Navbar styles */
 .navbar {
-    background-color: #D6EFD8;
+    background-color: #588157;
     padding: 0.5rem 1rem;
     position: relative;
 }
@@ -131,14 +131,14 @@
     padding: 0.3rem 0.5rem;
     cursor: pointer;
     border: none;
-    background-color: #007bff;
+    background-color: #38b000;
     color: #fff;
     border-radius: 0.25rem;
     font-size: 1em;
 }
 
 .base-toggle-btn:hover {
-    background-color: #0056b3;
+    background-color: #008000;
 }
 
 @media (max-width: 768px) {
@@ -176,6 +176,8 @@ body.dark-theme {
 
 body.dark-theme .navbar {
     background-color: #343a40;
+    color: #ffffff;
+    font-family: 'Noto Sans Mono', monospace;
 }
 
 body.dark-theme .nav-link,
@@ -235,14 +237,14 @@ body.dark-theme .base-toggle-btn {
     margin: 0 0.5rem;
     text-decoration: none;
     color: #fff;
-    background-color: #007bff;
+    background-color: #38b000;
     border: none;
     border-radius: 0.25rem;
     cursor: pointer;
 }
 
 .btn:hover {
-    background-color: #0056b3;
+    background-color: #008000;
 }
 
 /* Adjust navbar items alignment */

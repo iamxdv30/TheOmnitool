@@ -7,12 +7,13 @@
 {% block title %}Character Counter{% endblock %}
 
 {% block content %}
-<h1>Character Counter For Defect</h1>
-<div class="main-container">
-    <form class="form-container" method="POST" action="{{ url_for('char_counter') }}">
-        <textarea class="textarea" name="text" rows="20" cols="65">{{ input_text | default('') }}</textarea>
+
+<div class="char-container">
+    <h1>Character Counter For Defect</h1>
+    <form class="char-form" method="POST" action="{{ url_for('char_counter') }}">
+        <textarea class="char-textarea" name="text" rows="20" cols="65">{{ input_text | default('') }}</textarea>
         <br>
-        <button type="submit">Count Characters</button>
+        <button class="count-button" type="submit">Count Characters</button>
     </form>
     {% if total_characters is defined %}
         <div class="result-container">
@@ -32,3 +33,4 @@
     </div>
 {% endif %}
 {% endblock %}
+

@@ -1,16 +1,26 @@
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Noto Sans Mono', monospace;
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    background-color: #f9f9f9;
+    color: #333;
 }
 
-h1 {
-    text-align: center; /* Aligning the heading to center */
+.char-container {
+    display: flex;
+    flex-direction: column; /* Stacks heading, form, and result vertically */
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    margin-top: 50px; /* Adds space at the top */
+}
+
+.char-container h1 {
+    text-align: center; /* Center the heading */
     font-weight: bold;
     padding: 10px;
-    margin: 10px 0; /* Adjusted margin for better alignment with form */
-    align-items: center;
+    margin: 10px 0;
 }
 
 body.dark-theme {
@@ -18,34 +28,27 @@ body.dark-theme {
     color: #e0e0e0;
 }
 
-.main-container {
-    display: flex;
-    justify-content: center; /* Center horizontally */
-    align-items: flex-start; /* Align items at the top */
-    gap: 20px; /* Adjust space between the form and the result */
-    padding: 20px;
-}
-
-.form-container {
-    background-color: #f9f9f9; /* Just for visualization */
+.char-form {
+    background-color: #f9f9f9;
     border: 1px solid #ccc;
     padding: 20px;
-    max-width: 600px;
-    flex: 1; /* This will make the form container take up available space */
+    width: 100%; /* Full width for responsiveness */
+    max-width: 600px; /* Restricts the max width for better readability */
     display: flex;
     flex-direction: column;
-    align-items: center; /* Center the form contents */
+    align-items: center;
+    border-radius: 8px;
 }
 
-body.dark-theme .form-container {
+body.dark-theme .char-form {
     background-color: #1e1e1e;
     border: 1px solid #333;
 }
 
-.textarea {
+.char-textarea {
     width: 100%;
-    height: 300px;
-    resize: both; /* Allow both vertical and horizontal resizing */
+    height: 200px; /* Adjust height for better balance */
+    resize: vertical; /* Allow vertical resizing */
     background-color: #fff;
     color: #333;
     border: 1px solid #ccc;
@@ -53,63 +56,53 @@ body.dark-theme .form-container {
     border-radius: 5px;
 }
 
-body.dark-theme .textarea {
+body.dark-theme .char-textarea {
     background-color: #2e2e2e;
     color: #e0e0e0;
     border: 1px solid #555;
 }
 
-button {
-    background-color: #007bff;
+.count-button {
+    background-color: #38b000;
     color: white;
     border: none;
     padding: 10px 20px;
     cursor: pointer;
     margin-top: 10px;
     border-radius: 5px;
+    width: 100%; /* Makes the button take full width */
+    max-width: 200px; /* Adds a limit to the button width */
 }
 
-body.dark-theme button {
-    background-color: #007bff;
-    color: #e0e0e0;
-    border: 1px solid #555;
-}
-
-button:hover {
-    background-color: #0056b3;
-}
-
-body.dark-theme button:hover {
-    background-color: #0056b3;
+.count-button:hover {
+    background-color: #008000;
 }
 
 .result-container {
-    background-color: #f9f9f9; /* Just for visualization */
+    background-color: #f9f9f9;
     border: 1px solid #ccc;
     padding: 20px;
-    min-width: 300px;
-    max-width: 400px;
-    flex-shrink: 0; /* Ensure the result container doesn't shrink */
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    margin-top: 20px; /* Adds space between the form and result */
+    width: 100%;
+    max-width: 600px; /* Matches the form's max-width for consistency */
     border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
 body.dark-theme .result-container {
     background-color: #1e1e1e;
     color: #a0e0a0;
     border: 1px solid #a0e0a0;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
-/* Error Styles */
 .errors {
     background-color: #f9f9f9;
     color: #ff6b6b;
     border: 1px solid #ff6b6b;
-    margin-top: 10px; /* Add some space above the errors */
-    padding: 10px; /* Add some padding for better appearance */
-    width: 100%; /* Make errors take full width of the container */
-    max-width: 600px; /* Optional: limit the maximum width */
+    margin-top: 10px;
+    padding: 10px;
+    width: 100%;
+    max-width: 600px;
     border-radius: 8px;
 }
 

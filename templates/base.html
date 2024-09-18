@@ -45,8 +45,8 @@
                 </ul>
                 <div class="navbar-right">
                     <!-- Changed "Register" to buttons "Login" and "No Account? Register Here" per instruction 5 -->
-                    <a href="#" class="btn">Login</a>
-                    <a href="#" class="btn">Sign Up</a>
+                    <a href="{{ url_for('login') }}" class="btn">Login</a>
+                    <a href="{{ url_for('register') }}" class="btn">Sign Up</a>
                     <!-- Search bar and theme toggle button on the right -->
                     <input type="text" class="search-bar" placeholder="Search...">
                     <button class="base-toggle-btn">Toggle Theme</button>
