@@ -1,29 +1,36 @@
+/* Styles scoped under .tax-calculator */
+
 /* General Styles */
-body {
+.tax-calculator {
     font-family: 'Noto Sans Mono', monospace;
     box-sizing: border-box;
+    overflow: hidden; /* Preventing overflow issues */
+    width: 100%;
 }
 
-h1 {
+/* Headings */
+.tax-calculator h1 {
+    clear: both;
     text-align: center; /* Aligning the heading to center */
     font-weight: bold;
     padding: 10px;
     margin: 10px 0; /* Adjusted margin for better alignment with form */
-    align-items: center;
+
 }
 
-h3 {
+.tax-calculator h3 {
     font-weight: bold;
     font-size: 18px;
     text-align: center;
 }
 
-h4 {
+.tax-calculator h4 {
     text-align: left;
     font-size: 16px;
 }
 
-form {
+/* Form */
+.tax-calculator form {
     max-width: 600px;
     margin: 0 auto;
     padding: 15px;
@@ -32,13 +39,16 @@ form {
     background-color: #f9f9f9;
 }
 
-label {
+/* Form Labels */
+.tax-calculator .form-label {
     display: block;
     margin-bottom: 5px;
     font-weight: bold;
 }
 
-input, select {
+/* Form Inputs and Selects */
+.tax-calculator .form-input,
+.tax-calculator .form-select {
     width: calc(25% - 10px); /* Adjusted width for better alignment */
     padding: 10px;
     margin-bottom: 5px;
@@ -46,21 +56,24 @@ input, select {
     border-radius: 5px;
 }
 
-.line-item-group {
+/* Line Item Group */
+.tax-calculator .line-item-group {
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.line-item-group input {
+.tax-calculator .line-item-group .form-input {
     margin-right: 5px; /* Adjusted margin for spacing */
 }
 
-.line-item-tax-rate {
+/* Line Item Tax Rate */
+.tax-calculator .line-item-tax-rate {
     width: 30%; /* Adjusted width for tax rate input */
 }
 
-button {
+/* Calculate Button */
+.tax-calculator .calculate-btn {
     width: 100%;
     padding: 10px;
     background-color: #007bff;
@@ -71,23 +84,25 @@ button {
     font-size: 1.1em;
 }
 
-button:hover {
+.tax-calculator .calculate-btn:hover {
     background-color: #0056b3;
 }
 
 /* Responsive Styles */
 @media (max-width: 600px) {
-    form {
+    .tax-calculator form {
         padding: 5px;
     }
 
-    input, select, button {
+    .tax-calculator .form-input,
+    .tax-calculator .form-select,
+    .tax-calculator .calculate-btn {
         padding: 8px;
     }
 }
 
 /* New Styles for Result Container */
-.result-container {
+.tax-calculator .result-container {
     float: left;
     width: 30%;
     margin-left: 20px;
@@ -98,68 +113,69 @@ button:hover {
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
-.form-container {
+.tax-calculator .form-container {
     float: left;
     width: 50%;
 }
 
-.tax-breakdown {
+/* Tax Breakdown */
+.tax-calculator .tax-breakdown {
     margin-top: 20px;
     border: 1px solid #ccc;
     border-radius: 8px;
     background-color: #f9f9f9;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    float: left; /* Changed from right to left */
+    float: left;
     width: 45%;
-    margin-right: 20px; /* Changed from margin-left to margin-right */
+    margin-right: 20px;
     padding: 20px;
 }
 
-.tax-breakdown ul {
+.tax-calculator .tax-breakdown ul {
     list-style-type: none;
     padding: 0;
 }
 
-.tax-breakdown li {
+.tax-calculator .tax-breakdown li {
     margin-bottom: 5px;
 }
 
 /* Clearfix to handle floats */
-.clearfix::after {
+.tax-calculator::after {
     content: "";
     clear: both;
     display: table;
 }
 
 /* Dark Theme Styles */
-body.dark-theme {
+body.dark-theme .tax-calculator {
     background-color: #333;
     color: #e0e0e0;
 }
 
-body.dark-theme form {
+body.dark-theme .tax-calculator form {
     background-color: #1e1e1e;
     border-color: #333;
 }
 
-body.dark-theme .result-container,
-body.dark-theme .tax-breakdown {
+body.dark-theme .tax-calculator .result-container,
+body.dark-theme .tax-calculator .tax-breakdown {
     background-color: #1e1e1e;
     border-color: #333;
 }
 
-body.dark-theme input,
-body.dark-theme select,
-body.dark-theme button {
+body.dark-theme .tax-calculator .form-input,
+body.dark-theme .tax-calculator .form-select,
+body.dark-theme .tax-calculator .calculate-btn {
     background-color: #333;
     color: #e0e0e0;
     border-color: #555;
 }
 
-body.dark-theme button {
+body.dark-theme .tax-calculator .calculate-btn {
     background-color: #007bff;
 }
 
-body.dark-theme button:hover {
+body.dark-theme .tax-calculator .calculate-btn:hover {
     background-color: #0056b3;
 }

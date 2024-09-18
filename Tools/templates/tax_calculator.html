@@ -1,4 +1,4 @@
-{%extends "base.html"%}
+{% extends "base.html" %}
 
 {% block title %}Tax Calculator{% endblock %}
 
@@ -7,33 +7,34 @@
 {% endblock %}
 
 {% block content %}
-<h1>Tax Calculator</h1>
 
-<div class="clearfix">
+<div class="tax-calculator">
+    <h1>Tax Calculator</h1>
+
     <div class="form-container">
         <form method="POST" action="{{ url_for('tax_calculator_route') }}" id="tax_form" novalidate>
             <!-- Item Count -->
-            <label for="item_count">Number of Line Items:</label>
-            <input type="number" name="item_count" id="item_count" value="{{ data.get('item_count', 1) }}" min="1" required><br><br>
+            <label for="item_count" class="form-label">Number of Line Items:</label>
+            <input type="number" name="item_count" id="item_count" class="form-input" value="{{ data.get('item_count', 1) }}" min="1" required><br><br>
 
             <!-- Discount Section -->
             <h3>Discount Items</h3>
-            <label for="has_discount">Is there a discount? (Y/N):</label>
-            <select name="has_discount" id="has_discount">
+            <label for="has_discount" class="form-label">Is there a discount? (Y/N):</label>
+            <select name="has_discount" id="has_discount" class="form-select">
                 <option value="N" {% if data.get('has_discount', 'N') == 'N' %}selected{% endif %}>No</option>
                 <option value="Y" {% if data.get('has_discount', 'N') == 'Y' %}selected{% endif %}>Yes</option>
             </select><br><br>
 
             <div id="discount_section" style="display: {% if data.get('has_discount', 'N') == 'Y' %}block{% else %}none{% endif %};">
-                <label for="discount_count">Number of Discount Items:</label>
-                <input type="number" name="discount_count" id="discount_count"
+                <label for="discount_count" class="form-label">Number of Discount Items:</label>
+                <input type="number" name="discount_count" id="discount_count" class="form-input"
                     value="{{ data.get('discount_count', '1') }}" min="1"
                     {% if data.get('has_discount', 'N') == 'Y' %}required{% endif %}
                     {% if data.get('has_discount', 'N') == 'N' %}disabled{% endif %}>
                 <br><br>
 
-                <label for="is_discount_taxable">Is Discount Taxable? (Y/N):</label>
-                <select name="is_discount_taxable" id="is_discount_taxable" {% if data.get('has_discount', 'N') == 'N' %}disabled{% endif %}>
+                <label for="is_discount_taxable" class="form-label">Is Discount Taxable? (Y/N):</label>
+                <select name="is_discount_taxable" id="is_discount_taxable" class="form-select" {% if data.get('has_discount', 'N') == 'N' %}disabled{% endif %}>
                     <option value="N" {% if data.get('is_discount_taxable', 'N') == 'N' %}selected{% endif %}>No</option>
                     <option value="Y" {% if data.get('is_discount_taxable', 'N') == 'Y' %}selected{% endif %}>Yes</option>
                 </select><br><br>
@@ -51,29 +52,29 @@
 
             <!-- Shipping Section -->
             <h3>Shipping</h3>
-            <label for="has_shipping">Is there shipping cost? (Y/N):</label>
-            <select name="has_shipping" id="has_shipping">
+            <label for="has_shipping" class="form-label">Is there shipping cost? (Y/N):</label>
+            <select name="has_shipping" id="has_shipping" class="form-select">
                 <option value="N" {% if data.get('has_shipping', 'N') == 'N' %}selected{% endif %}>No</option>
                 <option value="Y" {% if data.get('has_shipping', 'N') == 'Y' %}selected{% endif %}>Yes</option>
             </select><br><br>
 
             <div id="shipping_section" style="display: {% if data.get('has_shipping', 'N') == 'Y' %}block{% else %}none{% endif %};">
-                <label for="shipping_cost">Shipping Cost:</label>
-                <input type="number" name="shipping_cost" id="shipping_cost" value="{{ data.get('shipping_cost', '') }}" step="0.01"><br><br>
+                <label for="shipping_cost" class="form-label">Shipping Cost:</label>
+                <input type="number" name="shipping_cost" id="shipping_cost" class="form-input" value="{{ data.get('shipping_cost', '') }}" step="0.01"><br><br>
 
-                <label for="shipping_taxable">Is Shipping Taxable? (Y/N):</label>
-                <select name="shipping_taxable" id="shipping_taxable">
+                <label for="shipping_taxable" class="form-label">Is Shipping Taxable? (Y/N):</label>
+                <select name="shipping_taxable" id="shipping_taxable" class="form-select">
                     <option value="N" {% if data.get('shipping_taxable', 'N') == 'N' %}selected{% endif %}>No</option>
                     <option value="Y" {% if data.get('shipping_taxable', 'N') == 'Y' %}selected{% endif %}>Yes</option>
                 </select><br><br>
 
                 <div id="shipping_tax_rate_section" style="display: {% if data.get('shipping_taxable', 'N') == 'Y' %}block{% else %}none{% endif %};">
-                    <label for="shipping_tax_rate">Shipping Tax Rate (%):</label>
-                    <input type="number" name="shipping_tax_rate" id="shipping_tax_rate" value="{{ data.get('shipping_tax_rate', '') }}" step="0.01"><br><br>
+                    <label for="shipping_tax_rate" class="form-label">Shipping Tax Rate (%):</label>
+                    <input type="number" name="shipping_tax_rate" id="shipping_tax_rate" class="form-input" value="{{ data.get('shipping_tax_rate', '') }}" step="0.01"><br><br>
                 </div>
             </div>
 
-            <button type="submit">Calculate Tax</button>
+            <button type="submit" class="calculate-btn">Calculate Tax</button>
         </form>
     </div>
 
@@ -170,10 +171,10 @@
                 lineItemsDiv.innerHTML += `
                     <div class="line-item-group">
                         <h4>Item ${i}</h4>
-                        <label for="item_price_${i}">Price:</label>
-                        <input type="number" name="item_price_${i}" id="item_price_${i}" step="0.01" required>
-                        <label for="item_tax_rate_${i}">Tax Rate (%):</label>
-                        <input type="number" name="item_tax_rate_${i}" id="item_tax_rate_${i}" step="0.01" required>
+                        <label for="item_price_${i}" class="form-label">Price:</label>
+                        <input type="number" name="item_price_${i}" id="item_price_${i}" class="form-input" step="0.01" required>
+                        <label for="item_tax_rate_${i}" class="form-label">Tax Rate (%):</label>
+                        <input type="number" name="item_tax_rate_${i}" id="item_tax_rate_${i}" class="form-input" step="0.01" required>
                     </div><br>
                 `;
             }
@@ -194,11 +195,11 @@
                 discountItemsDiv.innerHTML += `
                     <div class="line-item-group">
                         <h4>Discount Item ${i}</h4>
-                        <label for="discount_price_${i}">Price:</label>
-                        <input type="number" name="discount_price_${i}" id="discount_price_${i}" step="0.01" required>
+                        <label for="discount_price_${i}" class="form-label">Price:</label>
+                        <input type="number" name="discount_price_${i}" id="discount_price_${i}" class="form-input" step="0.01" required>
                         ${isTaxable === 'Y' ? `
-                        <label for="discount_tax_rate_${i}">Tax Rate (%):</label>
-                        <input type="number" name="discount_tax_rate_${i}" id="discount_tax_rate_${i}" step="0.01" required>
+                        <label for="discount_tax_rate_${i}" class="form-label">Tax Rate (%):</label>
+                        <input type="number" name="discount_tax_rate_${i}" id="discount_tax_rate_${i}" class="form-input" step="0.01" required>
                         ` : ''}
                     </div><br>
                 `;
@@ -239,6 +240,3 @@
     });
 </script>
 {% endblock %}
-
-
-
