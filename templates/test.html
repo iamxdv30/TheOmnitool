@@ -5,11 +5,11 @@ Theme Toggle Test
 {% endblock %}
 
 {% block content %}
-<button class="theme-toggle">Toggle Theme</button>
+<button class="base-toggle-btn">Toggle Theme</button>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
     console.log('Script is running');
-    const toggleButton = document.querySelector('.theme-toggle');
+    const toggleButton = document.querySelector('.base-toggle-btn');
 
     if (!toggleButton) {
         console.error('Theme toggle button not found');

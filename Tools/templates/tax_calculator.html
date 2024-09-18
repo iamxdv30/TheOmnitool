@@ -1,4 +1,10 @@
-{% extends "base.html" %}
+{%extends "base.html"%}
+
+{% block title %}Tax Calculator{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/tax_calculator.css') }}">
+{% endblock %}
 
 {% block content %}
 <h1>Tax Calculator</h1>
@@ -103,7 +109,7 @@
             const discountCountInput = document.getElementById('discount_count');
             const isDiscountTaxableSelect = document.getElementById('is_discount_taxable');
             const discountItemsDiv = document.getElementById('discount_items');
-    
+
             if (hasDiscount === 'Y') {
                 discountSection.style.display = 'block';
                 discountCountInput.disabled = false;
@@ -122,7 +128,7 @@
                 discountItemsDiv.innerHTML = ''; // Clear any discount items from the DOM
             }
         }
-    
+
         function toggleShippingSection() {
             const hasShipping = document.getElementById('has_shipping').value;
             const shippingSection = document.getElementById('shipping_section');
@@ -139,7 +145,7 @@
             }
             toggleShippingTaxRateSection(); // Ensure shipping tax rate section updates
         }
-    
+
         function toggleShippingTaxRateSection() {
             const shippingTaxable = document.getElementById('shipping_taxable').value;
             const shippingTaxRateSection = document.getElementById('shipping_tax_rate_section');
@@ -155,7 +161,7 @@
                 shippingTaxRateInput.value = '';
             }
         }
-    
+
         function createLineItems() {
             const itemCount = document.getElementById('item_count').value;
             const lineItemsDiv = document.getElementById('line_items');
@@ -172,17 +178,17 @@
                 `;
             }
         }
-    
+
         function createDiscountItems() {
             const discountCountInput = document.getElementById('discount_count');
             const discountCount = discountCountInput.value;
             const discountItemsDiv = document.getElementById('discount_items');
             discountItemsDiv.innerHTML = '';
-    
+
             if (!discountCount || discountCount <= 0) {
                 return; // Do not create inputs if discount count is invalid
             }
-    
+
             const isTaxable = document.getElementById('is_discount_taxable').value;
             for (let i = 1; i <= discountCount; i++) {
                 discountItemsDiv.innerHTML += `
@@ -198,32 +204,32 @@
                 `;
             }
         }
-    
+
         // Event Listeners
         document.getElementById('has_discount').addEventListener('change', function() {
             toggleDiscountSection();
         });
-    
+
         document.getElementById('has_shipping').addEventListener('change', function() {
             toggleShippingSection();
         });
-    
+
         document.getElementById('shipping_taxable').addEventListener('change', function() {
             toggleShippingTaxRateSection();
         });
-    
+
         document.getElementById('item_count').addEventListener('input', function() {
             createLineItems();
         });
-    
+
         document.getElementById('discount_count').addEventListener('input', function() {
             createDiscountItems();
         });
-    
+
         document.getElementById('is_discount_taxable').addEventListener('change', function() {
             createDiscountItems();
         });
-    
+
         // Initialize sections based on current form values
         toggleDiscountSection();
         toggleShippingSection();

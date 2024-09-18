@@ -17,7 +17,7 @@ import pytz
 from jinja2 import FileSystemLoader, Environment, ChoiceLoader
 
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="static")
 
 # Set up Jinja2 to load templates from both directories
 with app.app_context():
@@ -42,8 +42,6 @@ def index():
 @app.route("/test")
 def test_page():
     return render_template("test.html")
-
-
 
 @app.route("/convert", methods=["GET", "POST"])
 def convert() -> Response:

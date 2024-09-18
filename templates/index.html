@@ -5,36 +5,16 @@ Welcome to XDV: Support Tool
 {% endblock %}
 
 {% block content %}
-<h1 class="theme-heading">Welcome to XDV: Support Tool</h1>
+<h1 class="index-heading">The OmniTool</h1>
 
-<ul>
+<ul class="index-list">
     <li>Convert NSC Version to Readable Date and Time</li>
     <li>Steps to Reproduce Template to Easy Documentation for Case Summary</li>
     <li>Tax Calculator for NSC Error: Web Order Total is unmatched to NetSuite Total</li>
     <li>Character Counter for Defect</li>
 </ul>
-<a class="button" href="{{ url_for('login') }}">Login</a>
-<a class="button" href="{{ url_for('register') }}">No Account? Register Here</a>
+{% endblock %}
 
-<!-- Theme toggle button -->
-<!-- <button class="theme-toggle">Dark Theme</button>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const toggleButton = document.querySelector('.theme-toggle');
-
-        if (!toggleButton) {
-            console.error('Theme toggle button not found');
-            return;
-        }
-
-        toggleButton.addEventListener('click', function() {
-            document.body.classList.toggle('dark-theme');
-            document.body.classList.toggle('light-theme');
-        });
-    });
-</script> -->
-
-
-
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 {% endblock %}

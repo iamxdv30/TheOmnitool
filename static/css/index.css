@@ -1,0 +1,61 @@
+.index-heading {
+    color: #333;
+    font-size: 2em;
+    text-align: center;
+    margin-bottom: 20px;
+}
+body.dark-theme .index-heading {
+    color: #fff;
+}
+
+body.light-theme .index-heading {
+    color: #0a0a0a;
+}
+
+.index-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    text-align: center;
+    font-size: 1.2em;
+    color: #333;
+}
+
+body.dark-theme .index-list {
+    color: #fff;
+}
+
+body.light-theme .index-list {
+    color: #0a0a0a;
+}
+
+
+.index-list li {
+    margin-bottom: 10px;
+    text-align: left; /* Align text to the left */
+    padding-left: 8em; /* Adjust left padding to move it slightly to the right */
+    list-style-type: none; /* Remove default bullet points */
+    font-size: 1.1em;
+    color: #333;
+    position: relative; /* Changed to relative for proper positioning of bullets */
+}
+
+.index-list li::before {
+    content: ''; /* Add a pseudo-element for custom bullet */
+    position: absolute; /* Position it absolutely */
+    left: 7em; /* Move the bullet slightly to the right */
+    top: 50%; /* Center the bullet vertically */
+    transform: translateY(-50%); /* Adjust for bullet height */
+    width: 0.5em; /* Width of the bullet */
+    height: 0.5em; /* Height of the bullet */
+    border-radius: 50%; /* Make it circular */
+    background-color: currentColor; /* Use the current text color for the bullet */
+}
+
+body.dark-theme .index-list li {
+    color: #fff;
+}
+
+body.light-theme .index-list li {
+    color: #0a0a0a;
+}

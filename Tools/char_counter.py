@@ -1,6 +1,6 @@
 def count_characters(input_string: str) -> dict:
     total_characters = len(input_string)
-    character_limit = 3520
+    character_limit = 3560
     excess_characters = total_characters - character_limit
 
     result = {
@@ -9,3 +9,5 @@ def count_characters(input_string: str) -> dict:
                           if excess_characters > 0 else "Within character limit."
     }
     return result
+
+
