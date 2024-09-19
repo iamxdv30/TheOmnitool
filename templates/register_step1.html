@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/register.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="register-step1-container">
+    <form class="register-step1-form" method="POST">
+        <h1>Step 1</h1>
+        <input type="text" name="fname" placeholder="First Name" required>
+        <input type="text" name="lname" placeholder="Last Name" required>
+        <input type="text" name="address" placeholder="Address" required>
+        <input type="text" name="city" placeholder="City" required>
+        <input type="text" name="state" placeholder="State" required>
+        <input type="text" name="zip" placeholder="ZIP Code" required>
+        <button class="register-step1-button" type="submit">Next</button>
+    </form>
+</div>
+
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+{% endblock %}

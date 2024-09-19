@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+{% endblock %}
+
+{% block content %}
+
+    <div class="login-container">
+      <h1>Login</h1>
+      <form method="POST">
+          <input type="text" name="username" placeholder="Username" required>
+          <input type="password" name="password" placeholder="Password" required>
+          <input type="hidden" name="role" value="user">  {# Default role for regular users #}
+          <button type="submit">Login</button>
+      </form>
+    </div>
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+
+    {% if role == 'admin' %}
+        <p>Welcome, Admin! You have full access.</p>
+    {% elif role == 'superadmin' %}
+        <p>Welcome, Superadmin! You have all the privileges.</p>
+    {% elif role == 'user' %}
+        <p>Welcome, User! You have limited access.</p>
+    {% endif %}
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul>
+          {% for message in messages %}
+            <li>{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+{% endblock %}

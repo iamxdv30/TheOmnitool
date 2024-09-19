@@ -11,6 +11,7 @@
     max-width: 400px; /* Sets a maximum width for the container */
     width: 100%; /* Ensures it scales well with the screen */
     border-radius: 10px;
+    box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.5); /* Adds a subtle shadow */
 }
 
 .login-container h1 {
@@ -44,3 +45,24 @@
 .login-container form button:hover {
     background-color: #008000;
 }
+
+/* Dark mode */
+body.dark-theme .login-container {
+    background-color: #1e1e1e; /* Dark background for dark theme */
+    color: white; /* White text for dark theme */
+    box-shadow: 0 0 10px 0 rgba(0, 128, 0, 0.5); /* Adds a subtle shadow */
+}
+
+body.dark-theme .login-container form input {
+    background-color: #333; /* Darker input background */
+    color: white; /* White text for inputs */
+    border: 1px solid #555; /* Darker border for inputs */
+}
+
+body.dark-theme .login-container form button {
+    background-color: #38b000; /* Keep button color */
+    color: white; /* White text for button */
+}
+
+
+

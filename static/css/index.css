@@ -1,47 +1,55 @@
+/* Heading styles for the index page */
 .index-heading {
-    color: #333;
-    font-size: 2em;
-    text-align: center;
-    margin-bottom: 20px;
+    color: #333; /* Default text color */
+    font-size: 2em; /* Font size for the heading */
+    text-align: center; /* Center the heading text */
+    margin-bottom: 20px; /* Space below the heading */
 }
+
+/* Dark theme styles for the index heading */
 body.dark-theme .index-heading {
-    color: #fff;
-    font-family: 'Noto Sans Mono', monospace;
+    color: #fff; /* Text color in dark theme */
+    font-family: 'Noto Sans Mono', monospace; /* Font family for dark theme */
 }
 
+/* Light theme styles for the index heading */
 body.light-theme .index-heading {
-    color: #0a0a0a;
+    color: #0a0a0a; /* Text color in light theme */
 }
 
+/* Styles for the index list */
 .index-list {
-    list-style-type: none;
-    padding: 0;
-    margin: 0;
-    text-align: center;
-    font-size: 1.2em;
-    color: #333;
+    list-style-type: none; /* Remove default bullet points */
+    padding: 0; /* No padding */
+    margin: 0; /* No margin */
+    text-align: center; /* Center the list text */
+    font-size: 1.2em; /* Font size for list items */
+    color: #333; /* Default text color */
 }
 
+/* Dark theme styles for the index list */
 body.dark-theme .index-list {
-    color: #fff;
-    font-family: 'Noto Sans Mono', monospace;
+    color: #fff; /* Text color in dark theme */
+    font-family: 'Noto Sans Mono', monospace; /* Font family for dark theme */
 }
 
+/* Light theme styles for the index list */
 body.light-theme .index-list {
-    color: #0a0a0a;
+    color: #0a0a0a; /* Text color in light theme */
 }
 
-
+/* Styles for individual list items */
 .index-list li {
-    margin-bottom: 10px;
+    margin-bottom: 10px; /* Space below each list item */
     text-align: left; /* Align text to the left */
     padding-left: 8em; /* Adjust left padding to move it slightly to the right */
     list-style-type: none; /* Remove default bullet points */
-    font-size: 1.1em;
-    color: #333;
+    font-size: 1.1em; /* Font size for list items */
+    color: #333; /* Default text color */
     position: relative; /* Changed to relative for proper positioning of bullets */
 }
 
+/* Custom bullet styles for list items */
 .index-list li::before {
     content: ''; /* Add a pseudo-element for custom bullet */
     position: absolute; /* Position it absolutely */
@@ -54,11 +62,13 @@ body.light-theme .index-list {
     background-color: currentColor; /* Use the current text color for the bullet */
 }
 
+/* Dark theme styles for individual list items */
 body.dark-theme .index-list li {
-    color: #fff;
-    font-family: 'Noto Sans Mono', monospace;
+    color: #fff; /* Text color in dark theme */
+    font-family: 'Noto Sans Mono', monospace; /* Font family for dark theme */
 }
 
+/* Light theme styles for individual list items */
 body.light-theme .index-list li {
-    color: #0a0a0a;
+    color: #0a0a0a; /* Text color in light theme */
 }

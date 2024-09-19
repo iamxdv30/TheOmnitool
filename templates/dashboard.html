@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Dashboard</h1>
+    <p>Tools Available:</p>
+    <ul>
+        <li><a href="{{ url_for('convert') }}">Unix Timestamp Converter</a></li>
+    </ul>
+    <a href="{{ url_for('logout') }}">Logout</a>
+    
+{% endblock %}

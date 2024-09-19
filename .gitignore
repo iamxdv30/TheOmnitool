@@ -1,3 +1,4 @@
 .vscode/
-test.html
+templates/test.html
+templates/register.html
 

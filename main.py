@@ -10,14 +10,24 @@ from flask import (
     Response,
     make_response,
 )
-from datetime import timezone, datetime, timedelta
-from Tools.char_counter import count_characters
-from Tools.tax_calculator import tax_calculator as calculate_tax
-import pytz
-from jinja2 import FileSystemLoader, Environment, ChoiceLoader
-
+from flask_sqlalchemy import SQLAlchemy  # Import SQLAlchemy for database operations
+import bcrypt  # Import bcrypt for password hashing
+from datetime import timezone, datetime, timedelta  # Import datetime for timestamp operations
+from Tools.char_counter import count_characters  # Import count_characters from Tools
+from Tools.tax_calculator import tax_calculator as calculate_tax  # Import tax_calculator from Tools
+import pytz  # Import pytz for timezone operations
+from jinja2 import FileSystemLoader, Environment, ChoiceLoader  # Import Jinja2 for template rendering
+from main.model import User  # Import User model from main.model
 
 app = Flask(__name__, static_folder="static")
+
+# Database configuration
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'  # Use SQLite for simplicity
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # Disable tracking modifications
+app.config['SECRET_KEY'] = 'XDVsuperuser@1993'  # Set a secret key for session management
+
+# Initialize SQLAlchemy
+db = SQLAlchemy(app)
 
 # Set up Jinja2 to load templates from both directories
 with app.app_context():
@@ -30,18 +40,18 @@ with app.app_context():
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 
 # The secret key is used by Flask to sign session cookies and other cryptographic operations.
-app.secret_key = "XDVsuperuser@1993"  # Replace with a strong, unique key in production.
-
-users = {}  # Dictionary to store registered users
+app.secret_key = app.config['SECRET_KEY']  # Use the secret key from app config
 
 
 @app.route("/")
 def index():
     return render_template("index.html")
 
+
 @app.route("/test")
 def test_page():
     return render_template("test.html")
+
 
 @app.route("/convert", methods=["GET", "POST"])
 def convert() -> Response:
@@ -202,39 +212,169 @@ def tax_calculator_route():
         return render_template("tax_calculator.html", data=data)
 
 
+# Updated register route using User model and SQLAlchemy
+# @app.route("/register", methods=["GET", "POST"])
+# def register():
+#     if request.method == "POST":
+#         # Get form data
+#         fname = request.form["fname"]
+#         lname = request.form["lname"]
+#         address = request.form["address"]
+#         city = request.form["city"]
+#         state = request.form["state"]
+#         zip_code = request.form["zip"]
+#         username = request.form["username"]
+#         email = request.form["email"]
+#         password = request.form["password"]
+
+#         # Check if the username or email already exists
+#         if User.query.filter_by(username=username).first():
+#             flash("Username already exists!", "error")
+#             return redirect(url_for("register"))
+
+#         if User.query.filter_by(email=email).first():
+#             flash("Email already registered!", "error")
+#             return redirect(url_for("register"))
+
+#         # Create a new User object with all the fields
+#         new_user = User(
+#             fname=fname,
+#             lname=lname,
+#             address=address,
+#             city=city,
+#             state=state,
+#             zip=zip_code,
+#             username=username,
+#             email=email
+#         )
+
+#         # Set hashed password
+#         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+#         new_user.password = hashed_password.decode('utf-8')
+
+#         # Add the new user to the database
+#         db.session.add(new_user)
+#         db.session.commit()
+
+#         flash("Registration successful!", "success")
+#         return redirect(url_for("login"))
+
+#     return render_template("register.html")
+
+@app.route("/register_step1", methods=["GET", "POST"])
+def register_step1():
+    if request.method == "POST":
+        # Collect personal information
+        fname = request.form["fname"]
+        lname = request.form["lname"]
+        address = request.form["address"]
+        city = request.form["city"]
+        state = request.form["state"]
+        zip_code = request.form["zip"]
+
+        # Store the data in session for the next step
+        session['registration_info'] = {
+            'fname': fname,
+            'lname': lname,
+            'address': address,
+            'city': city,
+            'state': state,
+            'zip': zip_code
+        }
+
+        # Redirect to the next step (username, email, and password)
+        return redirect(url_for("register_step2"))
+
+    return render_template("register_step1.html")
+
+@app.route("/register_step2", methods=["GET", "POST"])
+def register_step2():
+    # Retrieve the personal info from the session
+    registration_info = session.get('registration_info')
+
+    # Check if the session contains the registration info
+    if not registration_info:
+        flash("Please complete step 1 of registration first.", "error")
+        return redirect(url_for("register_step1"))
+
+    if request.method == "POST":
+        # Collect the remaining account info
+        username = request.form["username"]
+        email = request.form["email"]
+        password = request.form["password"]
+        confirm_password = request.form["confirm_password"]
+
+        # Validate that passwords match
+        if password != confirm_password:
+            flash("Passwords do not match!", "error")
+            return redirect(url_for("register_step2"))
+
+        # Check if the username or email already exists
+        if User.query.filter_by(username=username).first():
+            flash("Username already exists!", "error")
+            return redirect(url_for("register_step2"))
+
+        if User.query.filter_by(email=email).first():
+            flash("Email already registered!", "error")
+            return redirect(url_for("register_step2"))
+
+        # Extract the data from the session
+        fname = registration_info['fname']
+        lname = registration_info['lname']
+        address = registration_info['address']
+        city = registration_info['city']
+        state = registration_info['state']
+        zip_code = registration_info['zip']
+
+        # Create a new User object with all the collected data
+        new_user = User(
+            fname=fname,
+            lname=lname,
+            address=address,
+            city=city,
+            state=state,
+            zip=zip_code,
+            username=username,
+            email=email
+        )
+
+        # Set hashed password
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+        new_user.password = hashed_password.decode('utf-8')
+
+        # Add the new user to the database
+        db.session.add(new_user)
+        db.session.commit()
+
+        # Clear the session data after successful registration
+        session.pop('registration_info', None)
+
+        flash("Registration successful!", "success")
+        return redirect(url_for("login"))
+
+    return render_template("register_step2.html")
 
 
+# Updated login route using User model and password validation
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
-        if (
-            username in users and users[username]["password"] == password
-        ):  # Moved this check up
+
+        # Fetch user from the database
+        user = User.query.filter_by(username=username).first()
+
+        # Validate user and password
+        if user and bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
             session["logged_in"] = True
-            session["role"] = users[username]["role"]
-            return redirect(
-                url_for("user_dashboard")
-            )  # Ensure this redirects to user_dashboard
-        elif username == "admin" and password == "Xdv-admin@1993":
-            session["logged_in"] = True
-            session["role"] = "admin"
-            return redirect(url_for("dashboard"))
-        elif username == "superadmin" and password == "XDVsuperuser@1993":
-            session["logged_in"] = True
-            session["role"] = "superadmin"
-            return redirect(url_for("superadmin"))
+            session["role"] = user.role if hasattr(user, 'role') else "user"
+            return redirect(url_for("user_dashboard"))
         else:
-            print(f"Failed login attempt for username: {username}")
-            return render_template(
-                "login.html",
-                role=None,
-                error="Invalid username or password. Please try again.",
-            )
-    return render_template(
-        "login.html", role=None
-    )  # Pass role as None for GET requests
+            flash("Invalid username or password!", "error")
+            return render_template("login.html")
+
+    return render_template("login.html")
 
 
 @app.route("/logout", methods=["GET", "POST"])
@@ -244,50 +384,56 @@ def logout():
     return redirect(url_for("index"))
 
 
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
-        users[username] = {
-            "password": password,
-            "role": "user",
-        }  # Store username, password, and role
-        print(f"User {username} registered successfully")
-        flash("Registration is successful")  # Flash success message
-        return redirect(url_for("login"))  # Redirect to login page
-    return render_template("register.html")
-
-
+# Updated register_admin route using User model and SQLAlchemy
 @app.route("/register_admin", methods=["GET", "POST"])
 def register_admin():
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
-        users[username] = {
-            "password": password,
-            "role": "admin",
-        }  # Store username, password, and role
-        return "Registration successful"
-    return render_template("register_admin.html")  # Render admin registration form
+
+        # Check if the username already exists
+        if User.query.filter_by(username=username).first():
+            flash("Username already exists!", "error")
+            return redirect(url_for("register_admin"))
+
+        # Create a new Admin user
+        new_admin = User(username=username, role="admin")
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+        new_admin.password = hashed_password.decode('utf-8')
+
+        db.session.add(new_admin)
+        db.session.commit()
+
+        return "Admin registration successful"
+    return render_template("register_admin.html")
 
 
+# Updated register_user route using User model and SQLAlchemy
 @app.route("/register_user", methods=["GET", "POST"])
 def register_user():
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
-        users[username] = {
-            "password": password,
-            "role": "user",
-        }  # Store username, password, and role
-        return "Registration successful"
-    return render_template("register_user.html")  # Render user registration form
+
+        # Check if the username already exists
+        if User.query.filter_by(username=username).first():
+            flash("Username already exists!", "error")
+            return redirect(url_for("register_user"))
+
+        # Create a new standard user
+        new_user = User(username=username, role="user")
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+        new_user.password = hashed_password.decode('utf-8')
+
+        db.session.add(new_user)
+        db.session.commit()
+
+        return "User registration successful"
+    return render_template("register_user.html")
 
 
 @app.route("/user/<name>", methods=["GET", "POST"])
 def user(name):
-
     if "logged_in" in session:
         return render_template("user_dashboard.html", name=name)
     else:
