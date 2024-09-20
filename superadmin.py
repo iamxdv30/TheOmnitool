@@ -5,13 +5,13 @@ from flask_login import current_user  # Add this import
 from flask_admin.contrib.sqla import ModelView  # Add this import
 
 # Add the parent directory to the system path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'main')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'model')))
 
-# Ensure 'main' is a package
-# Add __init__.py in the main directory
+# Ensure 'model' is a package
+# Add __init__.py in the model directory
 
-from main import db  # Ensure 'main' is a package
-from main.model import User  # Ensure 'main' is a package
+from model import db  # Ensure 'model' is a package
+from model.model import User  # Ensure 'model' is a package
 
 # Initialize the admin object
 admin = Admin()  # Add this line

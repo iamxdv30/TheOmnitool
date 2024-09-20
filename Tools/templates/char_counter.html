@@ -1,36 +1,35 @@
-{% extends "base.html" %}
-
-{% block styles %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/char_counter.css') }}">
-{% endblock %}
-
-{% block title %}Character Counter{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block styles %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/char_counter.css') }}"
+/>
+{% endblock %} {% block title %}Character Counter{% endblock %} {% block content
+%}
 
 <div class="char-container">
-    <h1>Character Counter For Defect</h1>
-    <form class="char-form" method="POST" action="{{ url_for('char_counter') }}">
-        <textarea class="char-textarea" name="text" rows="20" cols="65">{{ input_text | default('') }}</textarea>
-        <br>
-        <button class="count-button" type="submit">Count Characters</button>
-    </form>
-    {% if total_characters is defined %}
-        <div class="result-container">
-            <p>Total Characters: {{ total_characters }}</p>
-            <p>{{ excess_message }}</p>
-        </div>
-    {% endif %}
+  <h1>Character Counter</h1>
+  <p>Maximum of 3,532 characters</p>
+  <form class="char-form" method="POST" action="{{ url_for('char_counter') }}">
+    <textarea class="char-textarea" name="text" rows="20" cols="65">
+{{ input_text | default('') }}</textarea
+    >
+    <br />
+    <button class="count-button" type="submit">Count Characters</button>
+  </form>
+  {% if total_characters is defined %}
+  <div class="result-container">
+    <p>Total Characters: {{ total_characters }}</p>
+    <p>{{ excess_message }}</p>
+  </div>
+  {% endif %}
 </div>
 {% if errors %}
-    <div class="errors">
-        <p>Errors:</p>
-        <ul>
-            {% for error in errors %}
-                <li>{{ error }}</li>
-            {% endfor %}
-        </ul>
-    </div>
-{% endif %}
-{% endblock %}
-
+<div class="errors">
+  <p>Errors:</p>
+    <ul>
+        {% for error in errors %}
+        <li>{{ error }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %} {% endblock %}

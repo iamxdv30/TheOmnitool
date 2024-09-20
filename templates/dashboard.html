@@ -4,8 +4,16 @@
     <h1>Dashboard</h1>
     <p>Tools Available:</p>
     <ul>
-        <li><a href="{{ url_for('convert') }}">Unix Timestamp Converter</a></li>
+        {% if role == 'admin' or role == 'superadmin' %}
+            <li><a href="{{ url_for('convert') }}">Unix Timestamp Converter</a></li>
+
+            {% elif role == 'user' %}
+            <li><a href="{{ url_for('character_counter') }}">Character Counter</a></li>
+            <li><a href="{{ url_for('tax_calculator') }}">Tax Calculator</a></li>
+            <li><a href="#">Steps to Reproduce</a></li>
+        {% endif %}
     </ul>
-    <a href="{{ url_for('logout') }}">Logout</a>
+    
+    <button class="logout-button" onclick="window.location.href='{{ url_for('login') }}'">Logout</button>
     
 {% endblock %}

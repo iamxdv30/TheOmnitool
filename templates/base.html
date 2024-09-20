@@ -19,13 +19,9 @@
 <body class="light-theme">
     <nav class="navbar">
         <div class="navbar-container">
-            <!-- Removed the navbar-brand as per instruction 3 -->
-            <button class="navbar-toggler" id="navbar-toggler">
-                ☰
-            </button>
+            <button class="navbar-toggler" id="navbar-toggler">☰</button>
             <div class="navbar-collapse" id="navbar-collapse">
                 <ul class="navbar-nav">
-                    <!-- Aligned these items to the left as per instruction 4 -->
                     <li class="nav-item"><a href="{{ url_for('index') }}" class="nav-link">Home</a></li>
                     <li class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle">Tools</a>
@@ -44,10 +40,8 @@
                     </li>
                 </ul>
                 <div class="navbar-right">
-                    <!-- Changed "Register" to buttons "Login" and "No Account? Register Here" per instruction 5 -->
                     <a href="{{ url_for('login') }}" class="btn">Login</a>
                     <a href="{{ url_for('register_step1') }}" class="btn">Sign Up</a>
-                    <!-- Search bar and theme toggle button on the right -->
                     <input type="text" class="search-bar" placeholder="Search...">
                     <button class="base-toggle-btn">Toggle Theme</button>
                 </div>
@@ -55,8 +49,29 @@
         </div>
     </nav>
 
-    {% block content %}
-    {% endblock %}
+    <!-- Main content container -->
+    <div class="container">
+        {% block content %}
+        {% endblock %}
+    </div>
+
+<!-- Footer -->
+{% block footer %}
+<footer class="site-footer">
+    <div class="footer-container">
+        <p>&copy; 2024 NSC. All rights reserved.</p>
+        <nav class="footer-nav">
+            <ul>
+                <li><a href="#">Home</a></li>
+                <li><a href="#">About</a></li>
+                <li><a href="#">Services</a></li>
+                <li><a href="#">Contact</a></li>
+            </ul>
+        </nav>
+    </div>
+</footer>
+{% endblock %}
+
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -65,14 +80,12 @@
             const navbarCollapse = document.getElementById('navbar-collapse');
             const body = document.body;
 
-            // Load saved theme from localStorage
             const savedTheme = localStorage.getItem('theme');
             if (savedTheme) {
                 body.classList.remove('light-theme', 'dark-theme');
                 body.classList.add(savedTheme);
             }
 
-            // Toggle dark theme
             toggleButton.addEventListener('click', function() {
                 if (body.classList.contains('dark-theme')) {
                     body.classList.remove('dark-theme');
@@ -85,7 +98,6 @@
                 }
             });
 
-            // Toggle navbar collapse
             navbarToggler.addEventListener('click', function() {
                 navbarCollapse.classList.toggle('show');
             });

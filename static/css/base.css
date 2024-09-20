@@ -1,10 +1,16 @@
-
-/* Reset default styles */
-* {
+/* Ensure the body and html take full height */
+html, body {
+    height: 100%;
     margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
 }
+
+/* The main content container should flex to take available space */
+.container {
+    flex: 1; /* Makes the container take up remaining space between the header and footer */
+}
+
 .light-theme {
     font-family: 'Noto Sans Mono', monospace;
     background-color: #f6fff8;
@@ -13,7 +19,7 @@
 /* Navbar styles */
 .navbar {
     background-color: #588157;
-    padding: 0.5rem 1rem;
+    padding: 0.3rem 1rem; /* Reduce padding to reduce thickness */
     position: relative;
 }
 
@@ -44,6 +50,7 @@
     align-items: center;
     flex-grow: 1;
     font-size: 1.5em;
+    margin-left: 1rem; /* Adjust to align with footer links */
 }
 
 .nav-item {
@@ -52,13 +59,14 @@
 
 .nav-link {
     display: block;
-    padding: 0.5rem 1rem;
+    padding: 0.3rem 1rem; /* Reduce padding to reduce thickness */
     color: #000;
     text-decoration: none;
 }
 
 .nav-link:hover {
-    background-color: #e2e6ea;
+    background-color: #80AF81;
+    color: #fff;
 }
 
 .dropdown {
@@ -75,7 +83,7 @@
     position: absolute;
     top: 100%;
     left: 0;
-    background-color: #f8f9fa;
+    background-color: #D6EFD8;
     list-style: none;
     padding: 0;
     margin: 0;
@@ -92,7 +100,7 @@
 }
 
 .dropdown-item:hover {
-    background-color: #e2e6ea;
+    background-color: #80AF81;
 }
 
 .dropdown:hover > .dropdown-menu,
@@ -110,7 +118,7 @@
 }
 
 .dropdown-submenu > .dropdown-item::after {
-    content: ' ▶';
+    /*content: ' ▶'; */
     float: right;
     font-size: 0.6em;
 }
@@ -119,7 +127,6 @@
     display: flex;
     align-items: center;
     font-size: 1.1em;
-    
 }
 
 .search-bar {
@@ -212,7 +219,7 @@ body.dark-theme .base-toggle-btn {
 /* Style for main content */
 .main-content {
     padding: 2rem;
-    text-align: center; /* Center the content per instruction 6 */
+    text-align: center;
 }
 
 .main-content h1 {
@@ -231,7 +238,7 @@ body.dark-theme .base-toggle-btn {
     margin-bottom: 0.5rem;
 }
 
-/* Style buttons for "Login" and "No Account? Register Here" per instruction 5 */
+/* Style buttons for "Login" and "No Account? Register Here" */
 .btn {
     padding: 0.5rem 1rem;
     margin: 0 0.5rem;
@@ -255,3 +262,66 @@ body.dark-theme .base-toggle-btn {
 .navbar-right {
     justify-content: flex-end;
 }
+
+/* Footer Styling */
+.site-footer {
+    background-color: var(--footer-background-color, #588157); /* Light theme default */
+    font-family: 'Noto Sans Mono', monospace;
+    padding: 20px;
+    text-align: center;
+}
+
+.footer-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: var(--footer-text-color, white); /* Light theme default */
+}
+
+.footer-nav ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 10px 0 0;
+}
+
+.footer-nav ul li {
+    display: inline;
+    margin: 0 10px;
+}
+
+.footer-nav ul li a {
+    color: var(--footer-text-color, white); /* Light theme default */
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.footer-nav ul li a:hover {
+    color: var(--footer-hover-color, #f4a261); /* Light theme default */
+}
+
+@media (min-width: 768px) {
+    .footer-container {
+        flex-direction: row;
+        justify-content: space-between;
+    }
+}
+
+/* Dark theme for footer */
+body.dark-theme .site-footer {
+    background-color: #3c403d; /* Dark theme footer background */
+}
+
+body.dark-theme .footer-container {
+    color: #d3d3d3; /* Dark theme footer text color */
+}
+
+body.dark-theme .footer-nav ul li a {
+    color: #d3d3d3; /* Dark theme link color */
+}
+
+body.dark-theme .footer-nav ul li a:hover {
+    color: #a9d9b7; /* Dark theme link hover color */
+}
+
+
