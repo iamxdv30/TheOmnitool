@@ -10,7 +10,9 @@ from flask import (
     Response,
     make_response,
 )
-from flask_sqlalchemy import SQLAlchemy  # Already imported in model.model, so not necessary here
+from flask_sqlalchemy import (
+    SQLAlchemy,
+)  # Already imported in model.model, so not necessary here
 import bcrypt  # Import bcrypt for password hashing
 from datetime import (
     timezone,
@@ -18,7 +20,9 @@ from datetime import (
     timedelta,
 )
 from Tools.char_counter import count_characters  # Import count_characters from Tools
-from Tools.tax_calculator import tax_calculator as calculate_tax  # Import tax_calculator from Tools
+from Tools.tax_calculator import (
+    tax_calculator as calculate_tax,
+)  # Import tax_calculator from Tools
 import pytz  # Import pytz for timezone operations
 
 from jinja2 import (
@@ -28,17 +32,22 @@ from jinja2 import (
 )
 from model.model import User, db, UsageLog  # Import User model and db from model.model
 from flask_migrate import Migrate
-
+import logging
 
 # Factory function to create a Flask app
 def create_app():
     app = Flask(__name__, static_folder="static")
 
     # Database configuration
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///users.db"  # Use SQLite for simplicity
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False  # Disable tracking modifications
-    app.config["SECRET_KEY"] = "XDVsuperuser@1993"  # Set a secret key for session management
-    
+    app.config["SQLALCHEMY_DATABASE_URI"] = (
+        "sqlite:///users.db"  # Use SQLite for simplicity
+    )
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = (
+        False  # Disable tracking modifications
+    )
+    app.config["SECRET_KEY"] = (
+        "XDVsuperuser@1993"  # Set a secret key for session management
+    )
 
     # Initialize the db with the app
     db.init_app(app)
@@ -46,14 +55,16 @@ def create_app():
     # Initialize the migrate with the app and db
     migrate = Migrate(app, db)
 
-
-
     # Set up Jinja2 to load templates from both directories
     with app.app_context():
         app.jinja_env.loader = ChoiceLoader(
             [
-                FileSystemLoader("Tools/templates"),  # Load templates from Tools/templates
-                FileSystemLoader("templates"),  # Load templates from the model templates directory
+                FileSystemLoader(
+                    "Tools/templates"
+                ),  # Load templates from Tools/templates
+                FileSystemLoader(
+                    "templates"
+                ),  # Load templates from the model templates directory
             ]
         )
 
@@ -67,6 +78,7 @@ def create_app():
     register_routes(app)
 
     return app
+
 
 # Register all routes in a separate function
 def register_routes(app):
@@ -89,7 +101,9 @@ def register_routes(app):
 
         if request.method == "POST":
             if request.json is None:
-                return make_response(jsonify({"result": "Invalid input, JSON expected"}), 400)
+                return make_response(
+                    jsonify({"result": "Invalid input, JSON expected"}), 400
+                )
             input_timestamp_str = request.json.get("timestamp")
             timezone_str = request.json.get("timezone", "UTC")
             try:
@@ -100,7 +114,9 @@ def register_routes(app):
                 )
                 return make_response(render_template("convert.html", result=result))
             except (ValueError, pytz.UnknownTimeZoneError):
-                return make_response(jsonify({"result": "Invalid timestamp or timezone"}), 400)
+                return make_response(
+                    jsonify({"result": "Invalid timestamp or timezone"}), 400
+                )
         return make_response(render_template("convert.html"))
 
     # Route for character counter
@@ -111,112 +127,105 @@ def register_routes(app):
             total_characters = len(input_string)
             character_limit = 3520
             excess_characters = total_characters - character_limit
-            excess_message = f"Character limit exceeded by {excess_characters} characters." if excess_characters > 0 else "Within character limit."
-            return make_response(render_template("char_counter.html", input_text=input_string, total_characters=total_characters, excess_message=excess_message))
+            excess_message = (
+                f"Character limit exceeded by {excess_characters} characters."
+                if excess_characters > 0
+                else "Within character limit."
+            )
+            return make_response(
+                render_template(
+                    "char_counter.html",
+                    input_text=input_string,
+                    total_characters=total_characters,
+                    excess_message=excess_message,
+                )
+            )
         return make_response(render_template("char_counter.html"))
 
     # Route for tax calculator
+    logging.basicConfig(level=logging.DEBUG)
+    logger = logging.getLogger(__name__)
+
     @app.route("/tax_calculator", methods=["GET", "POST"])
     def tax_calculator_route():
         if request.method == "POST":
+            logger.debug("Received POST request for tax calculation")
             data = request.form.to_dict()
-            calculator_data = {}
-
-            # Process discount items
-            discount_items = []
-            if data.get("has_discount") == "Y":
-                discount_count = int(data.get("discount_count", 0))
-                is_discount_taxable = data.get("is_discount_taxable", "N") == "Y"
-                for i in range(1, discount_count + 1):
-                    try:
-                        price = float(data.get(f"discount_price_{i}", 0))
-                        if price < 0:
-                            raise ValueError
-                    except ValueError:
-                        price = None
-                    item = {"price": price, "is_taxable": is_discount_taxable}
-                    if is_discount_taxable:
-                        try:
-                            tax_rate = float(data.get(f"discount_tax_rate_{i}", 0))
-                            if tax_rate < 0:
-                                raise ValueError
-                            item["tax_rate"] = tax_rate
-                        except ValueError:
-                            item["tax_rate"] = None
-                    discount_items.append(item)
-            calculator_data["discount_items"] = discount_items
-
-            # Process shipping details
-            has_shipping = data.get("has_shipping", "N") == "Y"
-            if has_shipping:
-                try:
-                    shipping_cost = float(data.get("shipping_cost", 0))
-                    if shipping_cost < 0:
-                        raise ValueError
-                except ValueError:
-                    shipping_cost = 0
-                shipping_taxable = data.get("shipping_taxable", "N") == "Y"
-                if shipping_taxable:
-                    try:
-                        shipping_tax_rate = float(data.get("shipping_tax_rate", 0))
-                        if shipping_tax_rate < 0:
-                            raise ValueError
-                    except ValueError:
-                        shipping_tax_rate = 0
-                else:
-                    shipping_tax_rate = 0
-            else:
-                shipping_cost = 0
-                shipping_tax_rate = 0
-                shipping_taxable = False
-
-            calculator_data["shipping_cost"] = shipping_cost
-            calculator_data["shipping_tax_rate"] = shipping_tax_rate
-            calculator_data["shipping_taxable"] = shipping_taxable
-
-            # Process line items
+            logger.debug(f"Received form data: {data}")
+            
             try:
-                item_count = int(data.get("item_count", 0))
-                if item_count < 0:
-                    raise ValueError
-            except ValueError:
-                item_count = 0
-            calculator_data["item_count"] = item_count
+                # Process items
+                items = []
+                i = 1
+                while f"item_price_{i}" in data and f"item_tax_rate_{i}" in data:
+                    price = data[f"item_price_{i}"].strip()
+                    tax_rate = data[f"item_tax_rate_{i}"].strip()
+                    if price and tax_rate:
+                        items.append({
+                            'price': float(price),
+                            'tax_rate': float(tax_rate)
+                        })
+                    i += 1
 
-            # Collect line items
-            for i in range(1, item_count + 1):
-                try:
-                    price = float(data.get(f"item_price_{i}", 0))
-                    if price < 0:
-                        raise ValueError
-                except ValueError:
-                    price = 0
-                try:
-                    tax_rate = float(data.get(f"item_tax_rate_{i}", 0))
-                    if tax_rate < 0:
-                        raise ValueError
-                except ValueError:
-                    tax_rate = 0
-                calculator_data[f"item_price_{i}"] = price
-                calculator_data[f"item_tax_rate_{i}"] = tax_rate
+                # Process discounts
+                discounts = []
+                i = 1
+                while f"discount_amount_{i}" in data and f"is_discount_taxable_{i}" in data:
+                    amount = data[f"discount_amount_{i}"].strip()
+                    if amount:
+                        discounts.append({
+                            'amount': float(amount),
+                            'is_taxable': data[f"is_discount_taxable_{i}"] == 'Y'
+                        })
+                    i += 1
 
-            result = calculate_tax(calculator_data)
+                # Process shipping
+                shipping_cost = data.get('shipping_cost', '').strip()
+                shipping_cost = float(shipping_cost) if shipping_cost else 0
+                shipping_taxable = data.get('shipping_taxable') == 'Y'
+                shipping_tax_rate = data.get('shipping_tax_rate', '').strip()
+                shipping_tax_rate = float(shipping_tax_rate) if shipping_tax_rate else 0
+
+                calc_data = {
+                    'items': items,
+                    'discounts': discounts,
+                    'shipping_cost': shipping_cost,
+                    'shipping_taxable': shipping_taxable,
+                    'shipping_tax_rate': shipping_tax_rate
+                }
+
+                logger.debug(f"Processed data for calculation: {calc_data}")
+
+                result = calculate_tax(calc_data)
+                logger.debug(f"Calculation result: {result}")
+            except ValueError as e:
+                logger.error(f"Error during tax calculation: {str(e)}")
+                result = None
+                flash(f"Invalid input: Please ensure all numeric fields contain valid numbers.", "error")
+            except Exception as e:
+                logger.error(f"Unexpected error during tax calculation: {str(e)}")
+                result = None
+                flash("An unexpected error occurred. Please try again.", "error")
+
             return render_template("tax_calculator.html", result=result, data=data)
         else:
+            logger.debug("Received GET request for tax calculator")
             data = {}
             return render_template("tax_calculator.html", data=data)
-        
+
     # Route for Canada tax calculator
     @app.route("/canada_tax_calculator", methods=["GET", "POST"])
     def canada_tax_calculator():
         if request.method == "POST":
             data = request.form.to_dict()
             result = calculate_tax(data)
-            return render_template("canada_tax_calculator.html", result=result, data=data)
+            return render_template(
+                "canada_tax_calculator.html", result=result, data=data
+            )
         else:
             data = {}
             return render_template("canada_tax_calculator.html", data=data)
-        
+
     # Route for registration step 1
     @app.route("/register_step1", methods=["GET", "POST"])
     def register_step1():
@@ -309,7 +318,9 @@ def register_routes(app):
             user = User.query.filter_by(username=username).first()
 
             # Validate user and password
-            if user and bcrypt.checkpw(password.encode("utf-8"), user.password.encode("utf-8")):
+            if user and bcrypt.checkpw(
+                password.encode("utf-8"), user.password.encode("utf-8")
+            ):
                 session["logged_in"] = True
                 session["role"] = user.role if hasattr(user, "role") else "user"
                 return redirect(url_for("user_dashboard"))
@@ -332,6 +343,7 @@ def register_routes(app):
         if "logged_in" in session and session["role"] == "user":
             return render_template("user_dashboard.html")
         return redirect(url_for("login"))
+
 
 # The 'if __name__' block is still required to run the app
 if __name__ == "__model__":

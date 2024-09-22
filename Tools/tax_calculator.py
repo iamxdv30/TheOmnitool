@@ -1,67 +1,67 @@
 # Tools/tax_calculator.py
 
 def calculate_tax(price, tax_rate):
-    return round(price * (tax_rate / 100), 3)
+    return round(price * (tax_rate / 100), 2)
 
-def process_discount(discount_items):
+def process_discount(discounts, base_tax_rate):
     discount_total = 0
-    for item in discount_items:
-        price = item['price']
-        is_taxable = item['is_taxable']
-        tax_rate = item.get('tax_rate', 0)
+    discount_tax = 0
+    for discount in discounts:
+        amount = discount['amount']
+        is_taxable = discount['is_taxable']
+        discount_total += amount
         if is_taxable:
-            discount_total += calculate_tax(price, tax_rate)
-        else:
-            discount_total += price
-    return discount_total
+            discount_tax += calculate_tax(amount, base_tax_rate)
+    return discount_total, discount_tax
 
 def tax_calculator(data):
-    item_count = int(data.get('item_count', 0))
-    items = []
+    items = data.get('items', [])
+    discounts = data.get('discounts', [])
+    shipping_cost = float(data.get('shipping_cost', 0))
+    shipping_taxable = data.get('shipping_taxable', False)
+    shipping_tax_rate = float(data.get('shipping_tax_rate', 0))
+
     total_tax = 0
     total_amount = 0
-    taxes = []
-
-    # Process discount items if any
-    discount_items = data.get('discount_items', [])
-    discount_total = process_discount(discount_items)
+    item_total = 0
+    tax_breakdown = []
 
     # Process line items
-    for i in range(1, item_count + 1):
-        price = float(data.get(f'item_price_{i}', 0))
-        tax_rate = float(data.get(f'item_tax_rate_{i}', 0))
+    for i, item in enumerate(items, 1):
+        price = item['price']
+        tax_rate = item['tax_rate']
+        item_total += price
         tax = calculate_tax(price, tax_rate)
         total_tax += tax
-        total_amount += round(price + tax, 3)
-        taxes.append({'item': i, 'tax': tax})
-        items.append({'item': i, 'price': price, 'tax_rate': tax_rate, 'tax': tax})
+        total_amount += price + tax
+        tax_breakdown.append({'item': f'Item {i}', 'tax': tax})
 
-    # Process shipping cost if any
-    shipping_cost = float(data.get('shipping_cost', 0))
+    # Process discounts
+    base_tax_rate = items[0]['tax_rate'] if items else 0  # Use the first item's tax rate for discounts
+    discount_total, discount_tax = process_discount(discounts, base_tax_rate)
+    total_amount -= discount_total
+    total_tax -= discount_tax
+    if discount_total > 0:
+        tax_breakdown.append({'item': 'Discount', 'tax': -discount_tax})
+
+    # Process shipping cost
     shipping_tax = 0
-    if shipping_cost > 0:
-        shipping_taxable = data.get('shipping_taxable', 'N') == 'Y'
-        if shipping_taxable:
-            shipping_tax_rate = float(data.get('shipping_tax_rate', 0))
-            shipping_tax = calculate_tax(shipping_cost, shipping_tax_rate)
-            shipping_total = shipping_cost + shipping_tax
-        else:
-            shipping_total = shipping_cost
-    else:
-        shipping_total = 0
-
-    total_tax += shipping_tax
-    total_amount += shipping_total - discount_total
+    if shipping_cost > 0 and shipping_taxable:
+        shipping_tax = calculate_tax(shipping_cost, shipping_tax_rate)
+        total_tax += shipping_tax
+        tax_breakdown.append({'item': 'Shipping', 'tax': shipping_tax})
+    
+    total_amount += shipping_cost + shipping_tax
 
     result = {
         'items': items,
-        'discount_total': discount_total,
-        'shipping_cost': shipping_cost,
-        'shipping_tax': shipping_tax,
-        'total_tax': total_tax,
-        'total_amount': total_amount,
-        'tax_breakdown': taxes,
-        'item_total': total_amount - shipping_total - total_tax + discount_total,
+        'item_total': round(item_total, 2),
+        'discount_total': round(discount_total, 2),
+        'shipping_cost': round(shipping_cost, 2),
+        'shipping_tax': round(shipping_tax, 2),
+        'total_tax': round(total_tax, 2),
+        'total_amount': round(total_amount, 2),
+        'tax_breakdown': tax_breakdown
     }
 
     return result

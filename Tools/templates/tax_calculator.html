@@ -1,104 +1,80 @@
 {% extends "base.html" %}
-
 {% block title %}Tax Calculator{% endblock %}
-
 {% block styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/tax_calculator.css') }}">
 {% endblock %}
-
 {% block content %}
-
 <div class="tax-calculator">
     <h1>Tax Calculator</h1>
-
-    <div class="form-container">
-        <form method="POST" action="{{ url_for('tax_calculator_route') }}" id="tax_form" novalidate>
-            <select name="country" id="country" class="form-select">
-                <option value="US">United States</option>
-                <option value="CA">Canada</option>
-            </select><br><br>
-            <!-- Item Count -->
-            <label for="item_count" class="form-label">Number of Line Items:</label>
-            <input type="number" name="item_count" id="item_count" class="form-input" value="{{ data.get('item_count', 1) }}" min="1" required><br><br>
-
-            <!-- Discount Section -->
-            <h3>Discount Items</h3>
-            <label for="has_discount" class="form-label">Discount</label>
-            <select name="has_discount" id="has_discount" class="form-select">
-                <option value="N" {% if data.get('has_discount', 'N') == 'N' %}selected{% endif %}>No</option>
-                <option value="Y" {% if data.get('has_discount', 'N') == 'Y' %}selected{% endif %}>Yes</option>
-            </select><br><br>
-
-            <div id="discount_section" style="display: {% if data.get('has_discount', 'N') == 'Y' %}block{% else %}none{% endif %};">
-                <label for="discount_count" class="form-label">Number of Discount Items:</label>
-                <input type="number" name="discount_count" id="discount_count" class="form-input"
-                    value="{{ data.get('discount_count', '1') }}" min="1"
-                    {% if data.get('has_discount', 'N') == 'Y' %}required{% endif %}
-                    {% if data.get('has_discount', 'N') == 'N' %}disabled{% endif %}>
-                <br><br>
-
-                <label for="is_discount_taxable" class="form-label">Is Discount Taxable?</label>
-                <select name="is_discount_taxable" id="is_discount_taxable" class="form-select" {% if data.get('has_discount', 'N') == 'N' %}disabled{% endif %}>
-                    <option value="N" {% if data.get('is_discount_taxable', 'N') == 'N' %}selected{% endif %}>No</option>
-                    <option value="Y" {% if data.get('is_discount_taxable', 'N') == 'Y' %}selected{% endif %}>Yes</option>
-                </select><br><br>
-
-                <div id="discount_items">
-                    <!-- Discount items will be dynamically added here -->
-                </div>
+    <form id="taxForm" method="POST" action="{{ url_for('tax_calculator_route') }}">
+        <div class="calculator-selection">
+            <select name="calculator_type">
+                <option value="us">US Tax Calculator</option>
+                <option value="canada">Canada Tax Calculator</option>
+            </select>
+        </div>
+        <div id="itemsContainer">
+            <h3>Items</h3>
+            {% for i in range(1, (data.item_count|default(1))|int + 1) %}
+            <div class="item">
+                <label for="item_price_{{ i }}">Item {{ i }} Price:</label>
+                <input type="number" step="0.01" name="item_price_{{ i }}" value="{{ data.get('item_price_' ~ i, '') }}" required>
+                <label for="item_tax_rate_{{ i }}">Tax Rate (%):</label>
+                <input type="number" step="0.01" name="item_tax_rate_{{ i }}" value="{{ data.get('item_tax_rate_' ~ i, '') }}" required>
             </div>
+            {% endfor %}
+        </div>
+        <button type="button" onclick="addItem()">Add Item</button>
 
-            <!-- Line Items Section -->
-            <h3>Line Items</h3>
-            <div id="line_items">
-                <!-- Line items will be dynamically added here -->
+        <div id="discountsContainer">
+            <h3>Discounts</h3>
+            {% for i in range(1, (data.discount_count|default(0))|int + 1) %}
+            <div class="discount">
+                <label for="discount_amount_{{ i }}">Discount {{ i }} Amount:</label>
+                <input type="number" step="0.01" name="discount_amount_{{ i }}" value="{{ data.get('discount_amount_' ~ i, '') }}">
+                <label for="is_discount_taxable_{{ i }}">Is Taxable?</label>
+                <select name="is_discount_taxable_{{ i }}">
+                    <option value="N" {% if data.get('is_discount_taxable_' ~ i) == 'N' %}selected{% endif %}>No</option>
+                    <option value="Y" {% if data.get('is_discount_taxable_' ~ i) == 'Y' %}selected{% endif %}>Yes</option>
+                </select>
             </div>
+            {% endfor %}
+        </div>
+        <button type="button" onclick="addDiscount()">Add Discount</button>
 
-            <!-- Shipping Section -->
+        <div class="shipping-section">
             <h3>Shipping</h3>
-            <label for="has_shipping" class="form-label">Shipping Cost</label>
-            <select name="has_shipping" id="has_shipping" class="form-select">
-                <option value="N" {% if data.get('has_shipping', 'N') == 'N' %}selected{% endif %}>No</option>
-                <option value="Y" {% if data.get('has_shipping', 'N') == 'Y' %}selected{% endif %}>Yes</option>
-            </select><br><br>
-
-            <div id="shipping_section" style="display: {% if data.get('has_shipping', 'N') == 'Y' %}block{% else %}none{% endif %};">
-                <label for="shipping_cost" class="form-label">Shipping Cost:</label>
-                <input type="number" name="shipping_cost" id="shipping_cost" class="form-input" value="{{ data.get('shipping_cost', '') }}" step="0.01"><br><br>
-
-                <label for="shipping_taxable" class="form-label">Is Shipping Taxable? (Y/N):</label>
-                <select name="shipping_taxable" id="shipping_taxable" class="form-select">
-                    <option value="N" {% if data.get('shipping_taxable', 'N') == 'N' %}selected{% endif %}>No</option>
-                    <option value="Y" {% if data.get('shipping_taxable', 'N') == 'Y' %}selected{% endif %}>Yes</option>
-                </select><br><br>
-
-                <div id="shipping_tax_rate_section" style="display: {% if data.get('shipping_taxable', 'N') == 'Y' %}block{% else %}none{% endif %};">
-                    <label for="shipping_tax_rate" class="form-label">Shipping Tax Rate (%):</label>
-                    <input type="number" name="shipping_tax_rate" id="shipping_tax_rate" class="form-input" value="{{ data.get('shipping_tax_rate', '') }}" step="0.01"><br><br>
-                </div>
+            <label for="shipping_cost">Shipping Cost:</label>
+            <input type="number" step="0.01" name="shipping_cost" value="{{ data.shipping_cost|default('') }}">
+            <label for="shipping_taxable">Is Shipping Taxable?</label>
+            <select name="shipping_taxable" onchange="toggleShippingTaxRate()">
+                <option value="N" {% if data.shipping_taxable == 'N' %}selected{% endif %}>No</option>
+                <option value="Y" {% if data.shipping_taxable == 'Y' %}selected{% endif %}>Yes</option>
+            </select>
+            <div id="shipping_tax_rate_section" {% if data.shipping_taxable != 'Y' %}style="display: none;"{% endif %}>
+                <label for="shipping_tax_rate">Shipping Tax Rate (%):</label>
+                <input type="number" step="0.01" name="shipping_tax_rate" value="{{ data.shipping_tax_rate|default('') }}">
             </div>
+        </div>
 
-            <button type="submit" class="calculate-btn">Calculate Tax</button>
-        </form>
-    </div>
+        <button type="submit">Calculate Tax</button>
+    </form>
 
     {% if result %}
     <div class="result-container">
         <h2>Results</h2>
-        <p><strong>Item Total:</strong> {{ result.item_total }}</p>
-        <p><strong>Discount Total:</strong> {{ result.discount_total }}</p>
-        <p><strong>Total Tax:</strong> {{ result.total_tax }}</p>
-        <p><strong>Total Amount:</strong> {{ result.total_amount }}</p>
-
+        <p><strong>Item Total:</strong> ${{ "%.2f"|format(result.item_total) }}</p>
+        <p><strong>Discount Total:</strong> ${{ "%.2f"|format(result.discount_total) }}</p>
+        <p><strong>Shipping Cost:</strong> ${{ "%.2f"|format(result.shipping_cost) }}</p>
+        <p><strong>Total Tax:</strong> ${{ "%.2f"|format(result.total_tax) }}</p>
+        <p><strong>Total Amount:</strong> ${{ "%.2f"|format(result.total_amount) }}</p>
+        
         <div class="tax-breakdown">
             <h3>Tax Breakdown:</h3>
             <ul>
-                {% for tax in result.tax_breakdown %}
-                    <li>Tax for Item {{ tax.item }}: {{ tax.tax }}</li>
-                {% endfor %}
-                {% if result.shipping_tax > 0 %}
-                    <li>Shipping Tax: {{ result.shipping_tax }}</li>
-                {% endif %}
+            {% for tax in result.tax_breakdown %}
+                <li>{{ tax.item }}: ${{ "%.2f"|format(tax.tax) }}</li>
+            {% endfor %}
             </ul>
         </div>
     </div>
@@ -106,155 +82,58 @@
 </div>
 
 <script>
-    // JavaScript to dynamically handle form fields
-    document.addEventListener('DOMContentLoaded', function() {
-        function toggleDiscountSection() {
-            const hasDiscount = document.getElementById('has_discount').value;
-            const discountSection = document.getElementById('discount_section');
-            const discountCountInput = document.getElementById('discount_count');
-            const isDiscountTaxableSelect = document.getElementById('is_discount_taxable');
-            const discountItemsDiv = document.getElementById('discount_items');
+    let itemCount = {{ (data.item_count|default(1))|int }};
+    let discountCount = {{ (data.discount_count|default(0))|int }};
 
-            if (hasDiscount === 'Y') {
-                discountSection.style.display = 'block';
-                discountCountInput.disabled = false;
-                discountCountInput.required = true;
-                isDiscountTaxableSelect.disabled = false;
-                if (!discountCountInput.value || discountCountInput.value <= 0) {
-                    discountCountInput.value = '1'; // Set default valid value
-                }
-                createDiscountItems(); // Create discount items dynamically
-            } else {
-                discountSection.style.display = 'none';
-                discountCountInput.disabled = true;
-                discountCountInput.required = false;
-                discountCountInput.value = ''; // Clear the value to prevent validation error
-                isDiscountTaxableSelect.disabled = true;
-                discountItemsDiv.innerHTML = ''; // Clear any discount items from the DOM
-            }
+    function addItem() {
+        itemCount++;
+        const itemsContainer = document.getElementById('itemsContainer');
+        const newItem = document.createElement('div');
+        newItem.classList.add('item');
+        newItem.innerHTML = `
+            <label for="item_price_${itemCount}">Item ${itemCount} Price:</label>
+            <input type="number" step="0.01" name="item_price_${itemCount}" required>
+            <label for="item_tax_rate_${itemCount}">Tax Rate (%):</label>
+            <input type="number" step="0.01" name="item_tax_rate_${itemCount}" required>
+        `;
+        itemsContainer.appendChild(newItem);
+    }
+
+    function addDiscount() {
+        discountCount++;
+        const discountsContainer = document.getElementById('discountsContainer');
+        const newDiscount = document.createElement('div');
+        newDiscount.classList.add('discount');
+        newDiscount.innerHTML = `
+            <label for="discount_amount_${discountCount}">Discount ${discountCount} Amount:</label>
+            <input type="number" step="0.01" name="discount_amount_${discountCount}">
+            <label for="is_discount_taxable_${discountCount}">Is Taxable?</label>
+            <select name="is_discount_taxable_${discountCount}">
+                <option value="N">No</option>
+                <option value="Y">Yes</option>
+            </select>
+        `;
+        discountsContainer.appendChild(newDiscount);
+    }
+
+    function toggleShippingTaxRate() {
+        const shippingTaxable = document.querySelector('select[name="shipping_taxable"]').value;
+        const shippingTaxRateSection = document.getElementById('shipping_tax_rate_section');
+        shippingTaxRateSection.style.display = shippingTaxable === 'Y' ? 'block' : 'none';
+    }
+
+    //New function to handle calculator type change
+    function handleCalculatorTypeChange() {
+        const calculatorType = document.querySelector('select[name="calculator_type"]').value;
+        if (calculatorType === 'us') {
+            window.location.href = "{{ url_for('tax_calculator_route') }}";
+        } else if (calculatorType === 'canada') {
+            // Instead of redirecting, we'll update the form or display a message
+            console.log('Canada tax calculator selected');
+            // You can add code here to update the form for Canada-specific fields
+            // or display a message that the Canada calculator is not yet implemented
+            alert('Canada tax calculator is not yet implemented.');
         }
-
-        function toggleShippingSection() {
-            const hasShipping = document.getElementById('has_shipping').value;
-            const shippingSection = document.getElementById('shipping_section');
-            const shippingCostInput = document.getElementById('shipping_cost');
-            if (hasShipping === 'Y') {
-                shippingSection.style.display = 'block';
-                shippingCostInput.disabled = false;
-                shippingCostInput.required = true;
-            } else {
-                shippingSection.style.display = 'none';
-                shippingCostInput.disabled = true;
-                shippingCostInput.required = false;
-                shippingCostInput.value = '';
-            }
-            toggleShippingTaxRateSection(); // Ensure shipping tax rate section updates
-        }
-
-        function toggleShippingTaxRateSection() {
-            const shippingTaxable = document.getElementById('shipping_taxable').value;
-            const shippingTaxRateSection = document.getElementById('shipping_tax_rate_section');
-            const shippingTaxRateInput = document.getElementById('shipping_tax_rate');
-            if (shippingTaxable === 'Y') {
-                shippingTaxRateSection.style.display = 'block';
-                shippingTaxRateInput.disabled = false;
-                shippingTaxRateInput.required = true;
-            } else {
-                shippingTaxRateSection.style.display = 'none';
-                shippingTaxRateInput.disabled = true;
-                shippingTaxRateInput.required = false;
-                shippingTaxRateInput.value = '';
-            }
-        }
-
-        function createLineItems() {
-            const itemCount = document.getElementById('item_count').value;
-            const lineItemsDiv = document.getElementById('line_items');
-            lineItemsDiv.innerHTML = '';
-            for (let i = 1; i <= itemCount; i++) {
-                lineItemsDiv.innerHTML += `
-                    <div class="line-item-group">
-                        <h4>Item ${i}</h4>
-                        <label for="item_price_${i}" class="form-label">Price:</label>
-                        <input type="number" name="item_price_${i}" id="item_price_${i}" class="form-input" step="0.01" required>
-                        <label for="item_tax_rate_${i}" class="form-label">Tax Rate (%):</label>
-                        <input type="number" name="item_tax_rate_${i}" id="item_tax_rate_${i}" class="form-input" step="0.01" required>
-                    </div><br>
-                `;
-            }
-        }
-
-        function createDiscountItems() {
-            const discountCountInput = document.getElementById('discount_count');
-            const discountCount = discountCountInput.value;
-            const discountItemsDiv = document.getElementById('discount_items');
-            discountItemsDiv.innerHTML = '';
-
-            if (!discountCount || discountCount <= 0) {
-                return; // Do not create inputs if discount count is invalid
-            }
-
-            const isTaxable = document.getElementById('is_discount_taxable').value;
-            for (let i = 1; i <= discountCount; i++) {
-                discountItemsDiv.innerHTML += `
-                    <div class="line-item-group">
-                        <h4>Discount Item ${i}</h4>
-                        <label for="discount_price_${i}" class="form-label">Price:</label>
-                        <input type="number" name="discount_price_${i}" id="discount_price_${i}" class="form-input" step="0.01" required>
-                        ${isTaxable === 'Y' ? `
-                        <label for="discount_tax_rate_${i}" class="form-label">Tax Rate (%):</label>
-                        <input type="number" name="discount_tax_rate_${i}" id="discount_tax_rate_${i}" class="form-input" step="0.01" required>
-                        ` : ''}
-                    </div><br>
-                `;
-            }
-        }
-
-        // New function to handle country selection
-        function selectTaxCalculator() {
-            const selectCalculator = document.getElementById('country');
-            
-            if (selectCalculator.value === 'CA') {
-                window.location.href = "{{ url_for('canada_tax_calculator') }}";
-            }
-            // If US is selected, we stay on the current page (tax_calculator_route)
-        }
-
-        // Event Listeners
-        document.getElementById('has_discount').addEventListener('change', function() {
-            toggleDiscountSection();
-        });
-
-        document.getElementById('has_shipping').addEventListener('change', function() {
-            toggleShippingSection();
-        });
-
-        document.getElementById('shipping_taxable').addEventListener('change', function() {
-            toggleShippingTaxRateSection();
-        });
-
-        document.getElementById('item_count').addEventListener('input', function() {
-            createLineItems();
-        });
-
-        document.getElementById('discount_count').addEventListener('input', function() {
-            createDiscountItems();
-        });
-
-        document.getElementById('is_discount_taxable').addEventListener('change', function() {
-            createDiscountItems();
-        });
-
-        // New event listener for country selection
-        document.getElementById('country').addEventListener('change', selectTaxCalculator);
-
-        // Initialize sections based on current form values
-        toggleDiscountSection();
-        toggleShippingSection();
-        toggleShippingTaxRateSection();
-        createLineItems();
-        createDiscountItems();
-    });
-
+    }
 </script>
 {% endblock %}
