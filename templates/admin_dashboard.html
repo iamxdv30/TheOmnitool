@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Admin Dashboard</h1>
+<table>
+    <thead>
+        <tr>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for user in users %}
+        <tr>
+            <td>{{ user.username }}</td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.role }}</td>
+            <td>
+                <a href="{{ url_for('view_user_activity', user_id=user.id) }}">View Activity</a>
+                <form action="{{ url_for('grant_tool_access') }}" method="post">
+                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                    <input type="text" name="tool_name" placeholder="Tool name">
+                    <button type="submit">Grant Access</button>
+                </form>
+                <form action="{{ url_for('revoke_tool_access') }}" method="post">
+                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                    <input type="text" name="tool_name" placeholder="Tool name">
+                    <button type="submit">Revoke Access</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

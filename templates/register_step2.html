@@ -1,26 +1,47 @@
-{% extends "base.html" %} {% block styles %}
-<link
-  rel="stylesheet"
-  href="{{ url_for('static', filename='css/register.css') }}"
-/>
-{% endblock %} {% block content %}
+{% extends "base.html" %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/register.css') }}">
+{% endblock %}
+
+{% block content %}
 <div class="register-step2-container">
-  <form class="register-step2-form" method="POST">
     <h1>Step 2</h1>
-    <input type="text" name="username" placeholder="Username" required />
-    <input type="email" name="email" placeholder="Email" required />
-    <input type="password" name="password" placeholder="Password" required />
-    <input
-      type="password"
-      name="confirm_password"
-      placeholder="Confirm Password"
-      required
-    />
-    <button class="register-step2-button" type="submit">
-      Complete Registration
-    </button>
-  </form>
+    <h2>Complete Registration</h2>
+
+    <form method="POST" action="{{ url_for('register_step2') }}">
+        <div>
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+
+        <div>
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+
+        <div>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+
+        <div>
+            <label for="confirm_password">Confirm Password:</label>
+            <input type="password" id="confirm_password" name="confirm_password" required>
+        </div>
+
+        <div>
+            <button type="submit">Complete Registration</button>
+        </div>
+    </form>
 </div>
-{% if error %}
-<p style="color: red">{{ error }}</p>
-{% endif %} {% endblock %}
+
+<!-- Added error message display -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+{% endblock %}

@@ -83,9 +83,15 @@ body.dark-theme .register-step1-container form button {
     box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.5); /* Adds a subtle shadow */
 }
 
-.register-step2-container h1 {
+.register-step2-container h1,
+.register-step2-container h2 {
     font-size: 2rem;
     margin-bottom: 1rem;
+    text-align: center;
+}
+
+.register-step2-container h2 {
+    font-size: 1.5rem;
 }
 
 .register-step2-container form {
@@ -94,12 +100,17 @@ body.dark-theme .register-step1-container form button {
     width: 100%; /* Make the form take up the full width of the container */
 }
 
+.register-step2-container form div {
+    margin-bottom: 1rem;
+}
+
 .register-step2-container form input {
     width: 100%; /* Ensures inputs take up the full form width */
     padding: 0.5rem;
     margin-bottom: 1rem;
     border: 1px solid #ccc;
     border-radius: 0.25rem;
+    margin-bottom: 0;
 }
 
 .register-step2-container form button {
@@ -132,4 +143,34 @@ body.dark-theme .register-step2-container form input {
 body.dark-theme .register-step2-container form button {
     background-color: #38b000; /* Keep button color */
     color: white; /* White text for button */
+}
+
+/* Flash messages */
+.error, .success {
+    width: 100%;
+    padding: 10px;
+    margin-top: 1rem;
+    border-radius: 5px;
+    text-align: center;
+}
+
+.error {
+    background-color: #ffcccb;
+    color: #8b0000;
+}
+
+.success {
+    background-color: #90ee90;
+    color: #006400;
+}
+
+/* Dark theme adjustments for flash messages */
+body.dark-theme .error {
+    background-color: #8b0000;
+    color: #ffcccb;
+}
+
+body.dark-theme .success {
+    background-color: #006400;
+    color: #90ee90;
 }

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>User Activity</h1>
+<table>
+    <thead>
+        <tr>
+            <th>Tool Name</th>
+            <th>Timestamp</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for log in activity %}
+        <tr>
+            <td>{{ log.tool_name }}</td>
+            <td>{{ log.timestamp }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

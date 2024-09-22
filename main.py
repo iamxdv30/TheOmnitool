@@ -1,3 +1,7 @@
+import os
+
+os.environ["FLASK_APP"] = "main.py"
+
 from flask import (
     Flask,
     request,
@@ -9,7 +13,6 @@ from flask import (
     flash,
     Response,
     make_response,
-    flash,
 )
 from flask_sqlalchemy import (
     SQLAlchemy,
@@ -31,9 +34,19 @@ from jinja2 import (
     Environment,
     ChoiceLoader,
 )
-from model.model import User, db, UsageLog  # Import User model and db from model.model
+from model.model import (
+    User,
+    Admin,
+    SuperAdmin,
+    UsageLog,
+    ToolAccess,
+    db,
+    UserFactory,
+    ToolAccessManager,
+)
 from flask_migrate import Migrate
 import logging
+
 
 # Factory function to create a Flask app
 def create_app():
@@ -153,11 +166,11 @@ def register_routes(app):
             calculator_type = request.form.get("calculator_type")
             if calculator_type == "canada":
                 return redirect(url_for("canada_tax_calculator_check"))
-            
+
             logger.debug("Received POST request for US tax calculation")
             data = request.form.to_dict()
             logger.debug(f"Received form data: {data}")
-            
+
             try:
                 # Process items
                 items = []
@@ -166,37 +179,41 @@ def register_routes(app):
                     price = data[f"item_price_{i}"].strip()
                     tax_rate = data[f"item_tax_rate_{i}"].strip()
                     if price and tax_rate:
-                        items.append({
-                            'price': float(price),
-                            'tax_rate': float(tax_rate)
-                        })
+                        items.append(
+                            {"price": float(price), "tax_rate": float(tax_rate)}
+                        )
                     i += 1
 
                 # Process discounts
                 discounts = []
                 i = 1
-                while f"discount_amount_{i}" in data and f"is_discount_taxable_{i}" in data:
+                while (
+                    f"discount_amount_{i}" in data
+                    and f"is_discount_taxable_{i}" in data
+                ):
                     amount = data[f"discount_amount_{i}"].strip()
                     if amount:
-                        discounts.append({
-                            'amount': float(amount),
-                            'is_taxable': data[f"is_discount_taxable_{i}"] == 'Y'
-                        })
+                        discounts.append(
+                            {
+                                "amount": float(amount),
+                                "is_taxable": data[f"is_discount_taxable_{i}"] == "Y",
+                            }
+                        )
                     i += 1
 
                 # Process shipping
-                shipping_cost = data.get('shipping_cost', '').strip()
+                shipping_cost = data.get("shipping_cost", "").strip()
                 shipping_cost = float(shipping_cost) if shipping_cost else 0
-                shipping_taxable = data.get('shipping_taxable') == 'Y'
-                shipping_tax_rate = data.get('shipping_tax_rate', '').strip()
+                shipping_taxable = data.get("shipping_taxable") == "Y"
+                shipping_tax_rate = data.get("shipping_tax_rate", "").strip()
                 shipping_tax_rate = float(shipping_tax_rate) if shipping_tax_rate else 0
 
                 calc_data = {
-                    'items': items,
-                    'discounts': discounts,
-                    'shipping_cost': shipping_cost,
-                    'shipping_taxable': shipping_taxable,
-                    'shipping_tax_rate': shipping_tax_rate
+                    "items": items,
+                    "discounts": discounts,
+                    "shipping_cost": shipping_cost,
+                    "shipping_taxable": shipping_taxable,
+                    "shipping_tax_rate": shipping_tax_rate,
                 }
 
                 logger.debug(f"Processed data for calculation: {calc_data}")
@@ -206,7 +223,10 @@ def register_routes(app):
             except ValueError as e:
                 logger.error(f"Error during tax calculation: {str(e)}")
                 result = None
-                flash(f"Invalid input: Please ensure all numeric fields contain valid numbers.", "error")
+                flash(
+                    f"Invalid input: Please ensure all numeric fields contain valid numbers.",
+                    "error",
+                )
             except Exception as e:
                 logger.error(f"Unexpected error during tax calculation: {str(e)}")
                 result = None
@@ -243,11 +263,13 @@ def register_routes(app):
         if "logged_in" not in session:
             flash("You need to login to access the Canada Tax Calculator.", "info")
             return redirect(url_for("login"))
-        
+
         if request.method == "POST":
             data = request.form.to_dict()
             result = calculate_tax(data)
-            return render_template("canada_tax_calculator.html", result=result, data=data)
+            return render_template(
+                "canada_tax_calculator.html", result=result, data=data
+            )
         else:
             data = {}
             return render_template("canada_tax_calculator.html", data=data)
@@ -303,24 +325,9 @@ def register_routes(app):
                 flash("Email already registered!", "error")
                 return redirect(url_for("register_step2"))
 
-            fname = registration_info["fname"]
-            lname = registration_info["lname"]
-            address = registration_info["address"]
-            city = registration_info["city"]
-            state = registration_info["state"]
-            zip_code = registration_info["zip"]
-
-            new_user = User(
-                fname=fname,
-                lname=lname,
-                address=address,
-                city=city,
-                state=state,
-                zip=zip_code,
-                username=username,
-                email=email,
+            new_user = UserFactory.create_user(
+                "user", **registration_info, username=username, email=email
             )
-
             new_user.set_password(password)
 
             db.session.add(new_user)
@@ -340,20 +347,23 @@ def register_routes(app):
             username = request.form["username"]
             password = request.form["password"]
 
-            # Fetch user from the database
             user = User.query.filter_by(username=username).first()
+            logging.debug(f"User found: {user}")
+            if user:
+                logging.debug(f"Stored password hash: {user.password}")
 
-            # Validate user and password
-            if user and bcrypt.checkpw(
-                password.encode("utf-8"), user.password.encode("utf-8")
-            ):
+            if user and user.check_password(password):
                 session["logged_in"] = True
-                session["username"] = username  # Store username in session
-                session["role"] = user.role if hasattr(user, "role") else "user"
-                return redirect(url_for("user_dashboard"))
-            else:
-                flash("Invalid username or password!", "error")
-                return render_template("login.html")
+                session["username"] = username
+                session["role"] = user.role
+                if user.role == "super_admin":
+                    return redirect(url_for("superadmin_dashboard"))
+                elif user.role == "admin":
+                    return redirect(url_for("admin_dashboard"))
+                else:
+                    return redirect(url_for("user_dashboard"))
+        else:
+            flash("Invalid username or password!", "error")
 
         return render_template("login.html")
 
@@ -380,7 +390,7 @@ def register_routes(app):
                 flash("Session error. Please log in again.", "error")
                 return redirect(url_for("logout"))
         return redirect(url_for("login"))
-    
+
     @app.route("/profile", methods=["GET"])
     def profile():
         if "logged_in" in session:
@@ -396,7 +406,7 @@ def register_routes(app):
                 flash("Session error. Please log in again.", "error")
                 return redirect(url_for("logout"))
         return redirect(url_for("login"))
-    
+
     @app.route("/update_profile", methods=["POST"])
     def update_profile():
         if "logged_in" in session:
@@ -405,12 +415,12 @@ def register_routes(app):
                 user = User.query.filter_by(username=username).first()
                 if user:
                     # ADDED: Update user information
-                    user.fname = request.form['fname']
-                    user.lname = request.form['lname']
-                    user.address = request.form['address']
-                    user.city = request.form['city']
-                    user.state = request.form['state']
-                    user.zip = request.form['zip']
+                    user.fname = request.form["fname"]
+                    user.lname = request.form["lname"]
+                    user.address = request.form["address"]
+                    user.city = request.form["city"]
+                    user.state = request.form["state"]
+                    user.zip = request.form["zip"]
                     db.session.commit()
                     flash("Profile updated successfully!", "success")
                     # MODIFIED: Redirect to the new profile page
@@ -421,14 +431,17 @@ def register_routes(app):
                 flash("Session error. Please log in again.", "error")
             return redirect(url_for("logout"))
         return redirect(url_for("login"))
-    
+
     @app.route("/change_password", methods=["POST"])
     def change_password():
         if "logged_in" in session:
-            user = User.query.filter_by(username=session['username']).first()
-            if bcrypt.checkpw(request.form['current_password'].encode('utf-8'), user.password.encode('utf-8')):
-                if request.form['new_password'] == request.form['confirm_new_password']:
-                    user.set_password(request.form['new_password'])
+            user = User.query.filter_by(username=session["username"]).first()
+            if bcrypt.checkpw(
+                request.form["current_password"].encode("utf-8"),
+                user.password.encode("utf-8"),
+            ):
+                if request.form["new_password"] == request.form["confirm_new_password"]:
+                    user.set_password(request.form["new_password"])
                     db.session.commit()
                     flash("Password changed successfully!", "success")
                 else:
@@ -437,6 +450,128 @@ def register_routes(app):
                 flash("Current password is incorrect!", "error")
             return redirect(url_for("user_dashboard"))
         return redirect(url_for("login"))
+
+    # Admin dashboard route
+    @app.route("/admin_dashboard", methods=["GET"])
+    def admin_dashboard():
+        if "logged_in" in session and session.get("role") in ["admin", "super_admin"]:
+            users = User.query.all()
+            return render_template("admin_dashboard.html", users=users)
+        return redirect(url_for("login"))
+
+    # New route for viewing user activity
+    @app.route("/view_user_activity/<int:user_id>", methods=["GET"])
+    def view_user_activity(user_id):
+        if "logged_in" in session and session.get("role") in ["admin", "super_admin"]:
+            admin = Admin.query.filter_by(username=session.get("username")).first()
+            if admin:
+                activity = admin.view_user_activity(user_id)
+                return render_template("user_activity.html", activity=activity)
+        return redirect(url_for("login"))
+
+    # New route for granting tool access
+    @app.route("/grant_tool_access", methods=["POST"])
+    def grant_tool_access():
+        if "logged_in" in session and session.get("role") in ["admin", "super_admin"]:
+            admin = Admin.query.filter_by(username=session.get("username")).first()
+            if admin:
+                user_id = request.form.get("user_id")
+                tool_name = request.form.get("tool_name")
+                admin.grant_tool_access(user_id, tool_name)
+                flash(f"Tool access granted for {tool_name}", "success")
+                return redirect(url_for("admin_dashboard"))
+        return redirect(url_for("login"))
+
+        # New route for revoking tool access
+
+    @app.route("/revoke_tool_access", methods=["POST"])
+    def revoke_tool_access():
+        if "logged_in" in session and session.get("role") in ["admin", "super_admin"]:
+            admin = Admin.query.filter_by(username=session.get("username")).first()
+            if admin:
+                user_id = request.form.get("user_id")
+                tool_name = request.form.get("tool_name")
+                admin.revoke_tool_access(user_id, tool_name)
+                flash(f"Tool access revoked for {tool_name}", "success")
+                return redirect(url_for("admin_dashboard"))
+        return redirect(url_for("login"))
+
+    # New route for super admin dashboard
+    @app.route("/super_admin_dashboard", methods=["GET"])
+    def super_admin_dashboard():
+        if "logged_in" in session and session.get("role") == "super_admin":
+            users = User.query.all()
+            admins = Admin.query.all()
+            return render_template(
+                "super_admin_dashboard.html", users=users, admins=admins
+            )
+        return redirect(url_for("login"))
+
+    # New route for changing user role
+    @app.route("/change_user_role", methods=["POST"])
+    def change_user_role():
+        if "logged_in" in session and session.get("role") == "super_admin":
+            super_admin = SuperAdmin.query.filter_by(
+                username=session.get("username")
+            ).first()
+            if super_admin:
+                user_id = request.form.get("user_id")
+                new_role = request.form.get("new_role")
+                super_admin.change_user_role(user_id, new_role)
+                flash(f"User role changed to {new_role}", "success")
+                return redirect(url_for("super_admin_dashboard"))
+        return redirect(url_for("login"))
+
+    # The following setup route is commented out as it has already been run once for security reasons.
+    @app.route("/setup", methods=["GET"])
+    def setup():
+        try:
+            print("Starting setup...")
+            if not User.query.filter_by(role="super_admin").first():
+                print("Creating superadmin...")
+                superadmin = User(
+                    username="superadmin",
+                    email="super@admin.com",
+                    fname="Super",
+                    lname="Admin",
+                    address="123 Admin St",
+                    city="Admin City",
+                    state="AS",
+                    zip="12345",
+                    role="super_admin",
+                )
+                print("Setting superadmin password...")
+                superadmin.set_password("superpass")
+                print("Superadmin password set")
+
+                print("Creating admin...")
+                admin = User(
+                    username="admin",
+                    email="admin@example.com",
+                    fname="Regular",
+                    lname="Admin",
+                    address="456 Admin Ave",
+                    city="Admin Town",
+                    state="AT",
+                    zip="67890",
+                    role="admin",
+                )
+                print("Setting admin password...")
+                admin.set_password("adminpass")
+                print("Admin password set")
+
+                print("Adding to session...")
+                db.session.add(superadmin)
+                db.session.add(admin)
+                print("Committing...")
+                db.session.commit()
+                print("Setup complete")
+                return "Setup complete. Superadmin and Admin created."
+            return "Setup already done."
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error during setup: {str(e)}")
+            return f"Error during setup: {str(e)}"
 
 
 # The 'if __name__' block is still required to run the app
