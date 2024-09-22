@@ -1,6 +1,6 @@
 /* General Styles */
 .tax-calculator {
-    font-family: Arial, sans-serif;
+    font-family: 'Noto Sans Mono', monospace;
     max-width: 800px;
     margin: 0 auto;
     padding: 20px;
@@ -12,6 +12,13 @@
 }
 
 /* Form Styles */
+.calculator-selection {
+    width: 25%;
+    padding: 8px;
+    margin-top: 5px;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
 .tax-calculator form {
     background-color: #f9f9f9;
     padding: 20px;
@@ -120,4 +127,60 @@
     .tax-calculator .result-container {
         padding: 15px;
     }
+}
+
+/* Dark Theme */
+
+body.dark-theme .tax-calculator h1 {
+    color: #fff;
+}
+
+body.dark-theme .tax-calculator form,
+body.dark-theme .tax-calculator .result-container {
+    background-color: #1e1e1e;
+    color: #fff;
+    font-family: 'Noto Sans Mono', monospace;
+}
+
+body.dark-theme .tax-calculator label {
+    color: #ccc;
+}
+
+body.dark-theme .tax-calculator input[type="number"],
+body.dark-theme .tax-calculator select {
+    background-color: #555;
+    color: #fff;
+    border-color: #777;
+}
+
+body.dark-theme .tax-calculator button {
+    background-color: #38b000;
+}
+
+body.dark-theme .tax-calculator button:hover {
+    background-color: #008000;
+}
+
+body.dark-theme .tax-calculator .shipping-section {
+    background-color: #333;
+}
+
+body.dark-theme .tax-calculator .tax-breakdown li {
+    background-color: #222;
+}
+
+/* Dark Theme for Add Item */
+body.dark-theme .tax-calculator #itemsContainer .item {
+    background-color: #333;
+    border-color: #555;
+}
+
+body.dark-theme .tax-calculator #itemsContainer .item label {
+    color: #ccc;
+}
+
+body.dark-theme .tax-calculator #itemsContainer .item input[type="number"] {
+    background-color: #555;
+    color: #fff;
+    border-color: #777;
 }

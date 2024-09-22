@@ -1,8 +1,14 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h1>User Dashboard</h1>
-    <p>Welcome, {{ session['username'] }}!</p>
-    <a href="{{ url_for('logout') }}">Logout</a>
-    
+<h1>User Dashboard</h1>
+<p>Welcome, {{ session['username'] }}!</p>
+
+
+<h2>Available Tools</h2>
+<ul>
+    <li><a href="{{ url_for('tax_calculator_route') }}">Tax Calculator (US)</a></li>
+    <li><a href="{{ url_for('canada_tax_calculator') }}">Tax Calculator (Canada)</a></li>
+    <li><a href="{{ url_for('char_counter') }}">Character Counter</a></li>
+</ul>
 {% endblock %}

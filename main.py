@@ -348,6 +348,7 @@ def register_routes(app):
                 password.encode("utf-8"), user.password.encode("utf-8")
             ):
                 session["logged_in"] = True
+                session["username"] = username  # Store username in session
                 session["role"] = user.role if hasattr(user, "role") else "user"
                 return redirect(url_for("user_dashboard"))
             else:
@@ -366,8 +367,75 @@ def register_routes(app):
     # User dashboard route
     @app.route("/user_dashboard", methods=["GET"])
     def user_dashboard():
-        if "logged_in" in session and session["role"] == "user":
-            return render_template("user_dashboard.html")
+        if "logged_in" in session:
+            username = session.get("username")
+            if username:
+                user = User.query.filter_by(username=username).first()
+                if user:
+                    return render_template("user_dashboard.html", user=user)
+                else:
+                    flash("User not found. Please log in again.", "error")
+                    return redirect(url_for("logout"))
+            else:
+                flash("Session error. Please log in again.", "error")
+                return redirect(url_for("logout"))
+        return redirect(url_for("login"))
+    
+    @app.route("/profile", methods=["GET"])
+    def profile():
+        if "logged_in" in session:
+            username = session.get("username")
+            if username:
+                user = User.query.filter_by(username=username).first()
+                if user:
+                    return render_template("profile.html", user=user)
+                else:
+                    flash("User not found. Please log in again.", "error")
+                    return redirect(url_for("logout"))
+            else:
+                flash("Session error. Please log in again.", "error")
+                return redirect(url_for("logout"))
+        return redirect(url_for("login"))
+    
+    @app.route("/update_profile", methods=["POST"])
+    def update_profile():
+        if "logged_in" in session:
+            username = session.get("username")
+            if username:
+                user = User.query.filter_by(username=username).first()
+                if user:
+                    # ADDED: Update user information
+                    user.fname = request.form['fname']
+                    user.lname = request.form['lname']
+                    user.address = request.form['address']
+                    user.city = request.form['city']
+                    user.state = request.form['state']
+                    user.zip = request.form['zip']
+                    db.session.commit()
+                    flash("Profile updated successfully!", "success")
+                    # MODIFIED: Redirect to the new profile page
+                    return redirect(url_for("profile"))
+                else:
+                    flash("User not found. Please log in again.", "error")
+            else:
+                flash("Session error. Please log in again.", "error")
+            return redirect(url_for("logout"))
+        return redirect(url_for("login"))
+    
+    @app.route("/change_password", methods=["POST"])
+    def change_password():
+        if "logged_in" in session:
+            user = User.query.filter_by(username=session['username']).first()
+            if bcrypt.checkpw(request.form['current_password'].encode('utf-8'), user.password.encode('utf-8')):
+                if request.form['new_password'] == request.form['confirm_new_password']:
+                    user.set_password(request.form['new_password'])
+                    db.session.commit()
+                    flash("Password changed successfully!", "success")
+                else:
+                    flash("New passwords do not match!", "error")
+            else:
+                flash("Current password is incorrect!", "error")
+            return redirect(url_for("user_dashboard"))
         return redirect(url_for("login"))
 
 

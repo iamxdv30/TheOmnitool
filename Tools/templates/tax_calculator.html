@@ -10,10 +10,10 @@
 
     <form id="taxForm" method="POST" action="{{ url_for('tax_calculator_route') }}">
         <div class="calculator-selection">
-            <label for="calculator-type">Select Calculator:</label>
+            <label for="calculator-type">Select Country:</label>
             <select id="calculator-type" name="calculator_type" onchange="handleCalculatorChange(this)">
-                <option value="us">US Tax Calculator</option>
-                <option value="canada">Canada Tax Calculator</option>
+                <option value="us">United States</option>
+                <option value="canada">Canada</option>
             </select>
         </div>
 
@@ -95,7 +95,7 @@
             document.getElementById('taxForm').action = "{{ url_for('tax_calculator_route') }}";
         }
     }
-    
+
     let itemCount = {{ (data.item_count|default(1))|int }};
     let discountCount = {{ (data.discount_count|default(0))|int }};
 

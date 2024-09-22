@@ -1,0 +1,97 @@
+/* Profile Page Styles */
+.profile-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: 'Noto Sans Mono', sans-serif;
+}
+
+.profile-heading {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.profile-form,
+.password-form {
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.profile-form-group {
+    margin-bottom: 15px;
+}
+
+.profile-label {
+    display: block;
+    margin-bottom: 5px;
+    color: #666;
+}
+
+.profile-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.profile-button {
+    width: 100%;
+    padding: 10px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.profile-button:hover {
+    background-color: #45a049;
+}
+
+/* Responsive design */
+@media (max-width: 600px) {
+    .profile-container {
+        padding: 10px;
+    }
+}
+
+/* Dark Theme */
+body.dark-theme .profile-container {
+    background-color: #333;
+    color: #fff;
+}
+
+body.dark-theme .profile-heading {
+    color: #fff;
+}
+
+body.dark-theme .profile-form,
+body.dark-theme .password-form {
+    background-color: #444;
+    color: #fff;
+}
+
+body.dark-theme .profile-label {
+    color: #ccc;
+}
+
+body.dark-theme .profile-input {
+    background-color: #555;
+    color: #fff;
+    border-color: #777;
+}
+
+body.dark-theme .profile-button {
+    background-color: #2196F3;
+}
+
+body.dark-theme .profile-button:hover {
+    background-color: #1e88e5;
+}
+
