@@ -13,13 +13,17 @@
 
     <div class="form-container">
         <form method="POST" action="{{ url_for('tax_calculator_route') }}" id="tax_form" novalidate>
+            <select name="country" id="country" class="form-select">
+                <option value="US">United States</option>
+                <option value="CA">Canada</option>
+            </select><br><br>
             <!-- Item Count -->
             <label for="item_count" class="form-label">Number of Line Items:</label>
             <input type="number" name="item_count" id="item_count" class="form-input" value="{{ data.get('item_count', 1) }}" min="1" required><br><br>
 
             <!-- Discount Section -->
             <h3>Discount Items</h3>
-            <label for="has_discount" class="form-label">Is there a discount? (Y/N):</label>
+            <label for="has_discount" class="form-label">Discount</label>
             <select name="has_discount" id="has_discount" class="form-select">
                 <option value="N" {% if data.get('has_discount', 'N') == 'N' %}selected{% endif %}>No</option>
                 <option value="Y" {% if data.get('has_discount', 'N') == 'Y' %}selected{% endif %}>Yes</option>
@@ -33,7 +37,7 @@
                     {% if data.get('has_discount', 'N') == 'N' %}disabled{% endif %}>
                 <br><br>
 
-                <label for="is_discount_taxable" class="form-label">Is Discount Taxable? (Y/N):</label>
+                <label for="is_discount_taxable" class="form-label">Is Discount Taxable?</label>
                 <select name="is_discount_taxable" id="is_discount_taxable" class="form-select" {% if data.get('has_discount', 'N') == 'N' %}disabled{% endif %}>
                     <option value="N" {% if data.get('is_discount_taxable', 'N') == 'N' %}selected{% endif %}>No</option>
                     <option value="Y" {% if data.get('is_discount_taxable', 'N') == 'Y' %}selected{% endif %}>Yes</option>
@@ -52,7 +56,7 @@
 
             <!-- Shipping Section -->
             <h3>Shipping</h3>
-            <label for="has_shipping" class="form-label">Is there shipping cost? (Y/N):</label>
+            <label for="has_shipping" class="form-label">Shipping Cost</label>
             <select name="has_shipping" id="has_shipping" class="form-select">
                 <option value="N" {% if data.get('has_shipping', 'N') == 'N' %}selected{% endif %}>No</option>
                 <option value="Y" {% if data.get('has_shipping', 'N') == 'Y' %}selected{% endif %}>Yes</option>
@@ -206,6 +210,16 @@
             }
         }
 
+        // New function to handle country selection
+        function selectTaxCalculator() {
+            const selectCalculator = document.getElementById('country');
+            
+            if (selectCalculator.value === 'CA') {
+                window.location.href = "{{ url_for('canada_tax_calculator') }}";
+            }
+            // If US is selected, we stay on the current page (tax_calculator_route)
+        }
+
         // Event Listeners
         document.getElementById('has_discount').addEventListener('change', function() {
             toggleDiscountSection();
@@ -231,6 +245,9 @@
             createDiscountItems();
         });
 
+        // New event listener for country selection
+        document.getElementById('country').addEventListener('change', selectTaxCalculator);
+
         // Initialize sections based on current form values
         toggleDiscountSection();
         toggleShippingSection();
@@ -238,5 +255,6 @@
         createLineItems();
         createDiscountItems();
     });
+
 </script>
 {% endblock %}

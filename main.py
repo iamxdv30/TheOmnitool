@@ -205,7 +205,18 @@ def register_routes(app):
         else:
             data = {}
             return render_template("tax_calculator.html", data=data)
-
+        
+    # Route for Canada tax calculator
+    @app.route("/canada_tax_calculator", methods=["GET", "POST"])
+    def canada_tax_calculator():
+        if request.method == "POST":
+            data = request.form.to_dict()
+            result = calculate_tax(data)
+            return render_template("canada_tax_calculator.html", result=result, data=data)
+        else:
+            data = {}
+            return render_template("canada_tax_calculator.html", data=data)
+        
     # Route for registration step 1
     @app.route("/register_step1", methods=["GET", "POST"])
     def register_step1():

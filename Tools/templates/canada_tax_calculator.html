@@ -1,0 +1,285 @@
+{% extends 'base.html' %} {% block title %}Canadian Tax Calculator{% endblock %}
+{% block styles %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/canada_tax_calculator.css') }}"
+/>
+{% endblock %} {% block content %}
+<div class="ca-container">
+  <h1 class="ca-heading">Canadian Tax Calculator</h1>
+  <h4>Select Country:</h4>
+  <select id="country" onchange="selectTaxCalculator()">
+    <option value="CA">Canada</option>
+    <option value="US">United States</option>
+  </select>
+  <br /><br />
+  <div class="ca-province-form-group">
+    <label for="province">Province:</label>
+    <select id="province">
+      <option value="ON">Ontario</option>
+      <option value="BC">British Columbia</option>
+      <option value="AB">Alberta</option>
+      <option value="MB">Manitoba</option>
+      <option value="NB">New Brunswick</option>
+      <option value="NL">Newfoundland and Labrador</option>
+      <option value="NS">Nova Scotia</option>
+      <option value="NT">Northwest Territories</option>
+      <option value="NU">Nunavut</option>
+      <option value="PE">Prince Edward Island</option>
+      <option value="QC">Quebec</option>
+      <option value="SK">Saskatchewan</option>
+      <option value="YT">Yukon</option>
+    </select>
+  </div>
+
+  <div id="taxRates"></div>
+  <div id="itemsContainer"></div>
+  <button class="ca-add-item" onclick="addItem()">Add Item</button>
+
+  <div class="ca-shipping-form-group">
+    <label for="shippingCost">Shipping Cost:</label>
+    <input type="number" id="shippingCost" step="0.01" min="0" />
+  </div>
+  <div class="ca-shipping-checkbox">
+    <label>
+      <input type="checkbox" id="shippingTaxable" /> Shipping Taxable
+    </label>
+  </div>
+  <button class="ca-calculate-tax" onclick="calculateTax()">
+    Calculate Tax
+  </button>
+  <div id="results"></div>
+</div>
+
+<script>
+  const taxStructure = {
+    ON: { type: 'HST', rates: ['HST'] },
+    BC: { type: 'GST_PST', rates: ['GST', 'PST'] },
+    AB: { type: 'GST', rates: ['GST'] },
+    MB: { type: 'GST_PST', rates: ['GST', 'PST'] },
+    NB: { type: 'HST', rates: ['HST'] },
+    NL: { type: 'HST', rates: ['HST'] },
+    NS: { type: 'HST', rates: ['HST'] },
+    NT: { type: 'GST', rates: ['GST'] },
+    NU: { type: 'GST', rates: ['GST'] },
+    PE: { type: 'HST', rates: ['HST'] },
+    QC: { type: 'GST_QST', rates: ['GST', 'QST'] },
+    SK: { type: 'GST_PST', rates: ['GST', 'PST'] },
+    YT: { type: 'GST', rates: ['GST'] },
+  };
+
+  function updateTaxRates() {
+    const province = document.getElementById('province').value;
+    const taxRatesDiv = document.getElementById('taxRates');
+    taxRatesDiv.innerHTML = '';
+
+    if (province) {
+      const rates = taxStructure[province].rates;
+      const fragment = document.createDocumentFragment();
+      rates.forEach((rate) => {
+        const div = document.createElement('div');
+        div.className = 'form-group';
+        div.innerHTML = `
+              <label for="${rate.toLowerCase()}Rate">${rate} Rate (%):</label>
+              <input type="number" id="${rate.toLowerCase()}Rate" step="0.01" min="0" max="100" required>
+            `;
+        fragment.appendChild(div);
+      });
+      taxRatesDiv.appendChild(fragment);
+    }
+  }
+
+  function addItem() {
+    const itemsContainer = document.getElementById('itemsContainer');
+    const itemDiv = document.createElement('div');
+    itemDiv.className = 'item';
+    itemDiv.innerHTML = `
+          <div class="form-group">
+            <label>Item Price:</label>
+            <input type="number" class="itemPrice" step="0.01" min="0" required>
+          </div>
+          <div class="form-group">
+            <label>Discount Amount:</label>
+            <input type="number" class="discountAmount" step="0.01" min="0" required>
+          </div>
+          <div class="discount-checkbox">
+            <label>
+              <input type="checkbox" class="discountTaxable"> Discount Taxable
+            </label>
+          </div>
+        `;
+    itemsContainer.appendChild(itemDiv);
+  }
+
+  function calculateTax() {
+    const province = document.getElementById('province').value;
+    const taxRates = {};
+    taxStructure[province].rates.forEach((rate) => {
+      const rateValue = parseFloat(
+        document.getElementById(rate.toLowerCase() + 'Rate').value
+      );
+      taxRates[rate] = rateValue;
+    });
+
+    const items = Array.from(document.querySelectorAll('.item')).map(
+      (itemDiv) => ({
+        price: parseFloat(itemDiv.querySelector('.itemPrice').value) || 0,
+        discount:
+          parseFloat(itemDiv.querySelector('.discountAmount').value) || 0,
+        discount_taxable: itemDiv.querySelector('.discountTaxable').checked,
+      })
+    );
+
+    const shippingCost =
+      parseFloat(document.getElementById('shippingCost').value) || 0;
+    const shippingTaxable = document.getElementById('shippingTaxable').checked;
+
+    const result = calculateTaxResult(
+      items,
+      taxRates,
+      shippingCost,
+      shippingTaxable
+    );
+    displayResults(result);
+  }
+
+  function calculateTaxResult(items, taxRates, shippingCost, shippingTaxable) {
+    let orderTotal = 0;
+    let itemTotal = 0;
+    let taxTotal = 0;
+    let discountTotal = 0;
+    let taxBreakdown = {};
+
+    items.forEach((item, index) => {
+      itemTotal += item.price;
+      let taxableAmount = item.price;
+      if (item.discount > 0) {
+        discountTotal += item.discount;
+        taxableAmount = item.discount_taxable
+          ? item.price - item.discount
+          : item.price;
+      }
+
+      let itemTax = 0;
+      taxBreakdown[`item${index + 1}`] = {};
+      for (const [taxType, rate] of Object.entries(taxRates)) {
+        const taxAmount = (taxableAmount * rate) / 100;
+        itemTax += taxAmount;
+        taxBreakdown[`item${index + 1}`][`${taxType}_amount`] =
+          Math.round(taxAmount * 10000) / 10000;
+      }
+      taxTotal += itemTax;
+    });
+
+    let shippingTax = 0;
+    if (shippingTaxable) {
+      taxBreakdown['shipping'] = {};
+      for (const [taxType, rate] of Object.entries(taxRates)) {
+        const taxAmount = (shippingCost * rate) / 100;
+        shippingTax += taxAmount;
+        taxBreakdown['shipping'][`${taxType}_amount`] =
+          Math.round(taxAmount * 10000) / 10000;
+      }
+      taxTotal += shippingTax;
+    }
+
+    orderTotal = itemTotal + taxTotal + shippingCost - discountTotal;
+
+    return {
+      orderTotal: Math.round(orderTotal * 100) / 100,
+      itemTotal: Math.round(itemTotal * 100) / 100,
+      taxTotal: Math.round(taxTotal * 100) / 100,
+      shippingCost: Math.round(shippingCost * 100) / 100,
+      shippingTax: Math.round(shippingTax * 100) / 100,
+      discountTotal: Math.round(discountTotal * 100) / 100,
+      taxBreakdown: taxBreakdown,
+    };
+  }
+
+  function displayResults(result) {
+    const resultsDiv = document.getElementById('results');
+    resultsDiv.innerHTML = `
+          <h2>Calculation Results:</h2>
+          <p>Order Total: $${result.orderTotal.toFixed(2)}</p>
+          <p>Item Total: $${result.itemTotal.toFixed(2)}</p>
+          <p>Tax Total: $${result.taxTotal.toFixed(2)}</p>
+          <p>Shipping Cost: $${result.shippingCost.toFixed(2)}</p>
+          <p>Shipping Tax: $${result.shippingTax.toFixed(2)}</p>
+          <p>Discount Total: $${result.discountTotal.toFixed(2)}</p>
+          <h3>Tax Breakdown:</h3>
+          ${Object.entries(result.taxBreakdown)
+            .map(
+              ([itemKey, taxes]) => `
+            <p>${
+              itemKey === 'shipping' ? 'Shipping' : `Item ${itemKey.slice(4)}`
+            } Taxes:</p>
+            <ul>
+              ${Object.entries(taxes)
+                .map(
+                  ([taxType, amount]) => `
+                <li>${taxType
+                  .toUpperCase()
+                  .replace('_AMOUNT', '')}: $${amount.toFixed(2)}</li>
+              `
+                )
+                .join('')}
+            </ul>
+          `
+            )
+            .join('')}
+        `;
+  }
+
+  function initializeForm() {
+    const provinceSelect = document.getElementById('province');
+    const provinceNames = {
+      ON: 'Ontario',
+      BC: 'British Columbia',
+      AB: 'Alberta',
+      MB: 'Manitoba',
+      NB: 'New Brunswick',
+      NL: 'Newfoundland and Labrador',
+      NS: 'Nova Scotia',
+      NT: 'Northwest Territories',
+      NU: 'Nunavut',
+      PE: 'Prince Edward Island',
+      QC: 'Quebec',
+      SK: 'Saskatchewan',
+      YT: 'Yukon',
+    };
+
+    Object.entries(provinceNames).forEach(([abbr, fullName]) => {
+      const option = document.createElement('option');
+      option.value = abbr;
+      option.textContent = fullName;
+      provinceSelect.appendChild(option);
+    });
+
+    updateTaxRates();
+    addItem();
+  }
+
+  function selectTaxCalculator() {
+    const country = document.getElementById('country').value;
+    window.location.href =
+      country === 'CA'
+        ? "{{ url_for('canada_tax_calculator') }}"
+        : "{{ url_for('tax_calculator_route') }}";
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    initializeForm();
+    document
+      .getElementById('province')
+      .addEventListener('change', updateTaxRates);
+    document
+      .getElementById('country')
+      .addEventListener('change', selectTaxCalculator);
+    document.getElementById('addItemBtn').addEventListener('click', addItem);
+    document
+      .getElementById('calculateTaxBtn')
+      .addEventListener('click', calculateTax);
+  });
+</script>
+
+{% endblock %}
