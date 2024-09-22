@@ -4,15 +4,19 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/tax_calculator.css') }}">
 {% endblock %}
 {% block content %}
+
 <div class="tax-calculator">
     <h1>Tax Calculator</h1>
+
     <form id="taxForm" method="POST" action="{{ url_for('tax_calculator_route') }}">
         <div class="calculator-selection">
-            <select name="calculator_type">
+            <label for="calculator-type">Select Calculator:</label>
+            <select id="calculator-type" name="calculator_type" onchange="handleCalculatorChange(this)">
                 <option value="us">US Tax Calculator</option>
                 <option value="canada">Canada Tax Calculator</option>
             </select>
         </div>
+
         <div id="itemsContainer">
             <h3>Items</h3>
             {% for i in range(1, (data.item_count|default(1))|int + 1) %}
@@ -82,6 +86,16 @@
 </div>
 
 <script>
+
+    function handleCalculatorChange(selectElement) {
+        if (selectElement.value === 'canada') {
+            document.getElementById('taxForm').action = "{{ url_for('canada_tax_calculator_check') }}";
+            document.getElementById('taxForm').submit();
+        } else {
+            document.getElementById('taxForm').action = "{{ url_for('tax_calculator_route') }}";
+        }
+    }
+    
     let itemCount = {{ (data.item_count|default(1))|int }};
     let discountCount = {{ (data.discount_count|default(0))|int }};
 
@@ -120,20 +134,6 @@
         const shippingTaxable = document.querySelector('select[name="shipping_taxable"]').value;
         const shippingTaxRateSection = document.getElementById('shipping_tax_rate_section');
         shippingTaxRateSection.style.display = shippingTaxable === 'Y' ? 'block' : 'none';
-    }
-
-    //New function to handle calculator type change
-    function handleCalculatorTypeChange() {
-        const calculatorType = document.querySelector('select[name="calculator_type"]').value;
-        if (calculatorType === 'us') {
-            window.location.href = "{{ url_for('tax_calculator_route') }}";
-        } else if (calculatorType === 'canada') {
-            // Instead of redirecting, we'll update the form or display a message
-            console.log('Canada tax calculator selected');
-            // You can add code here to update the form for Canada-specific fields
-            // or display a message that the Canada calculator is not yet implemented
-            alert('Canada tax calculator is not yet implemented.');
-        }
     }
 </script>
 {% endblock %}

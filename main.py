@@ -9,6 +9,7 @@ from flask import (
     flash,
     Response,
     make_response,
+    flash,
 )
 from flask_sqlalchemy import (
     SQLAlchemy,
@@ -149,7 +150,11 @@ def register_routes(app):
     @app.route("/tax_calculator", methods=["GET", "POST"])
     def tax_calculator_route():
         if request.method == "POST":
-            logger.debug("Received POST request for tax calculation")
+            calculator_type = request.form.get("calculator_type")
+            if calculator_type == "canada":
+                return redirect(url_for("canada_tax_calculator_check"))
+            
+            logger.debug("Received POST request for US tax calculation")
             data = request.form.to_dict()
             logger.debug(f"Received form data: {data}")
             
@@ -213,15 +218,36 @@ def register_routes(app):
             data = {}
             return render_template("tax_calculator.html", data=data)
 
+    @app.route("/canada_tax_calculator_check", methods=["GET", "POST"])
+    def canada_tax_calculator_check():
+        """
+        Check if the user is logged in before accessing the Canada Tax Calculator.
+
+        This route handler performs the following actions:
+        1. Checks if the user is logged in by verifying the presence of 'logged_in' in the session.
+        2. If logged in, redirects the user to the Canada Tax Calculator page.
+        3. If not logged in, flashes an info message and redirects to the login page.
+
+        Returns:
+            A redirect response to either the Canada Tax Calculator or login page.
+        """
+        if "logged_in" in session:
+            return redirect(url_for("canada_tax_calculator"))
+        else:
+            flash("You need to login to access the Canada Tax Calculator.", "info")
+        return redirect(url_for("login"))
+
     # Route for Canada tax calculator
     @app.route("/canada_tax_calculator", methods=["GET", "POST"])
     def canada_tax_calculator():
+        if "logged_in" not in session:
+            flash("You need to login to access the Canada Tax Calculator.", "info")
+            return redirect(url_for("login"))
+        
         if request.method == "POST":
             data = request.form.to_dict()
             result = calculate_tax(data)
-            return render_template(
-                "canada_tax_calculator.html", result=result, data=data
-            )
+            return render_template("canada_tax_calculator.html", result=result, data=data)
         else:
             data = {}
             return render_template("canada_tax_calculator.html", data=data)
