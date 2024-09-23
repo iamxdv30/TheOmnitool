@@ -1,8 +1,14 @@
 {% extends "base.html" %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/superadmin.css') }}">
+{% endblock %}
+
 {% block content %}
 <h1>Super Admin Dashboard</h1>
-<h2>Users</h2>
-<table>
+
+<h2 class="superadmin-title">Users and Admins</h2>
+<table class="superadmin-table">
     <thead>
         <tr>
             <th>Username</th>
@@ -18,13 +24,36 @@
             <td>{{ user.email }}</td>
             <td>{{ user.role }}</td>
             <td>
-                <form action="{{ url_for('change_user_role') }}" method="post">
+                <a href="{{ url_for('view_user_activity', user_id=user.id) }}">View Activity</a>
+                
+                <form class="superadmin-form" action="{{ url_for('change_user_role') }}" method="POST">
                     <input type="hidden" name="user_id" value="{{ user.id }}">
                     <select name="new_role">
                         <option value="user">User</option>
                         <option value="admin">Admin</option>
+                        <option value="super_admin">Super Admin</option>
                     </select>
                     <button type="submit">Change Role</button>
+                </form>
+
+                <form class="superadmin-form" action="{{ url_for('grant_tool_access') }}" method="POST">
+                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                    <select name="tool_name">
+                        {% for tool in tools %}
+                        <option value="{{ tool.name }}">{{ tool.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <button class="superadmin-button" type="submit">Grant Access</button>
+                </form>
+
+                <form class="superadmin-form" action="{{ url_for('revoke_tool_access') }}" method="POST">
+                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                    <select name="tool_name">
+                        {% for tool in tools %}
+                        <option value="{{ tool.name }}">{{ tool.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <button class="superadmin-button" type="submit">Revoke Access</button>
                 </form>
             </td>
         </tr>
@@ -32,23 +61,4 @@
     </tbody>
 </table>
 
-<h2>Admins</h2>
-<table>
-    <thead>
-        <tr>
-            <th>Username</th>
-            <th>Email</th>
-            <th>Admin Level</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for admin in admins %}
-        <tr>
-            <td>{{ admin.username }}</td>
-            <td>{{ admin.email }}</td>
-            <td>{{ admin.admin_level }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
 {% endblock %}

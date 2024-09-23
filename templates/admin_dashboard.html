@@ -17,17 +17,40 @@
             <td>{{ user.email }}</td>
             <td>{{ user.role }}</td>
             <td>
-                <a href="{{ url_for('view_user_activity', user_id=user.id) }}">View Activity</a>
-                <form action="{{ url_for('grant_tool_access') }}" method="post">
-                    <input type="hidden" name="user_id" value="{{ user.id }}">
-                    <input type="text" name="tool_name" placeholder="Tool name">
-                    <button type="submit">Grant Access</button>
-                </form>
-                <form action="{{ url_for('revoke_tool_access') }}" method="post">
-                    <input type="hidden" name="user_id" value="{{ user.id }}">
-                    <input type="text" name="tool_name" placeholder="Tool name">
-                    <button type="submit">Revoke Access</button>
-                </form>
+                {% if session.get('role') == 'super_admin' or (session.get('role') == 'admin' and user.role == 'user') %}
+                    <a href="{{ url_for('view_user_activity', user_id=user.id) }}">View Activity</a>
+                    
+                    <form action="{{ url_for('grant_tool_access') }}" method="POST">
+                        <input type="hidden" name="user_id" value="{{ user.id }}">
+                        <select name="tool_name">
+                            {% for tool in tools %}
+                            <option value="{{ tool.name }}">{{ tool.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit">Grant Access</button>
+                    </form>
+                    <form action="{{ url_for('revoke_tool_access') }}" method="POST">
+                        <input type="hidden" name="user_id" value="{{ user.id }}">
+                        <select name="tool_name">
+                            {% for tool in tools %}
+                            <option value="{{ tool.name }}">{{ tool.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit">Revoke Access</button>
+                    </form>
+                {% endif %}
+
+                {% if session.get('role') == 'super_admin' %}
+                    <form action="{{ url_for('change_user_role') }}" method="POST">
+                        <input type="hidden" name="user_id" value="{{ user.id }}">
+                        <select name="new_role">
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
+                            <option value="super_admin">Super Admin</option>
+                        </select>
+                        <button type="submit">Change Role</button>
+                    </form>
+                {% endif %}
             </td>
         </tr>
         {% endfor %}

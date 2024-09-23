@@ -379,7 +379,12 @@ def register_routes(app):
     def user_dashboard():
         if "logged_in" in session:
             username = session.get("username")
-            if username:
+            role = session.get("role")
+            if role == "admin":
+                return redirect(url_for("admin_dashboard"))
+            elif role == "super_admin":
+                return redirect(url_for("superadmin_dashboard"))
+            elif username:
                 user = User.query.filter_by(username=username).first()
                 if user:
                     return render_template("user_dashboard.html", user=user)
@@ -456,7 +461,8 @@ def register_routes(app):
     def admin_dashboard():
         if "logged_in" in session and session.get("role") in ["admin", "super_admin"]:
             users = User.query.all()
-            return render_template("admin_dashboard.html", users=users)
+            tools = ToolAccess.query.all()  # Get all available tools
+            return render_template("admin_dashboard.html", users=users, tools=tools)
         return redirect(url_for("login"))
 
     # New route for viewing user activity
@@ -473,105 +479,60 @@ def register_routes(app):
     @app.route("/grant_tool_access", methods=["POST"])
     def grant_tool_access():
         if "logged_in" in session and session.get("role") in ["admin", "super_admin"]:
-            admin = Admin.query.filter_by(username=session.get("username")).first()
-            if admin:
-                user_id = request.form.get("user_id")
-                tool_name = request.form.get("tool_name")
-                admin.grant_tool_access(user_id, tool_name)
-                flash(f"Tool access granted for {tool_name}", "success")
-                return redirect(url_for("admin_dashboard"))
+            user_id = request.form.get("user_id")
+            tool_name = request.form.get("tool_name")
+            user = User.query.get(user_id)
+            if user:
+                tool_access = ToolAccess(user_id=user_id, tool_name=tool_name)
+                db.session.add(tool_access)
+                db.session.commit()
+                flash(f"Tool access granted for {tool_name} to {user.username}", "success")
+            else:
+                flash("User not found", "error")
+            return redirect(url_for("superadmin_dashboard" if session.get("role") == "super_admin" else "admin_dashboard"))
         return redirect(url_for("login"))
 
-        # New route for revoking tool access
+    # This route is for revoking tool access. Admins can remove tool access from users.
 
     @app.route("/revoke_tool_access", methods=["POST"])
     def revoke_tool_access():
         if "logged_in" in session and session.get("role") in ["admin", "super_admin"]:
-            admin = Admin.query.filter_by(username=session.get("username")).first()
-            if admin:
-                user_id = request.form.get("user_id")
-                tool_name = request.form.get("tool_name")
-                admin.revoke_tool_access(user_id, tool_name)
+            user_id = request.form.get("user_id")
+            tool_name = request.form.get("tool_name")
+            tool_access = ToolAccess.query.filter_by(user_id=user_id, tool_name=tool_name).first()
+            if tool_access:
+                db.session.delete(tool_access)
+                db.session.commit()
                 flash(f"Tool access revoked for {tool_name}", "success")
-                return redirect(url_for("admin_dashboard"))
+            else:
+                flash("Tool access not found", "error")
+            return redirect(url_for("superadmin_dashboard" if session.get("role") == "super_admin" else "admin_dashboard"))
         return redirect(url_for("login"))
 
     # New route for super admin dashboard
-    @app.route("/super_admin_dashboard", methods=["GET"])
-    def super_admin_dashboard():
+    @app.route("/superadmin_dashboard", methods=["GET"])
+    def superadmin_dashboard():
         if "logged_in" in session and session.get("role") == "super_admin":
             users = User.query.all()
-            admins = Admin.query.all()
-            return render_template(
-                "super_admin_dashboard.html", users=users, admins=admins
-            )
+            tools = ToolAccess.query.all()  # Get all available tools
+            return render_template("superadmin_dashboard.html", users=users, tools=tools)
         return redirect(url_for("login"))
-
+    
     # New route for changing user role
     @app.route("/change_user_role", methods=["POST"])
     def change_user_role():
         if "logged_in" in session and session.get("role") == "super_admin":
-            super_admin = SuperAdmin.query.filter_by(
-                username=session.get("username")
-            ).first()
-            if super_admin:
-                user_id = request.form.get("user_id")
-                new_role = request.form.get("new_role")
-                super_admin.change_user_role(user_id, new_role)
-                flash(f"User role changed to {new_role}", "success")
-                return redirect(url_for("super_admin_dashboard"))
-        return redirect(url_for("login"))
-
-    # The following setup route is commented out as it has already been run once for security reasons.
-    @app.route("/setup", methods=["GET"])
-    def setup():
-        try:
-            print("Starting setup...")
-            if not User.query.filter_by(role="super_admin").first():
-                print("Creating superadmin...")
-                superadmin = User(
-                    username="superadmin",
-                    email="super@admin.com",
-                    fname="Super",
-                    lname="Admin",
-                    address="123 Admin St",
-                    city="Admin City",
-                    state="AS",
-                    zip="12345",
-                    role="super_admin",
-                )
-                print("Setting superadmin password...")
-                superadmin.set_password("superpass")
-                print("Superadmin password set")
-
-                print("Creating admin...")
-                admin = User(
-                    username="admin",
-                    email="admin@example.com",
-                    fname="Regular",
-                    lname="Admin",
-                    address="456 Admin Ave",
-                    city="Admin Town",
-                    state="AT",
-                    zip="67890",
-                    role="admin",
-                )
-                print("Setting admin password...")
-                admin.set_password("adminpass")
-                print("Admin password set")
-
-                print("Adding to session...")
-                db.session.add(superadmin)
-                db.session.add(admin)
-                print("Committing...")
+            user_id = request.form.get("user_id")
+            new_role = request.form.get("new_role")
+            user = User.query.get(user_id)
+            if user:
+                user.role = new_role
                 db.session.commit()
-                print("Setup complete")
-                return "Setup complete. Superadmin and Admin created."
-            return "Setup already done."
-        except Exception as e:
-            db.session.rollback()
-            print(f"Error during setup: {str(e)}")
-            return f"Error during setup: {str(e)}"
+                flash(f"User {user.username}'s role changed to {new_role}", "success")
+            else:
+                flash("User not found", "error")
+            return redirect(url_for("superadmin_dashboard"))
+        return redirect(url_for("login"))
 
 
 # The 'if __name__' block is still required to run the app
