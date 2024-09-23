@@ -17,6 +17,7 @@ class PasswordHasher(ABC):
     @abstractmethod
     def hash_password(self, password: str) -> str:
         pass
+    
 
     @abstractmethod
     def check_password(self, password: str, hashed: str) -> bool:
