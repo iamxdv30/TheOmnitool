@@ -12,6 +12,7 @@
     </thead>
     <tbody>
         {% for user in users %}
+        {% if user.role != 'super_admin' or session.get('role') == 'super_admin' %}
         <tr>
             <td>{{ user.username }}</td>
             <td>{{ user.email }}</td>
@@ -53,6 +54,7 @@
                 {% endif %}
             </td>
         </tr>
+        {% endif %}
         {% endfor %}
     </tbody>
 </table>
