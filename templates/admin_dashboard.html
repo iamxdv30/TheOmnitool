@@ -1,7 +1,40 @@
 {% extends "base.html" %}
+
+{% block styles %}
+ <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
 {% block content %}
-<h1>Admin Dashboard</h1>
-<table>
+
+<h1 class="admin-dashboard-title">Admin Dashboard</h1>
+
+<!-- Add a button to show/hide the create user form -->
+<button id="showCreateUserForm" class="btn btn-primary">Create New User</button>
+
+<!-- Create user form (initially hidden) -->
+<div id="createUserForm" style="display:none;">
+    <h2 class="section-title">Create New User</h2>
+    <form action="{{ url_for('create_user') }}" method="post" class="user-form">
+        <input type="text" name="username" placeholder="Username" required class="form-input">
+        <input type="email" name="email" placeholder="Email" required class="form-input">
+        <input type="password" name="password" placeholder="Password" required class="form-input">
+        <input type="text" name="fname" placeholder="First Name" required class="form-input">
+        <input type="text" name="lname" placeholder="Last Name" required class="form-input">
+        <input type="text" name="address" placeholder="Address" required class="form-input">
+        <input type="text" name="city" placeholder="City" required class="form-input">
+        <input type="text" name="state" placeholder="State" required class="form-input">
+        <input type="text" name="zip" placeholder="ZIP Code" required class="form-input">
+        <button type="submit" class="submit-btn">Create User</button>
+    </form>
+</div>
+
+<!-- Add search bar -->
+<div class="search-container">
+    <input type="text" id="userSearch" class="search-input" placeholder="Search users...">
+</div>
+
+<!-- User table -->
+<table class="user-table">
     <thead>
         <tr>
             <th>Username</th>
@@ -10,52 +43,97 @@
             <th>Actions</th>
         </tr>
     </thead>
-    <tbody>
+    <tbody id="userTableBody">
         {% for user in users %}
-        {% if user.role != 'super_admin' or session.get('role') == 'super_admin' %}
-        <tr>
-            <td>{{ user.username }}</td>
-            <td>{{ user.email }}</td>
-            <td>{{ user.role }}</td>
-            <td>
-                {% if session.get('role') == 'super_admin' or (session.get('role') == 'admin' and user.role == 'user') %}
-                    <a href="{{ url_for('view_user_activity', user_id=user.id) }}">View Activity</a>
-                    
-                    <form action="{{ url_for('grant_tool_access') }}" method="POST">
-                        <input type="hidden" name="user_id" value="{{ user.id }}">
-                        <select name="tool_name">
-                            {% for tool in tools %}
-                            <option value="{{ tool.name }}">{{ tool.name }}</option>
-                            {% endfor %}
-                        </select>
-                        <button type="submit">Grant Access</button>
-                    </form>
-                    <form action="{{ url_for('revoke_tool_access') }}" method="POST">
-                        <input type="hidden" name="user_id" value="{{ user.id }}">
-                        <select name="tool_name">
-                            {% for tool in tools %}
-                            <option value="{{ tool.name }}">{{ tool.name }}</option>
-                            {% endfor %}
-                        </select>
-                        <button type="submit">Revoke Access</button>
-                    </form>
-                {% endif %}
-
-                {% if session.get('role') == 'super_admin' %}
-                    <form action="{{ url_for('change_user_role') }}" method="POST">
-                        <input type="hidden" name="user_id" value="{{ user.id }}">
-                        <select name="new_role">
-                            <option value="user">User</option>
-                            <option value="admin">Admin</option>
-                            <option value="super_admin">Super Admin</option>
-                        </select>
-                        <button type="submit">Change Role</button>
-                    </form>
-                {% endif %}
-            </td>
-        </tr>
-        {% endif %}
+            {% if user.role != 'super_admin' %}
+                <tr class="user-row">
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.role }}</td>
+                    <td>
+                        <button class="btn btn-secondary showUpdateForm">Update</button>
+                        <button class="btn btn-secondary showToolAccess">Tool Access</button>
+                    </td>
+                </tr>
+                <tr class="update-form" style="display:none;">
+                    <td colspan="4">
+                        <form action="{{ url_for('update_user', user_id=user.id) }}" method="post" class="user-form">
+                            <input type="text" name="username" value="{{ user.username }}" required class="form-input">
+                            <input type="email" name="email" value="{{ user.email }}" required class="form-input">
+                            <input type="text" name="fname" value="{{ user.fname }}" required class="form-input">
+                            <input type="text" name="lname" value="{{ user.lname }}" required class="form-input">
+                            <input type="text" name="address" value="{{ user.address }}" required class="form-input">
+                            <input type="text" name="city" value="{{ user.city }}" required class="form-input">
+                            <input type="text" name="state" value="{{ user.state }}" required class="form-input">
+                            <input type="text" name="zip" value="{{ user.zip }}" required class="form-input">
+                            <input type="password" name="password" placeholder="New Password (leave blank to keep current)" class="form-input">
+                            <button type="submit" class="submit-btn">Update User</button>
+                        </form>
+                    </td>
+                </tr>
+                <tr class="tool-access" style="display:none;">
+                    <td colspan="4">
+                        <form action="{{ url_for('grant_tool_access') }}" method="post" class="tool-form">
+                            <input type="hidden" name="user_id" value="{{ user.id }}">
+                            <select name="tool_name" class="form-select">
+                                {% for tool in tools %}
+                                    {% if tool not in user_tools[user.id] %}
+                                        <option value="{{ tool }}">{{ tool }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn btn-primary">Grant Access</button>
+                        </form>
+                        <form action="{{ url_for('revoke_tool_access') }}" method="post" class="tool-form">
+                            <input type="hidden" name="user_id" value="{{ user.id }}">
+                            <select name="tool_name" class="form-select">
+                                {% for tool in user_tools[user.id] %}
+                                    <option value="{{ tool }}">{{ tool }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn btn-danger">Revoke Access</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endif %}
         {% endfor %}
     </tbody>
 </table>
+
+<script>
+    // JavaScript for search functionality and form toggling
+    document.getElementById('showCreateUserForm').addEventListener('click', function() {
+        var form = document.getElementById('createUserForm');
+        form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    });
+
+    document.getElementById('userSearch').addEventListener('keyup', function() {
+        var filter = this.value.toLowerCase();
+        var rows = document.getElementById('userTableBody').getElementsByClassName('user-row');
+        
+        for (var i = 0; i < rows.length; i++) {
+            var username = rows[i].getElementsByTagName('td')[0].textContent.toLowerCase();
+            var email = rows[i].getElementsByTagName('td')[1].textContent.toLowerCase();
+            if (username.indexOf(filter) > -1 || email.indexOf(filter) > -1) {
+                rows[i].style.display = '';
+            } else {
+                rows[i].style.display = 'none';
+            }
+        }
+    });
+
+    // Add event listeners for showing/hiding forms
+    document.querySelectorAll('.showUpdateForm').forEach(button => {
+        button.addEventListener('click', function() {
+            this.closest('tr').nextElementSibling.style.display = this.closest('tr').nextElementSibling.style.display === 'none' ? 'table-row' : 'none';
+        });
+    });
+
+    document.querySelectorAll('.showToolAccess').forEach(button => {
+        button.addEventListener('click', function() {
+            this.closest('tr').nextElementSibling.nextElementSibling.style.display = this.closest('tr').nextElementSibling.nextElementSibling.style.display === 'none' ? 'table-row' : 'none';
+        });
+    });
+</script>
+
 {% endblock %}

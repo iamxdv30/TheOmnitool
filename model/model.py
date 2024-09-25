@@ -1,4 +1,6 @@
+from flask import current_app
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.exc import SQLAlchemyError
 import bcrypt
 from datetime import datetime
 from abc import ABC, abstractmethod
@@ -62,14 +64,34 @@ class User(db.Model):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.password_hasher = BcryptPasswordHasher()
+        
 
     def set_password(self, password):
         logging.debug(f"Setting password for user {self.username}")
         self.password = generate_password_hash(password, method="pbkdf2:sha256")
         logging.debug(f"Password hash: {self.password}")
 
-    def check_password(self, password):
-        return check_password_hash(self.password, password)
+    
+    def has_tool_access(self, tool_name):
+        return ToolAccess.query.filter_by(user_id=self.id, tool_name=tool_name).first() is not None
+
+    
+    @classmethod
+    def assign_default_tools(cls, user_id):
+        user = cls.query.get(user_id)
+        if not user:
+            raise ValueError(f"No user found with id {user_id}")
+        default_tools = Tool.query.filter_by(is_default=True).all()
+        for tool in default_tools:
+            if not ToolAccess.query.filter_by(user_id=user.id, tool_name=tool.name).first():
+                tool_access = ToolAccess(user_id=user.id, tool_name=tool.name)
+                db.session.add(tool_access)
+        db.session.commit()
+
+    @classmethod
+    def check_password(cls, user, password):
+        # UPDATED: Use cls to refer to the class instead of self
+        return check_password_hash(user.password, password)
 
     def __repr__(self):
         return (
@@ -99,20 +121,25 @@ class Admin(User):
         return UsageLog.query.filter_by(user_id=user_id).all()
 
     def create_user(self, user_data):
-        new_user = User(**user_data)
+        new_user = UserFactory.create_user(**user_data)
         db.session.add(new_user)
-        db.session.commit()
+        db.session.commit()  # This ensures the user has an ID
+        User.assign_default_tools(new_user.id)  # Now we can assign default tools
+        return new_user
 
     def update_user(self, user_id, user_data):
         user = User.query.get(user_id)
-        if user:
+        if user and user.role == "user":
             for key, value in user_data.items():
-                setattr(user, key, value)
+                if key == "password":
+                    user.set_password(value)
+                else:
+                    setattr(user, key, value)
             db.session.commit()
 
     def delete_user(self, user_id):
         user = User.query.get(user_id)
-        if user:
+        if user and user.role == "user":
             db.session.delete(user)
             db.session.commit()
 
@@ -145,14 +172,53 @@ class SuperAdmin(Admin):
     def change_user_role(self, user_id, new_role):
         user = User.query.get(user_id)
         if user:
-            if new_role == "admin":
-                new_admin = Admin(id=user.id, admin_level=1)
+            if new_role == "admin" and not isinstance(user, Admin):
+                new_admin = Admin(
+                    username=user.username,
+                    email=user.email,
+                    fname=user.fname,
+                    lname=user.lname,
+                    address=user.address,
+                    city=user.city,
+                    state=user.state,
+                    zip=user.zip
+                )
+                new_admin.password = user.password  # Copy hashed password
                 db.session.delete(user)
                 db.session.add(new_admin)
-            elif new_role == "user":
-                new_user = User(id=user.id)
+            elif new_role == "user" and isinstance(user, (Admin, SuperAdmin)):
+                new_user = User(
+                    username=user.username,
+                    email=user.email,
+                    fname=user.fname,
+                    lname=user.lname,
+                    address=user.address,
+                    city=user.city,
+                    state=user.state,
+                    zip=user.zip
+                )
+                new_user.password = user.password  # Copy hashed password
                 db.session.delete(user)
                 db.session.add(new_user)
+            db.session.commit()
+
+    def create_user(self, user_data):
+        return super().create_user(user_data)
+    
+    def update_user(self, user_id, user_data):
+        user = User.query.get(user_id)
+        if user:
+            for key, value in user_data.items():
+                if key == "password":
+                    user.set_password(value)
+                else:
+                    setattr(user, key, value)
+            db.session.commit()
+
+    def delete_user(self, user_id):
+        user = User.query.get(user_id)
+        if user:
+            db.session.delete(user)
             db.session.commit()
 
     def view_all_activity(self):
@@ -184,44 +250,68 @@ class ToolAccess(db.Model):
 
     user = db.relationship("User", back_populates="tool_access")
 
+    @classmethod
+    def get_distinct_tool_names(cls):
+        distinct_tools = [row[0] for row in db.session.query(cls.tool_name).distinct().all()]
+        print("Distinct tools from database:", distinct_tools)
+        return distinct_tools
+
     def __init__(self, user_id, tool_name):
         self.user_id = user_id
         self.tool_name = tool_name
 
     def __repr__(self):
         return f"<ToolAccess(user_id={self.user_id}, tool_name={self.tool_name})>"
+    
+class Tool(db.Model):
+    __tablename__ = 'tools'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+    description = db.Column(db.String(255))
+    is_default = db.Column(db.Boolean, default=False)
+
+    def __init__(self, name, description, is_default=False):
+        self.name = name
+        self.description = description
+        self.is_default = is_default
+
+    @classmethod
+    def get_default_tools(cls):
+        return cls.query.filter_by(is_default=True).all()
+
+    @staticmethod
+    def assign_default_tool_to_users(tool_name):
+        users = User.query.all()
+        for user in users:
+            if not user.has_tool_access(tool_name):
+                new_access = ToolAccess(user_id=user.id, tool_name=tool_name)
+                db.session.add(new_access)
+        db.session.commit()
+
+    @staticmethod
+    def remove_default_tool_from_users(tool_name):
+        ToolAccess.query.filter_by(tool_name=tool_name).delete()
+        db.session.commit()
 
 
 # Design Pattern: Factory Pattern
 # The UserFactory class implements the Factory Pattern, providing a centralized way to create different types of users.
 class UserFactory:
     @staticmethod
-    def create_user(role, **kwargs):
+    def create_user(**kwargs):
+        role = kwargs.pop('role', 'user')
         if role == "user":
-            return User(**kwargs)
+            user = User(**kwargs)
         elif role == "admin":
-            return Admin(**kwargs)
+            user = Admin(**kwargs)
         elif role == "super_admin":
-            return SuperAdmin(**kwargs)
+            user = SuperAdmin(**kwargs)
         else:
             raise ValueError("Invalid user role")
+        user.set_password(kwargs.pop('password'))
+        return user
 
 
-# Design Pattern: Singleton Pattern
-# The ToolAccessManager class implements the Singleton Pattern, ensuring only one instance of the class exists.
-class ToolAccessManager:
-    _instance = None
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
-
-    def check_access(self, user_id, tool_name):
-        return (
-            ToolAccess.query.filter_by(user_id=user_id, tool_name=tool_name).first()
-            is not None
-        )
 
 
 # Date: September 23, 2024

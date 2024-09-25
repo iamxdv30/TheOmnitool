@@ -13,10 +13,10 @@ from flask import (
     flash,
     Response,
     make_response,
+    get_flashed_messages,
 )
-from flask_sqlalchemy import (
-    SQLAlchemy,
-)  # Already imported in model.model, so not necessary here
+
+from sqlalchemy.exc import SQLAlchemyError
 import bcrypt  # Import bcrypt for password hashing
 from datetime import (
     timezone,
@@ -40,17 +40,28 @@ from model.model import (
     SuperAdmin,
     UsageLog,
     ToolAccess,
+    Tool,
     db,
     UserFactory,
-    ToolAccessManager,
 )
 from flask_migrate import Migrate
+from werkzeug.wrappers import Response
+from typing import Union
 import logging
 
 
 # Factory function to create a Flask app
 def create_app():
     app = Flask(__name__, static_folder="static")
+    app.config['METHOD_OVERRIDE_EXCEPTIONS'] = True
+
+    # Custom method override
+    @app.before_request
+    def handle_method_override():
+        if request.form and '_method' in request.form:
+            method = request.form['_method'].upper()
+            if method in ['PUT', 'DELETE', 'PATCH']:
+                request.environ['REQUEST_METHOD'] = method
 
     # Database configuration
     app.config["SQLALCHEMY_DATABASE_URI"] = (
@@ -90,6 +101,10 @@ def create_app():
 
     # Register routes
     register_routes(app)
+
+    @app.context_processor
+    def inject_flashed_messages():
+        return dict(messages=get_flashed_messages(with_categories=True))
 
     return app
 
@@ -325,18 +340,34 @@ def register_routes(app):
                 flash("Email already registered!", "error")
                 return redirect(url_for("register_step2"))
 
-            new_user = UserFactory.create_user(
-                "user", **registration_info, username=username, email=email
-            )
-            new_user.set_password(password)
+            try:
+                new_user = User(
+                    username=username,
+                    email=email,
+                    fname=registration_info['fname'],
+                    lname=registration_info['lname'],
+                    address=registration_info['address'],
+                    city=registration_info['city'],
+                    state=registration_info['state'],
+                    zip=registration_info['zip'],
+                    role='user'  # Ensure role is set
+                )
+                new_user.set_password(password)
+                db.session.add(new_user)
+                db.session.commit()
 
-            db.session.add(new_user)
-            db.session.commit()
+                # Assign default tools
+                User.assign_default_tools(new_user.id)
 
-            session.pop("registration_info", None)
+                session.pop("registration_info", None)
 
-            flash("Registration successful!", "success")
-            return redirect(url_for("login"))
+                flash("Registration successful!", "success")
+                return redirect(url_for("login"))
+            except Exception as e:
+                db.session.rollback()
+                app.logger.error(f"Error during user registration: {str(e)}")
+                flash("An error occurred during registration. Please try again.", "error")
+                return redirect(url_for("register_step2"))
 
         return render_template("register_step2.html")
 
@@ -348,31 +379,32 @@ def register_routes(app):
             password = request.form["password"]
 
             user = User.query.filter_by(username=username).first()
-            logging.debug(f"User found: {user}")
-            if user:
-                logging.debug(f"Stored password hash: {user.password}")
-
-            if user and user.check_password(password):
+            if user and User.check_password(user, password):
                 session["logged_in"] = True
                 session["username"] = username
                 session["role"] = user.role
+                session["user_id"] = user.id
+                session["user_tools"] = [access.tool_name for access in user.tool_access]
                 if user.role == "super_admin":
                     return redirect(url_for("superadmin_dashboard"))
                 elif user.role == "admin":
                     return redirect(url_for("admin_dashboard"))
                 else:
                     return redirect(url_for("user_dashboard"))
+            else:
+                flash("Invalid username or password!", "error")
         else:
-            flash("Invalid username or password!", "error")
+            _ = get_flashed_messages()
 
         return render_template("login.html")
 
     # Logout route
     @app.route("/logout", methods=["GET", "POST"])
     def logout():
-        session.pop("logged_in", None)
-        session.pop("role", None)
-        return redirect(url_for("index"))
+        session.clear()
+        # Clear any remaining flash messages
+        _ = get_flashed_messages()  # This will consume all flashed messages
+        return redirect(url_for("login"))
 
     # User dashboard route
     @app.route("/user_dashboard", methods=["GET"])
@@ -387,7 +419,9 @@ def register_routes(app):
             elif username:
                 user = User.query.filter_by(username=username).first()
                 if user:
-                    return render_template("user_dashboard.html", user=user)
+                    # Fetch the latest tool access information
+                    user_tools = [access.tool_name for access in user.tool_access]
+                    return render_template("user_dashboard.html", user=user, user_tools=user_tools)
                 else:
                     flash("User not found. Please log in again.", "error")
                     return redirect(url_for("logout"))
@@ -441,18 +475,23 @@ def register_routes(app):
     def change_password():
         if "logged_in" in session:
             user = User.query.filter_by(username=session["username"]).first()
-            if bcrypt.checkpw(
-                request.form["current_password"].encode("utf-8"),
-                user.password.encode("utf-8"),
-            ):
-                if request.form["new_password"] == request.form["confirm_new_password"]:
-                    user.set_password(request.form["new_password"])
-                    db.session.commit()
-                    flash("Password changed successfully!", "success")
+            if user:  # UPDATED: Check if user exists
+                if user.check_password(
+                    request.form["current_password"]
+                ):  # UPDATED: Use instance method
+                    if (
+                        request.form["new_password"]
+                        == request.form["confirm_new_password"]
+                    ):
+                        user.set_password(request.form["new_password"])
+                        db.session.commit()
+                        flash("Password changed successfully!", "success")
+                    else:
+                        flash("New passwords do not match!", "error")
                 else:
-                    flash("New passwords do not match!", "error")
+                    flash("Current password is incorrect!", "error")
             else:
-                flash("Current password is incorrect!", "error")
+                flash("User not found!", "error")
             return redirect(url_for("user_dashboard"))
         return redirect(url_for("login"))
 
@@ -461,21 +500,28 @@ def register_routes(app):
     def admin_dashboard():
         if "logged_in" in session and session.get("role") in ["admin", "super_admin"]:
             users = User.query.all()
-            tools = ToolAccess.query.all()  # Get all available tools
-            return render_template("admin_dashboard.html", users=users, tools=tools)
+            tools = ToolAccess.get_distinct_tool_names()
+            user_tools = {user.id: [access.tool_name for access in user.tool_access] for user in users}
+            return render_template("admin_dashboard.html", users=users, tools=tools, user_tools=user_tools)
         return redirect(url_for("login"))
 
-    # New route for viewing user activity
-    @app.route("/view_user_activity/<int:user_id>", methods=["GET"])
-    def view_user_activity(user_id):
-        if "logged_in" in session and session.get("role") in ["admin", "super_admin"]:
-            admin = Admin.query.filter_by(username=session.get("username")).first()
-            if admin:
-                activity = admin.view_user_activity(user_id)
-                return render_template("user_activity.html", activity=activity)
+    # New route for super admin dashboard
+    @app.route("/superadmin_dashboard", methods=["GET"])
+    def superadmin_dashboard():
+        if "logged_in" in session and session.get("role") == "super_admin":
+            users = User.query.all()
+            tools = ToolAccess.get_distinct_tool_names()
+            user_tools = {user.id: [access.tool_name for access in user.tool_access] for user in users}
+            
+            # Get flash messages here, so they appear on the dashboard
+            messages = get_flashed_messages(with_categories=True)
+            
+            return render_template("superadmin_dashboard.html", users=users, tools=tools, user_tools=user_tools, messages=messages)
         return redirect(url_for("login"))
 
-    # New route for granting tool access
+    # Routes for Admins and Super Admins capabilities
+
+    # This route is for granting tool access. Admins and Super Admins can grant tool access to users.
     @app.route("/grant_tool_access", methods=["POST"])
     def grant_tool_access():
         if "logged_in" in session and session.get("role") in ["admin", "super_admin"]:
@@ -483,17 +529,21 @@ def register_routes(app):
             tool_name = request.form.get("tool_name")
             user = User.query.get(user_id)
             if user:
-                tool_access = ToolAccess(user_id=user_id, tool_name=tool_name)
-                db.session.add(tool_access)
-                db.session.commit()
-                flash(f"Tool access granted for {tool_name} to {user.username}", "success")
+                # Check if the access already exists
+                existing_access = ToolAccess.query.filter_by(user_id=user_id, tool_name=tool_name).first()
+                if not existing_access:
+                    tool_access = ToolAccess(user_id=user_id, tool_name=tool_name)
+                    db.session.add(tool_access)
+                    db.session.commit()
+                    flash(f"Tool access granted for {tool_name} to {user.username}", "success")
+                else:
+                    flash(f"{user.username} already has access to {tool_name}", "info")
             else:
                 flash("User not found", "error")
             return redirect(url_for("superadmin_dashboard" if session.get("role") == "super_admin" else "admin_dashboard"))
         return redirect(url_for("login"))
 
     # This route is for revoking tool access. Admins can remove tool access from users.
-
     @app.route("/revoke_tool_access", methods=["POST"])
     def revoke_tool_access():
         if "logged_in" in session and session.get("role") in ["admin", "super_admin"]:
@@ -508,31 +558,177 @@ def register_routes(app):
                 flash("Tool access not found", "error")
             return redirect(url_for("superadmin_dashboard" if session.get("role") == "super_admin" else "admin_dashboard"))
         return redirect(url_for("login"))
-
-    # New route for super admin dashboard
-    @app.route("/superadmin_dashboard", methods=["GET"])
-    def superadmin_dashboard():
-        if "logged_in" in session and session.get("role") == "super_admin":
-            users = User.query.all()
-            tools = ToolAccess.query.all()  # Get all available tools
-            return render_template("superadmin_dashboard.html", users=users, tools=tools)
-        return redirect(url_for("login"))
     
-    # New route for changing user role
-    @app.route("/change_user_role", methods=["POST"])
-    def change_user_role():
-        if "logged_in" in session and session.get("role") == "super_admin":
-            user_id = request.form.get("user_id")
-            new_role = request.form.get("new_role")
-            user = User.query.get(user_id)
-            if user:
-                user.role = new_role
-                db.session.commit()
-                flash(f"User {user.username}'s role changed to {new_role}", "success")
+    @app.route("/check_tool_access/<tool_name>")
+    def check_tool_access(tool_name):
+        if "logged_in" in session:
+            user_id = session.get('user_id')
+            tool_access = ToolAccess.query.filter_by(user_id=user_id, tool_name=tool_name).first()
+            if tool_access:
+                return jsonify({"access": True})
             else:
-                flash("User not found", "error")
+                return jsonify({"access": False, "message": "You don't have access to this tool."})
+        return jsonify({"access": False, "message": "Please log in to access tools."})
+    
+    @app.route("/get_user_tools")
+    def get_user_tools():
+        if "logged_in" in session:
+            user = User.query.filter_by(username=session.get("username")).first()
+            if user:
+                user_tools = [access.tool_name for access in user.tool_access]
+                return jsonify(user_tools)
+        return jsonify([])
+
+
+    # New route for changing user role
+    @app.route("/change_user_role/<int:user_id>", methods=["POST"])
+    def change_user_role(user_id):
+        if "logged_in" in session and session.get("role") == "super_admin":
+            new_role = request.form.get("new_role")
+            SuperAdmin().change_user_role(user_id, new_role)
+            flash(f"User role changed to {new_role}", "success")
             return redirect(url_for("superadmin_dashboard"))
         return redirect(url_for("login"))
+    
+    @app.route('/manage_tools', methods=['GET', 'POST', 'PUT', 'DELETE'])
+    def manage_tools():
+        if "logged_in" not in session or session.get("role") not in ["admin", "super_admin"]:
+            flash("You don't have permission to manage tools.", "error")
+            return redirect(url_for("login"))
+
+        if request.method == 'POST':
+            tool_name = request.form.get('tool_name')
+            is_default = 'is_default' in request.form
+            description = request.form.get('description', '')
+            existing_tool = Tool.query.filter_by(name=tool_name).first()
+            if existing_tool:
+                flash("A tool with this name already exists.", "error")
+            else:
+                new_tool = Tool(name=tool_name, description=description, is_default=is_default)
+                db.session.add(new_tool)
+                db.session.commit()
+                if is_default:
+                    Tool.assign_default_tool_to_users(tool_name)
+                flash("Tool created successfully", "success")
+        elif request.method == 'PUT':
+            tool_name = request.form.get('tool_name')
+            is_default = 'is_default' in request.form
+            description = request.form.get('description', '')
+            tool = Tool.query.filter_by(name=tool_name).first()
+            if tool:
+                old_is_default = tool.is_default
+                tool.is_default = is_default
+                tool.description = description
+                db.session.commit()
+                if not old_is_default and is_default:
+                    Tool.assign_default_tool_to_users(tool_name)
+                elif old_is_default and not is_default:
+                    Tool.remove_default_tool_from_users(tool_name)
+                flash("Tool updated successfully", "success")
+            else:
+                flash("Tool not found", "error")
+        elif request.method == 'DELETE':
+            tool_name = request.form.get('tool_name')
+            tool = Tool.query.filter_by(name=tool_name).first()
+            if tool:
+                ToolAccess.query.filter_by(tool_name=tool_name).delete()
+                db.session.delete(tool)
+                db.session.commit()
+                flash("Tool deleted successfully", "success")
+            else:
+                flash("Tool not found", "error")
+        
+        tools = Tool.query.all()
+        return render_template('manage_tools.html', tools=tools)
+
+
+
+
+    # CRUD for Admins and Super Admins
+
+    @app.route("/create_user", methods=["GET", "POST"])
+    def create_user():
+        if "logged_in" in session and session.get("role") in ["admin", "super_admin"]:
+            if request.method == "POST":
+                user_data = {
+                    "username": request.form.get("username"),
+                    "email": request.form.get("email"),
+                    "password": request.form.get("password"),
+                    "fname": request.form.get("fname"),
+                    "lname": request.form.get("lname"),
+                    "address": request.form.get("address"),
+                    "city": request.form.get("city"),
+                    "state": request.form.get("state"),
+                    "zip": request.form.get("zip"),
+                    "role": request.form.get("role", "user"),
+                }
+                try:
+                    if session.get("role") == "admin":
+                        new_user = Admin().create_user(user_data)
+                    else:
+                        new_user = SuperAdmin().create_user(user_data)
+                    User.assign_default_tools(new_user.id)
+                    flash("User created successfully", "success")
+                except SQLAlchemyError as e:
+                    db.session.rollback()
+                    app.logger.error(f"Database error creating user: {str(e)}")
+                    flash(f"Error creating user: {str(e)}", "error")
+                except Exception as e:
+                    db.session.rollback()
+                    app.logger.error(f"Unexpected error creating user: {str(e)}")
+                    flash("An unexpected error occurred while creating the user", "error")
+                return redirect(url_for("superadmin_dashboard" if session.get("role") == "super_admin" else "admin_dashboard"))
+            return render_template("create_user.html")
+        return redirect(url_for("login"))
+
+    @app.route("/update_user/<int:user_id>", methods=["POST"])
+    def update_user(user_id: int) -> Union[Response, str]:
+        if "logged_in" in session and session.get("role") in ["admin", "super_admin"]:
+            user_data = {
+                "username": request.form.get("username"),
+                "email": request.form.get("email"),
+                "fname": request.form.get("fname"),
+                "lname": request.form.get("lname"),
+                "address": request.form.get("address"),
+                "city": request.form.get("city"),
+                "state": request.form.get("state"),
+                "zip": request.form.get("zip"),
+            }
+            if request.form.get("password"):
+                user_data["password"] = request.form.get("password")
+
+            if session.get("role") == "admin":
+                Admin().update_user(user_id, user_data)
+            else:
+                SuperAdmin().update_user(user_id, user_data)
+            flash("User updated successfully", "success")
+
+            if session.get("role") == "admin":
+                return redirect(url_for("admin_dashboard"))
+            elif session.get("role") == "super_admin":
+                return redirect(url_for("superadmin_dashboard"))
+        
+        return redirect(url_for("login"))
+
+
+    @app.route("/delete_user/<int:user_id>", methods=["POST"])
+    def delete_user(user_id):
+        if "logged_in" in session and session.get("role") in ["admin", "super_admin"]:
+            user = User.query.get(user_id)
+            if user:
+                db.session.delete(user)
+                db.session.commit()
+                flash("User deleted successfully", "success")
+
+            if session.get("role") == "admin":
+                return redirect(url_for("admin_dashboard"))
+            elif session.get("role") == "super_admin":
+                return redirect(url_for("superadmin_dashboard"))
+            else:
+                return redirect(url_for("login"))
+        return redirect(url_for("login"))
+
+    return app
 
 
 # The 'if __name__' block is still required to run the app

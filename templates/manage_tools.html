@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Manage Tools</h1>
+
+<h2>Add New Tool</h2>
+<form method="POST" action="{{ url_for('manage_tools') }}">
+    <input type="text" name="tool_name" placeholder="Tool Name" required>
+    <textarea name="description" placeholder="Description"></textarea>
+    <label>
+        <input type="checkbox" name="is_default"> Default Tool
+    </label>
+    <button type="submit">Add Tool</button>
+</form>
+
+<h2>Existing Tools</h2>
+{% for tool in tools %}
+    <div class="tool-item">
+        <h3>{{ tool.name }} {% if tool.is_default %}(Default){% endif %}</h3>
+        <p>{{ tool.description }}</p>
+        
+        <h4>Update Tool</h4>
+        <form method="POST" action="{{ url_for('manage_tools') }}">
+            <input type="hidden" name="_method" value="PUT">
+            <input type="hidden" name="tool_name" value="{{ tool.name }}">
+            <textarea name="description">{{ tool.description }}</textarea>
+            <label>
+                <input type="checkbox" name="is_default" {% if tool.is_default %}checked{% endif %}> Default Tool
+            </label>
+            <button type="submit">Update Tool</button>
+        </form>
+
+        <h4>Delete Tool</h4>
+        <form method="POST" action="{{ url_for('manage_tools') }}" onsubmit="return confirm('Are you sure you want to delete this tool?');">
+            <input type="hidden" name="_method" value="DELETE">
+            <input type="hidden" name="tool_name" value="{{ tool.name }}">
+            <button type="submit">Delete Tool</button>
+        </form>
+    </div>
+{% endfor %}
+{% endblock %}

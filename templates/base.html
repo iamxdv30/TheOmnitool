@@ -28,8 +28,8 @@
                     <li class="nav-item dropdown">
                         <a href="#" class="nav-link dropdown-toggle">Tools</a>
                         <ul class="dropdown-menu">
-                            <li><a href="{{ url_for('tax_calculator_route') }}" class="dropdown-item">Tax Calculator</a></li>
-                            <li><a href="{{ url_for('char_counter') }}" class="dropdown-item">Character Counter</a></li>
+                            <li><a href="#" class="dropdown-item" onclick="checkToolAccess('Tax Calculator', '{{ url_for('tax_calculator_route') }}'); return false;">Tax Calculator</a></li>
+                            <li><a href="#" class="dropdown-item" onclick="checkToolAccess('Character Counter', '{{ url_for('char_counter') }}'); return false;">Character Counter</a></li>
                             <li class="dropdown-submenu">
                                 <a href="#" class="dropdown-item">Steps-to-Reproduce</a>
                                 <ul class="dropdown-menu">
@@ -115,6 +115,18 @@
             navbarToggler.addEventListener('click', function() {
                 navbarCollapse.classList.toggle('show');
             });
+
+            function checkToolAccess(toolName, url) {
+                fetch(`/check_tool_access/${toolName}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.access) {
+                            window.location.href = url;
+                        } else {
+                            alert(data.message);
+                        }
+                    });
+            }
         });
     </script>
 </body>
