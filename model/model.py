@@ -259,6 +259,10 @@ class ToolAccess(db.Model):
         distinct_tools = [row[0] for row in db.session.query(cls.tool_name).distinct().all()]
         print("Distinct tools from database:", distinct_tools)
         return distinct_tools
+    
+    @classmethod
+    def user_has_access(cls, user_id, tool_name):
+        return cls.query.filter_by(user_id=user_id, tool_name=tool_name).first() is not None
 
     def __init__(self, user_id, tool_name):
         self.user_id = user_id

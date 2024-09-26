@@ -439,7 +439,8 @@ def register_routes(app):
         logging.debug(f"Username: {username}")
         user = User.query.filter_by(username=username).first()
         if user:
-            user_tools = [access.tool_name for access in user.tool_access]
+            # Refresh user's tool access from the database
+            user_tools = [access.tool_name for access in ToolAccess.query.filter_by(user_id=user.id).all()]
             logging.debug(f"User tools: {user_tools}")
             session["user_tools"] = user_tools  # Update session
             return render_template("user_dashboard.html", user=user, user_tools=user_tools)
@@ -544,7 +545,6 @@ def register_routes(app):
 
     # Routes for Admins and Super Admins capabilities
 
-    # This route is for granting tool access. Admins and Super Admins can grant tool access to users.
     @app.route("/grant_tool_access", methods=["POST"])
     def grant_tool_access():
         if "logged_in" in session and session.get("role") in ["admin", "super_admin"]:
@@ -552,16 +552,20 @@ def register_routes(app):
             tool_name = request.form.get("tool_name")
             user = User.query.get(user_id)
             if user:
-                # ... (existing code)
-                db.session.commit()
-                refresh_user_tools(user_id)  # Refresh session data
-                flash(f"Tool access granted for {tool_name} to {user.username}", "success")
+                if not ToolAccess.query.filter_by(user_id=user_id, tool_name=tool_name).first():
+                    new_access = ToolAccess(user_id=user_id, tool_name=tool_name)
+                    db.session.add(new_access)
+                    db.session.commit()
+                    if 'user_tools' in session:
+                        del session['user_tools']  # Clear the session to force a refresh
+                    flash(f"Tool access granted for {tool_name} to {user.username}", "success")
+                else:
+                    flash(f"User already has access to {tool_name}", "info")
             else:
                 flash("User not found", "error")
             return redirect(url_for("superadmin_dashboard" if session.get("role") == "super_admin" else "admin_dashboard"))
         return redirect(url_for("login"))
 
-    # This route is for revoking tool access. Admins can remove tool access from users.
     @app.route("/revoke_tool_access", methods=["POST"])
     def revoke_tool_access():
         if "logged_in" in session and session.get("role") in ["admin", "super_admin"]:
@@ -571,10 +575,11 @@ def register_routes(app):
             if tool_access:
                 db.session.delete(tool_access)
                 db.session.commit()
-                refresh_user_tools(user_id)  # Refresh session data
+                if 'user_tools' in session:
+                    del session['user_tools']  # Clear the session to force a refresh
                 flash(f"Tool access revoked for {tool_name}", "success")
             else:
-                flash("Tool access not found", "error")
+                flash(f"User doesn't have access to {tool_name}", "info")
             return redirect(url_for("superadmin_dashboard" if session.get("role") == "super_admin" else "admin_dashboard"))
         return redirect(url_for("login"))
     
@@ -585,7 +590,9 @@ def register_routes(app):
         if "logged_in" in session:
             user_id = session.get('user_id')
             logging.debug(f"User ID: {user_id}")
-            has_access = User.user_has_tool_access(user_id, tool_name)
+            
+            # Use the ToolAccess model to check access
+            has_access = ToolAccess.query.filter_by(user_id=user_id, tool_name=tool_name).first() is not None
             logging.debug(f"Has access: {has_access}")
             
             if has_access:
