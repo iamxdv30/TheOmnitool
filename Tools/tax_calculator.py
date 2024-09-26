@@ -17,9 +17,11 @@ def process_discount(discounts, base_tax_rate):
 def tax_calculator(data):
     items = data.get('items', [])
     discounts = data.get('discounts', [])
-    shipping_cost = float(data.get('shipping_cost', 0))
+    shipping_cost = data.get('shipping_cost', '')
+    shipping_cost = float(shipping_cost) if shipping_cost else 0
     shipping_taxable = data.get('shipping_taxable', False)
-    shipping_tax_rate = float(data.get('shipping_tax_rate', 0))
+    shipping_tax_rate = data.get('shipping_tax_rate', '')
+    shipping_tax_rate = float(shipping_tax_rate) if shipping_tax_rate else 0
 
     total_tax = 0
     total_amount = 0

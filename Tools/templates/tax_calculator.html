@@ -89,7 +89,7 @@
 
     function handleCalculatorChange(selectElement) {
         if (selectElement.value === 'canada') {
-            document.getElementById('taxForm').action = "{{ url_for('canada_tax_calculator_check') }}";
+            document.getElementById('taxForm').action = "{{ url_for('canada_tax_calculator') }}";
             document.getElementById('taxForm').submit();
         } else {
             document.getElementById('taxForm').action = "{{ url_for('tax_calculator_route') }}";

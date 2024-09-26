@@ -1,386 +1,424 @@
 /* Ensure the body and html take full height */
-html, body {
-    height: 100%;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
+html,
+body {
+  height: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 /* The main content container should flex to take available space */
 .container {
-    flex: 1; /* Makes the container take up remaining space between the header and footer */
+  flex: 1; /* Makes the container take up remaining space between the header and footer */
 }
 
 .light-theme {
-    font-family: 'Noto Sans Mono', monospace;
-    background-color: #f6fff8;
+  font-family: 'Noto Sans Mono', monospace;
+  background-color: #f6fff8;
 }
 
 /* Navbar styles */
 .navbar {
-    background-color: #588157;
-    padding: 0.3rem 1rem; /* Reduce padding to reduce thickness */
-    position: relative;
+  background-color: #588157;
+  padding: 0.3rem 1rem; /* Reduce padding to reduce thickness */
+  position: relative;
 }
 
 .navbar-container {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .navbar-toggler {
-    display: none;
-    font-size: 1.5rem;
-    background: none;
-    border: none;
-    cursor: pointer;
+  display: none;
+  font-size: 1.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
 }
 
 .navbar-collapse {
-    display: flex;
-    align-items: center;
-    width: 100%;
+  display: flex;
+  align-items: center;
+  width: 100%;
 }
 
 /* Align navbar items to the left */
 .navbar-nav {
-    list-style: none;
-    display: flex;
-    align-items: center;
-    flex-grow: 1;
-    font-size: 1.5em;
-    margin-left: 1rem; /* Adjust to align with footer links */
+  list-style: none;
+  display: flex;
+  align-items: center;
+  flex-grow: 1;
+  font-size: 1.5em;
+  margin-left: 1rem; /* Adjust to align with footer links */
 }
 
 .nav-item {
-    position: relative;
+  position: relative;
 }
 
 .nav-link {
-    display: block;
-    padding: 0.3rem 1rem; /* Reduce padding to reduce thickness */
-    color: #000;
-    text-decoration: none;
+  display: block;
+  padding: 0.3rem 1rem; /* Reduce padding to reduce thickness */
+  color: #000;
+  text-decoration: none;
 }
 
 .nav-link:hover {
-    background-color: #80AF81;
-    color: #fff;
+  background-color: #80af81;
+  color: #fff;
 }
 
 .dropdown {
-    position: relative;
+  position: relative;
 }
 
 .dropdown-toggle::after {
-    content: ' ▼';
-    font-size: 0.6em;
+  content: ' ▼';
+  font-size: 0.6em;
 }
 
 .dropdown-menu {
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    background-color: #D6EFD8;
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    min-width: 150px;
-    border: 1px solid #ccc;
-    z-index: 1000;
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: #d6efd8;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  min-width: 150px;
+  border: 1px solid #ccc;
+  z-index: 1000;
 }
 
 .dropdown-item {
-    padding: 0.5rem 1rem;
-    color: #000;
-    text-decoration: none;
-    display: block;
+  padding: 0.5rem 1rem;
+  color: #000;
+  text-decoration: none;
+  display: block;
 }
 
 .dropdown-item:hover {
-    background-color: #80AF81;
+  background-color: #80af81;
 }
 
 .dropdown:hover > .dropdown-menu,
 .dropdown-submenu:hover > .dropdown-menu {
-    display: block;
+  display: block;
 }
 
 .dropdown-submenu {
-    position: relative;
+  position: relative;
 }
 
 .dropdown-submenu > .dropdown-menu {
-    top: 0;
-    left: 100%;
+  top: 0;
+  left: 100%;
 }
 
 .dropdown-submenu > .dropdown-item::after {
-    /*content: ' ▶'; */
-    float: right;
-    font-size: 0.6em;
+  /*content: ' ▶'; */
+  float: right;
+  font-size: 0.6em;
 }
 
 .navbar-right {
-    display: flex;
-    align-items: center;
-    font-size: 1.1em;
+  display: flex;
+  align-items: center;
+  font-size: 1.1em;
 }
 
 .search-bar {
-    padding: 0.3rem 0.5rem;
-    margin-right: 1rem;
+  padding: 0.3rem 0.5rem;
+  margin-right: 1rem;
 }
 
 .base-toggle-btn {
-    padding: 0.3rem 0.5rem;
-    cursor: pointer;
-    border: none;
-    background-color: #38b000;
-    color: #fff;
-    border-radius: 0.25rem;
-    font-size: 1em;
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+  border: none;
+  background-color: #38b000;
+  color: #fff;
+  border-radius: 0.25rem;
+  font-size: 1em;
 }
 
 .base-toggle-btn:hover {
-    background-color: #008000;
+  background-color: #008000;
 }
 
 @media (max-width: 768px) {
-    .navbar-toggler {
-        display: block;
-    }
+  .navbar-toggler {
+    display: block;
+  }
 
-    .navbar-collapse {
-        display: none;
-        flex-direction: column;
-    }
+  .navbar-collapse {
+    display: none;
+    flex-direction: column;
+  }
 
-    .navbar-collapse.show {
-        display: flex;
-    }
+  .navbar-collapse.show {
+    display: flex;
+  }
 
-    .navbar-nav {
-        flex-direction: column;
-    }
+  .navbar-nav {
+    flex-direction: column;
+  }
 
-    .navbar-right {
-        flex-direction: column;
-    }
+  .navbar-right {
+    flex-direction: column;
+  }
 
-    .nav-link {
-        padding: 0.5rem 1rem;
-    }
+  .nav-link {
+    padding: 0.5rem 1rem;
+  }
 }
 
 /* Profile Nav */
 
 .user-dropdown {
-    position: relative;
-    display: inline-block;
+  position: relative;
+  display: inline-block;
 }
 
 .dropbtn {
-    background-color: #4CAF50;
-    color: white;
-    padding: 10px;
-    font-size: 16px;
-    border: none;
-    cursor: pointer;
+  background-color: #4caf50;
+  color: white;
+  padding: 10px;
+  font-size: 16px;
+  border: none;
+  cursor: pointer;
 }
 
 .dropdown-content {
-    display: none;
-    position: absolute;
-    background-color: #f9f9f9;
-    min-width: 160px;
-    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-    z-index: 1;
+  display: none;
+  position: absolute;
+  background-color: #f9f9f9;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+  z-index: 1;
 }
 
 .dropdown-content a {
-    color: black;
-    padding: 12px 16px;
-    text-decoration: none;
-    display: block;
+  color: black;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
 }
 
 .dropdown-content a:hover {
-    background-color: #f1f1f1;
+  background-color: #f1f1f1;
 }
 
 .user-dropdown {
-    margin-right: 1rem;
+  margin-right: 1rem;
 }
 
 .dropbtn {
-    padding: 0.4rem 0.5rem;
-    cursor: pointer;
-    border: none;
-    background-color: #38b000;
-    color: #fff;
-    border-radius: 0.25rem;
-    font-size: 1em;
+  padding: 0.4rem 0.5rem;
+  cursor: pointer;
+  border: none;
+  background-color: #38b000;
+  color: #fff;
+  border-radius: 0.25rem;
+  font-size: 1em;
 }
 
 .user-dropdown:hover .dropdown-content {
-    display: block;
+  display: block;
 }
 
 .user-dropdown:hover .dropbtn {
-    background-color: #3e8e41;
+  background-color: #3e8e41;
 }
-
 
 /* Dark theme styles */
 body.dark-theme {
-    background-color: #333;
-    color: #ffffff;
+  background-color: #333;
+  color: #ffffff;
 }
 
 body.dark-theme .navbar {
-    background-color: #343a40;
-    color: #ffffff;
-    font-family: 'Noto Sans Mono', monospace;
+  background-color: #343a40;
+  color: #ffffff;
+  font-family: 'Noto Sans Mono', monospace;
 }
 
 body.dark-theme .nav-link,
 body.dark-theme .dropdown-item,
 body.dark-theme .btn {
-    color: #fff;
+  color: #fff;
 }
 
 body.dark-theme .nav-link:hover,
 body.dark-theme .dropdown-item:hover,
 body.dark-theme .btn:hover {
-    background-color: #495057;
+  background-color: #495057;
 }
 
 body.dark-theme .dropdown-menu {
-    background-color: #343a40;
-    border-color: #454d55;
+  background-color: #343a40;
+  border-color: #454d55;
 }
 
 body.dark-theme .search-bar {
-    background-color: #495057;
-    color: #fff;
-    border: none;
+  background-color: #495057;
+  color: #fff;
+  border: none;
 }
 
 body.dark-theme .base-toggle-btn {
-    background-color: #495057;
-    color: #fff;
-    border: none;
+  background-color: #495057;
+  color: #fff;
+  border: none;
 }
 
 /* Style for main content */
 .main-content {
-    padding: 2rem;
-    text-align: center;
+  padding: 2rem;
+  text-align: center;
 }
 
 .main-content h1 {
-    margin-bottom: 1rem;
+  margin-bottom: 1rem;
 }
 
 .main-content ul {
-    list-style: disc;
-    margin: 0 auto;
-    padding: 0;
-    display: inline-block;
-    text-align: left;
+  list-style: disc;
+  margin: 0 auto;
+  padding: 0;
+  display: inline-block;
+  text-align: left;
 }
 
 .main-content li {
-    margin-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 /* Style buttons for "Login" and "No Account? Register Here" */
 .btn {
-    padding: 0.5rem 1rem;
-    margin: 0 0.5rem;
-    text-decoration: none;
-    color: #fff;
-    background-color: #38b000;
-    border: none;
-    border-radius: 0.25rem;
-    cursor: pointer;
+  padding: 0.5rem 1rem;
+  margin: 0 0.5rem;
+  text-decoration: none;
+  color: #fff;
+  background-color: #38b000;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
 }
 
 .btn:hover {
-    background-color: #008000;
+  background-color: #008000;
 }
 
 /* Adjust navbar items alignment */
 .navbar-nav {
-    justify-content: flex-start; /* Align items to the left */
+  justify-content: flex-start; /* Align items to the left */
 }
 
 .navbar-right {
-    justify-content: flex-end;
+  justify-content: flex-end;
 }
 
 /* Footer Styling */
 .site-footer {
-    background-color: var(--footer-background-color, #588157); /* Light theme default */
-    font-family: 'Noto Sans Mono', monospace;
-    padding: 20px;
-    text-align: center;
+  background-color: var(
+    --footer-background-color,
+    #588157
+  ); /* Light theme default */
+  font-family: 'Noto Sans Mono', monospace;
+  padding: 20px;
+  text-align: center;
 }
 
 .footer-container {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    color: var(--footer-text-color, white); /* Light theme default */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: var(--footer-text-color, white); /* Light theme default */
 }
 
 .footer-nav ul {
-    list-style-type: none;
-    padding: 0;
-    margin: 10px 0 0;
+  list-style-type: none;
+  padding: 0;
+  margin: 10px 0 0;
 }
 
 .footer-nav ul li {
-    display: inline;
-    margin: 0 10px;
+  display: inline;
+  margin: 0 10px;
 }
 
 .footer-nav ul li a {
-    color: var(--footer-text-color, white); /* Light theme default */
-    text-decoration: none;
-    transition: color 0.3s ease;
+  color: var(--footer-text-color, white); /* Light theme default */
+  text-decoration: none;
+  transition: color 0.3s ease;
 }
 
 .footer-nav ul li a:hover {
-    color: var(--footer-hover-color, #f4a261); /* Light theme default */
+  color: var(--footer-hover-color, #f4a261); /* Light theme default */
 }
 
 @media (min-width: 768px) {
-    .footer-container {
-        flex-direction: row;
-        justify-content: space-between;
-    }
+  .footer-container {
+    flex-direction: row;
+    justify-content: space-between;
+  }
 }
 
 /* Dark theme for footer */
 body.dark-theme .site-footer {
-    background-color: #3c403d; /* Dark theme footer background */
+  background-color: #3c403d; /* Dark theme footer background */
 }
 
 body.dark-theme .footer-container {
-    color: #d3d3d3; /* Dark theme footer text color */
+  color: #d3d3d3; /* Dark theme footer text color */
 }
 
 body.dark-theme .footer-nav ul li a {
-    color: #d3d3d3; /* Dark theme link color */
+  color: #d3d3d3; /* Dark theme link color */
 }
 
 body.dark-theme .footer-nav ul li a:hover {
-    color: #a9d9b7; /* Dark theme link hover color */
+  color: #a9d9b7; /* Dark theme link hover color */
 }
 
+.flashes {
+  list-style-type: none;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 5px;
+}
 
+.flashes li {
+  padding: 10px;
+  margin-bottom: 5px;
+  border-radius: 3px;
+}
+
+.flashes .error {
+  background-color: #ffebee;
+  color: #c62828;
+  border: 1px solid #ef9a9a;
+}
+
+.flashes .success {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+}
+
+.flashes .info {
+  background-color: #e3f2fd;
+  color: #1565c0;
+  border: 1px solid #90caf9;
+}
+
+.flashes .warning {
+  background-color: #fff3e0;
+  color: #ef6c00;
+  border: 1px solid #ffcc80;
+}

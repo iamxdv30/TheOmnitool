@@ -1,139 +1,105 @@
 {% extends "base.html" %}
-
-{% block styles %}
- <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
-{% endblock %}
-
 {% block content %}
+<h1 id="admin-dashboard" class="admin-dashboard-title">Admin Dashboard</h1>
 
-<h1 class="admin-dashboard-title">Admin Dashboard</h1>
+<h2>Create New User</h2>
+<form action="{{ url_for('create_user') }}" method="post">
+    <input type="text" name="username" placeholder="Username" required>
+    <input type="email" name="email" placeholder="Email" required>
+    <input type="password" name="password" placeholder="Password" required>
+    <input type="text" name="fname" placeholder="First Name" required>
+    <input type="text" name="lname" placeholder="Last Name" required>
+    <input type="text" name="address" placeholder="Address" required>
+    <input type="text" name="city" placeholder="City" required>
+    <input type="text" name="state" placeholder="State" required>
+    <input type="text" name="zip" placeholder="ZIP" required>
+    <select name="role">
+        <option value="user">User</option>
+        <option value="admin">Admin</option>
+    </select>
+    <button type="submit">Create User</button>
+</form>
 
-<!-- Add a button to show/hide the create user form -->
-<button id="showCreateUserForm" class="btn btn-primary">Create New User</button>
-
-<!-- Create user form (initially hidden) -->
-<div id="createUserForm" style="display:none;">
-    <h2 class="section-title">Create New User</h2>
-    <form action="{{ url_for('create_user') }}" method="post" class="user-form">
-        <input type="text" name="username" placeholder="Username" required class="form-input">
-        <input type="email" name="email" placeholder="Email" required class="form-input">
-        <input type="password" name="password" placeholder="Password" required class="form-input">
-        <input type="text" name="fname" placeholder="First Name" required class="form-input">
-        <input type="text" name="lname" placeholder="Last Name" required class="form-input">
-        <input type="text" name="address" placeholder="Address" required class="form-input">
-        <input type="text" name="city" placeholder="City" required class="form-input">
-        <input type="text" name="state" placeholder="State" required class="form-input">
-        <input type="text" name="zip" placeholder="ZIP Code" required class="form-input">
-        <button type="submit" class="submit-btn">Create User</button>
-    </form>
-</div>
-
-<!-- Add search bar -->
-<div class="search-container">
-    <input type="text" id="userSearch" class="search-input" placeholder="Search users...">
-</div>
-
-<!-- User table -->
-<table class="user-table">
+<h2>Manage Users</h2>
+<table>
     <thead>
         <tr>
             <th>Username</th>
             <th>Email</th>
             <th>Role</th>
             <th>Actions</th>
+            <th>Tool Access</th>
         </tr>
     </thead>
-    <tbody id="userTableBody">
+    <tbody>
         {% for user in users %}
-            {% if user.role != 'super_admin' %}
-                <tr class="user-row">
-                    <td>{{ user.username }}</td>
-                    <td>{{ user.email }}</td>
-                    <td>{{ user.role }}</td>
-                    <td>
-                        <button class="btn btn-secondary showUpdateForm">Update</button>
-                        <button class="btn btn-secondary showToolAccess">Tool Access</button>
-                    </td>
-                </tr>
-                <tr class="update-form" style="display:none;">
-                    <td colspan="4">
-                        <form action="{{ url_for('update_user', user_id=user.id) }}" method="post" class="user-form">
-                            <input type="text" name="username" value="{{ user.username }}" required class="form-input">
-                            <input type="email" name="email" value="{{ user.email }}" required class="form-input">
-                            <input type="text" name="fname" value="{{ user.fname }}" required class="form-input">
-                            <input type="text" name="lname" value="{{ user.lname }}" required class="form-input">
-                            <input type="text" name="address" value="{{ user.address }}" required class="form-input">
-                            <input type="text" name="city" value="{{ user.city }}" required class="form-input">
-                            <input type="text" name="state" value="{{ user.state }}" required class="form-input">
-                            <input type="text" name="zip" value="{{ user.zip }}" required class="form-input">
-                            <input type="password" name="password" placeholder="New Password (leave blank to keep current)" class="form-input">
-                            <button type="submit" class="submit-btn">Update User</button>
-                        </form>
-                    </td>
-                </tr>
-                <tr class="tool-access" style="display:none;">
-                    <td colspan="4">
-                        <form action="{{ url_for('grant_tool_access') }}" method="post" class="tool-form">
+        {% if user.role != 'super_admin' %}
+        <tr>
+            <td>{{ user.username }}</td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.role }}</td>
+            <td>
+                <button onclick="showUpdateForm('{{ user.id }}')">Update</button>
+                <form action="{{ url_for('delete_user', user_id=user.id) }}" method="post" onsubmit="return confirm('Are you sure you want to delete this user?');">
+                    <button type="submit">Delete</button>
+                </form>
+            </td>
+            <td>
+                <h4>Available Tools</h4>
+                <ul>
+                    {% for tool in tools %}
+                    {% if tool not in user_tools[user.id] %}
+                    <li>
+                        {{ tool }}
+                        <form action="{{ url_for('grant_tool_access') }}" method="post">
                             <input type="hidden" name="user_id" value="{{ user.id }}">
-                            <select name="tool_name" class="form-select">
-                                {% for tool in tools %}
-                                    {% if tool not in user_tools[user.id] %}
-                                        <option value="{{ tool }}">{{ tool }}</option>
-                                    {% endif %}
-                                {% endfor %}
-                            </select>
-                            <button type="submit" class="btn btn-primary">Grant Access</button>
+                            <input type="hidden" name="tool_name" value="{{ tool }}">
+                            <button type="submit">Grant Access</button>
                         </form>
-                        <form action="{{ url_for('revoke_tool_access') }}" method="post" class="tool-form">
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                </ul>
+
+                <h4>Granted Tools</h4>
+                <ul>
+                    {% for tool in user_tools[user.id] %}
+                    <li>
+                        {{ tool }}
+                        <form action="{{ url_for('revoke_tool_access') }}" method="post">
                             <input type="hidden" name="user_id" value="{{ user.id }}">
-                            <select name="tool_name" class="form-select">
-                                {% for tool in user_tools[user.id] %}
-                                    <option value="{{ tool }}">{{ tool }}</option>
-                                {% endfor %}
-                            </select>
-                            <button type="submit" class="btn btn-danger">Revoke Access</button>
+                            <input type="hidden" name="tool_name" value="{{ tool }}">
+                            <button type="submit">Revoke Access</button>
                         </form>
-                    </td>
-                </tr>
-            {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </td>
+        </tr>
+        {% endif %}
         {% endfor %}
     </tbody>
 </table>
 
+<div id="updateForm" style="display:none;">
+    <h2>Update User</h2>
+    <form action="{{ url_for('update_user', user_id=0) }}" method="post" id="updateUserForm">
+        <input type="text" name="username" placeholder="Username" required>
+        <input type="email" name="email" placeholder="Email" required>
+        <input type="text" name="fname" placeholder="First Name" required>
+        <input type="text" name="lname" placeholder="Last Name" required>
+        <input type="text" name="address" placeholder="Address" required>
+        <input type="text" name="city" placeholder="City" required>
+        <input type="text" name="state" placeholder="State" required>
+        <input type="text" name="zip" placeholder="ZIP" required>
+        <button type="submit">Update User</button>
+    </form>
+</div>
+
 <script>
-    // JavaScript for search functionality and form toggling
-    document.getElementById('showCreateUserForm').addEventListener('click', function() {
-        var form = document.getElementById('createUserForm');
-        form.style.display = form.style.display === 'none' ? 'block' : 'none';
-    });
-
-    document.getElementById('userSearch').addEventListener('keyup', function() {
-        var filter = this.value.toLowerCase();
-        var rows = document.getElementById('userTableBody').getElementsByClassName('user-row');
-        
-        for (var i = 0; i < rows.length; i++) {
-            var username = rows[i].getElementsByTagName('td')[0].textContent.toLowerCase();
-            var email = rows[i].getElementsByTagName('td')[1].textContent.toLowerCase();
-            if (username.indexOf(filter) > -1 || email.indexOf(filter) > -1) {
-                rows[i].style.display = '';
-            } else {
-                rows[i].style.display = 'none';
-            }
-        }
-    });
-
-    // Add event listeners for showing/hiding forms
-    document.querySelectorAll('.showUpdateForm').forEach(button => {
-        button.addEventListener('click', function() {
-            this.closest('tr').nextElementSibling.style.display = this.closest('tr').nextElementSibling.style.display === 'none' ? 'table-row' : 'none';
-        });
-    });
-
-    document.querySelectorAll('.showToolAccess').forEach(button => {
-        button.addEventListener('click', function() {
-            this.closest('tr').nextElementSibling.nextElementSibling.style.display = this.closest('tr').nextElementSibling.nextElementSibling.style.display === 'none' ? 'table-row' : 'none';
-        });
-    });
+function showUpdateForm(userId) {
+    document.getElementById('updateForm').style.display = 'block';
+    document.getElementById('updateUserForm').action = "{{ url_for('update_user', user_id=0) }}".replace('0', userId);
+}
 </script>
-
 {% endblock %}

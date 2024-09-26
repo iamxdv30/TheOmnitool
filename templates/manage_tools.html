@@ -3,38 +3,63 @@
 <h1>Manage Tools</h1>
 
 <h2>Add New Tool</h2>
-<form method="POST" action="{{ url_for('manage_tools') }}">
+<form action="{{ url_for('manage_tools') }}" method="post">
     <input type="text" name="tool_name" placeholder="Tool Name" required>
-    <textarea name="description" placeholder="Description"></textarea>
+    <textarea name="description" placeholder="Tool Description"></textarea>
     <label>
-        <input type="checkbox" name="is_default"> Default Tool
+        <input type="checkbox" name="is_default"> Is Default Tool
     </label>
     <button type="submit">Add Tool</button>
 </form>
 
 <h2>Existing Tools</h2>
-{% for tool in tools %}
-    <div class="tool-item">
-        <h3>{{ tool.name }} {% if tool.is_default %}(Default){% endif %}</h3>
-        <p>{{ tool.description }}</p>
-        
-        <h4>Update Tool</h4>
-        <form method="POST" action="{{ url_for('manage_tools') }}">
-            <input type="hidden" name="_method" value="PUT">
-            <input type="hidden" name="tool_name" value="{{ tool.name }}">
-            <textarea name="description">{{ tool.description }}</textarea>
-            <label>
-                <input type="checkbox" name="is_default" {% if tool.is_default %}checked{% endif %}> Default Tool
-            </label>
-            <button type="submit">Update Tool</button>
-        </form>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Default</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for tool in tools %}
+        <tr>
+            <td>{{ tool.name }}</td>
+            <td>{{ tool.description }}</td>
+            <td>{{ 'Yes' if tool.is_default else 'No' }}</td>
+            <td>
+                <button onclick="showUpdateForm('{{ tool.id }}', '{{ tool.name }}', '{{ tool.description }}', {{ tool.is_default|lower }})">Update</button>
+                <form action="{{ url_for('manage_tools') }}" method="post" onsubmit="return confirm('Are you sure you want to delete this tool?');">
+                    <input type="hidden" name="_method" value="DELETE">
+                    <input type="hidden" name="tool_name" value="{{ tool.name }}">
+                    <button type="submit">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 
-        <h4>Delete Tool</h4>
-        <form method="POST" action="{{ url_for('manage_tools') }}" onsubmit="return confirm('Are you sure you want to delete this tool?');">
-            <input type="hidden" name="_method" value="DELETE">
-            <input type="hidden" name="tool_name" value="{{ tool.name }}">
-            <button type="submit">Delete Tool</button>
-        </form>
-    </div>
-{% endfor %}
+<div id="updateForm" style="display:none;">
+    <h2>Update Tool</h2>
+    <form action="{{ url_for('manage_tools') }}" method="post" id="updateToolForm">
+        <input type="hidden" name="_method" value="PUT">
+        <input type="text" name="tool_name" id="update_tool_name" required>
+        <textarea name="description" id="update_description"></textarea>
+        <label>
+            <input type="checkbox" name="is_default" id="update_is_default"> Is Default Tool
+        </label>
+        <button type="submit">Update Tool</button>
+    </form>
+</div>
+
+<script>
+function showUpdateForm(toolId, name, description, isDefault) {
+    document.getElementById('updateForm').style.display = 'block';
+    document.getElementById('update_tool_name').value = name;
+    document.getElementById('update_description').value = description;
+    document.getElementById('update_is_default').checked = isDefault;
+}
+</script>
 {% endblock %}

@@ -1,133 +1,187 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %} XDV Tool For NSC{% endblock %}</title>
 
     <!-- Link to the global CSS file (base.css) -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/base.css') }}"
+    />
 
     <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Mono:wght@100..900&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Mono:wght@100..900&display=swap"
+      rel="stylesheet"
+    />
 
-    {% block styles %}
-    {% endblock %}
-</head>
-<body class="light-theme">
+    {% block styles %} {% endblock %}
+  </head>
+  <body class="light-theme">
     <nav class="navbar">
-        <div class="navbar-container">
-            <button class="navbar-toggler" id="navbar-toggler">☰</button>
-            <div class="navbar-collapse" id="navbar-collapse">
-                <ul class="navbar-nav">
-                    <li class="nav-item"><a href="{{ url_for('index') }}" class="nav-link">Home</a></li>
-                    <!-- ADDED: Conditional check for logged-in users -->
-                    {% if 'logged_in' in session %}
-                    <li class="nav-item dropdown">
-                        <a href="#" class="nav-link dropdown-toggle">Tools</a>
-                        <ul class="dropdown-menu">
-                            <li><a href="#" class="dropdown-item" onclick="checkToolAccess('Tax Calculator', '{{ url_for('tax_calculator_route') }}'); return false;">Tax Calculator</a></li>
-                            <li><a href="#" class="dropdown-item" onclick="checkToolAccess('Character Counter', '{{ url_for('char_counter') }}'); return false;">Character Counter</a></li>
-                            <li class="dropdown-submenu">
-                                <a href="#" class="dropdown-item">Steps-to-Reproduce</a>
-                                <ul class="dropdown-menu">
-                                    <li><a href="#" class="dropdown-item">Order Sync</a></li>
-                                    <li><a href="#" class="dropdown-item">Product Sync</a></li>
-                                    <li><a href="#" class="dropdown-item">Settlement Sync</a></li>
-                                </ul>
-                            </li>
-                        </ul>
+      <div class="navbar-container">
+        <button class="navbar-toggler" id="navbar-toggler">☰</button>
+        <div class="navbar-collapse" id="navbar-collapse">
+          <ul class="navbar-nav">
+            <li class="nav-item">
+              <a href="{{ url_for('index') }}" class="nav-link">Home</a>
+            </li>
+            <!-- ADDED: Conditional check for logged-in users -->
+            {% if 'logged_in' in session %}
+            <li class="nav-item dropdown">
+              <a href="#" class="nav-link dropdown-toggle">Tools</a>
+              <ul class="dropdown-menu">
+                <li>
+                  <a
+                    href="#"
+                    class="dropdown-item"
+                    onclick="checkToolAccess('Tax Calculator', '{{ url_for('tax_calculator_route') }}'); return false;"
+                    >Tax Calculator</a
+                  >
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    class="dropdown-item"
+                    onclick="checkToolAccess('Character Counter', '{{ url_for('char_counter') }}'); return false;"
+                    >Character Counter</a
+                  >
+                </li>
+                <li class="dropdown-submenu">
+                  <a href="#" class="dropdown-item">Steps-to-Reproduce</a>
+                  <ul class="dropdown-menu">
+                    <li><a href="#" class="dropdown-item">Order Sync</a></li>
+                    <li><a href="#" class="dropdown-item">Product Sync</a></li>
+                    <li>
+                      <a href="#" class="dropdown-item">Settlement Sync</a>
                     </li>
-                    <!-- ADDED: Dashboard link for logged-in users -->
-                    <li class="nav-item"><a href="{{ url_for('user_dashboard') }}" class="nav-link">Dashboard</a></li>
-                    {% endif %}
-                </ul>
-                <div class="navbar-right">
-                    {% if 'logged_in' in session %}
-                    <div class="user-dropdown">
-                        <button class="dropbtn">{{ session.get('username', 'User') }} ▼</button>
-                        <div class="dropdown-content">
-                            <a href="{{ url_for('profile') }}">Profile Settings</a>
-                            <a href="{{ url_for('logout') }}">Logout</a>
-                        </div>
-                    </div>
-                    {% else %}
-                    <a href="{{ url_for('login') }}" class="btn">Login</a>
-                    <a href="{{ url_for('register_step1') }}" class="btn">Sign Up</a>
-                    {% endif %}
-                    <input type="text" class="search-bar" placeholder="Search...">
-                    <button class="base-toggle-btn">Toggle Theme</button>
-                </div>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+            <!-- ADDED: Dashboard link for logged-in users -->
+            <li class="nav-item">
+              <a href="{{ url_for('user_dashboard') }}" class="nav-link"
+                >Dashboard</a
+              >
+            </li>
+            {% endif %}
+          </ul>
+          <div class="navbar-right">
+            {% if 'logged_in' in session %}
+            <div class="user-dropdown">
+              <button class="dropbtn">
+                {{ session.get('username', 'User') }} ▼
+              </button>
+              <div class="dropdown-content">
+                <a href="{{ url_for('profile') }}">Profile Settings</a>
+                <a href="{{ url_for('logout') }}">Logout</a>
+              </div>
             </div>
+            {% else %}
+            <a href="{{ url_for('login') }}" class="btn">Login</a>
+            <a href="{{ url_for('register_step1') }}" class="btn">Sign Up</a>
+            {% endif %}
+            <input type="text" class="search-bar" placeholder="Search..." />
+            <button class="base-toggle-btn">Toggle Theme</button>
+          </div>
         </div>
+      </div>
     </nav>
 
     <!-- Main content container -->
     <div class="container">
-        {% block content %}
-        {% endblock %}
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %}
+      <ul class="flashes">
+        {% for category, message in messages %}
+        <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %} {% endwith %} {% block content %} {% endblock %}
     </div>
 
-<!-- Footer -->
-{% block footer %}
-<footer class="site-footer">
-    <div class="footer-container">
+    <!-- Footer -->
+    {% block footer %}
+    <footer class="site-footer">
+      <div class="footer-container">
         <p>&copy; 2024 NSC. All rights reserved.</p>
         <nav class="footer-nav">
-            <ul>
-                <li><a href="#">Home</a></li>
-                <li><a href="#">About</a></li>
-                <li><a href="#">Services</a></li>
-                <li><a href="#">Contact</a></li>
-            </ul>
+          <ul>
+            <li><a href="#">Home</a></li>
+            <li><a href="#">About</a></li>
+            <li><a href="#">Services</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul>
         </nav>
-    </div>
-</footer>
-{% endblock %}
+      </div>
+    </footer>
+    {% endblock %}
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const toggleButton = document.querySelector('.base-toggle-btn');
-            const navbarToggler = document.getElementById('navbar-toggler');
-            const navbarCollapse = document.getElementById('navbar-collapse');
-            const body = document.body;
-
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme) {
-                body.classList.remove('light-theme', 'dark-theme');
-                body.classList.add(savedTheme);
+      function checkToolAccess(toolName, url) {
+        fetch(`/check_tool_access/${toolName}`, {
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+        })
+          .then((response) => {
+            if (response.redirected) {
+              window.location.href = response.url;
+              return;
             }
-
-            toggleButton.addEventListener('click', function() {
-                if (body.classList.contains('dark-theme')) {
-                    body.classList.remove('dark-theme');
-                    body.classList.add('light-theme');
-                    localStorage.setItem('theme', 'light-theme');
-                } else {
-                    body.classList.remove('light-theme');
-                    body.classList.add('dark-theme');
-                    localStorage.setItem('theme', 'dark-theme');
-                }
-            });
-
-            navbarToggler.addEventListener('click', function() {
-                navbarCollapse.classList.toggle('show');
-            });
-
-            function checkToolAccess(toolName, url) {
-                fetch(`/check_tool_access/${toolName}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.access) {
-                            window.location.href = url;
-                        } else {
-                            alert(data.message);
-                        }
-                    });
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
             }
+            return response.json();
+          })
+          .then((data) => {
+            if (data && data.access) {
+              window.location.href = data.url;
+            } else if (data && data.message) {
+              alert(data.message);
+            }
+          })
+          .catch((e) => {
+            console.error('There was a problem with the fetch operation:', e);
+            alert(
+              'An error occurred while checking tool access. Please try again.'
+            );
+          });
+      }
+
+      document.addEventListener('DOMContentLoaded', function () {
+        const toggleButton = document.querySelector('.base-toggle-btn');
+        const navbarToggler = document.getElementById('navbar-toggler');
+        const navbarCollapse = document.getElementById('navbar-collapse');
+        const body = document.body;
+
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+          body.classList.remove('light-theme', 'dark-theme');
+          body.classList.add(savedTheme);
+        }
+
+        toggleButton.addEventListener('click', function () {
+          if (body.classList.contains('dark-theme')) {
+            body.classList.remove('dark-theme');
+            body.classList.add('light-theme');
+            localStorage.setItem('theme', 'light-theme');
+          } else {
+            body.classList.remove('light-theme');
+            body.classList.add('dark-theme');
+            localStorage.setItem('theme', 'dark-theme');
+          }
         });
+
+        navbarToggler.addEventListener('click', function () {
+          navbarCollapse.classList.toggle('show');
+        });
+      });
     </script>
-</body>
+  </body>
 </html>

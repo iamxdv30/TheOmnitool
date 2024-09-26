@@ -47,6 +47,7 @@ from model.model import (
 from flask_migrate import Migrate
 from werkzeug.wrappers import Response
 from typing import Union
+from functools import wraps
 import logging
 
 
@@ -121,13 +122,33 @@ def register_routes(app):
     @app.route("/test")
     def test_page():
         return render_template("test.html")
+    
+    # This function is a decorator that checks if a user has access to a specific tool.
+    # It verifies if the user is logged in and if they have the necessary permissions
+    # based on their role or specific tool access.
+    def tool_access_required(tool_name):
+        def decorator(f):
+            @wraps(f)
+            def decorated_function(*args, **kwargs):
+                if "logged_in" not in session:
+                    flash("You need to log in to access this tool.", "error")
+                    return redirect(url_for("login"))
+
+                user_role = session.get("role")
+                user_id = session.get("user_id")
+
+                if user_role not in ["admin", "superadmin"] and not User.user_has_tool_access(user_id, tool_name):
+                    flash(f"You don't have access to {tool_name}. Please contact an administrator.", "error")
+                    return redirect(url_for("user_dashboard"))
+
+                return f(*args, **kwargs)
+            return decorated_function
+        return decorator
 
     # Route to convert timestamp to a specific timezone
     @app.route("/convert", methods=["GET", "POST"])
+    @tool_access_required("Unix Timestamp Converter")
     def convert() -> Response:
-        if "logged_in" not in session or session["role"] not in ["admin", "superadmin"]:
-            return make_response(redirect(url_for("convert")))
-
         if request.method == "POST":
             if request.json is None:
                 return make_response(
@@ -151,6 +172,10 @@ def register_routes(app):
     # Route for character counter
     @app.route("/char_counter", methods=["GET", "POST"])
     def char_counter() -> Response:
+        if "logged_in" not in session or not User.user_has_tool_access(session.get('user_id'), "Character Counter"):
+            flash("You don't have access to this tool.", "error")
+            return redirect(url_for("user_dashboard"))
+        
         if request.method == "POST":
             input_string = request.form.get("text", "")
             total_characters = len(input_string)
@@ -177,10 +202,14 @@ def register_routes(app):
 
     @app.route("/tax_calculator", methods=["GET", "POST"])
     def tax_calculator_route():
+        if "logged_in" not in session or not User.user_has_tool_access(session.get('user_id'), "Tax Calculator"):
+            flash("You don't have access to this tool.", "error")
+            return redirect(url_for("user_dashboard"))
+        
         if request.method == "POST":
             calculator_type = request.form.get("calculator_type")
             if calculator_type == "canada":
-                return redirect(url_for("canada_tax_calculator_check"))
+                return redirect(url_for("canada_tax_calculator"))
 
             logger.debug("Received POST request for US tax calculation")
             data = request.form.to_dict()
@@ -253,31 +282,12 @@ def register_routes(app):
             data = {}
             return render_template("tax_calculator.html", data=data)
 
-    @app.route("/canada_tax_calculator_check", methods=["GET", "POST"])
-    def canada_tax_calculator_check():
-        """
-        Check if the user is logged in before accessing the Canada Tax Calculator.
-
-        This route handler performs the following actions:
-        1. Checks if the user is logged in by verifying the presence of 'logged_in' in the session.
-        2. If logged in, redirects the user to the Canada Tax Calculator page.
-        3. If not logged in, flashes an info message and redirects to the login page.
-
-        Returns:
-            A redirect response to either the Canada Tax Calculator or login page.
-        """
-        if "logged_in" in session:
-            return redirect(url_for("canada_tax_calculator"))
-        else:
-            flash("You need to login to access the Canada Tax Calculator.", "info")
-        return redirect(url_for("login"))
-
     # Route for Canada tax calculator
     @app.route("/canada_tax_calculator", methods=["GET", "POST"])
     def canada_tax_calculator():
-        if "logged_in" not in session:
-            flash("You need to login to access the Canada Tax Calculator.", "info")
-            return redirect(url_for("login"))
+        if "logged_in" not in session or not User.user_has_tool_access(session.get('user_id'), "Canada Tax Calculator"):
+            flash("You need to login and have access to use the Canada Tax Calculator.", "error")
+            return redirect(url_for("user_dashboard"))
 
         if request.method == "POST":
             data = request.form.to_dict()
@@ -350,14 +360,14 @@ def register_routes(app):
                     city=registration_info['city'],
                     state=registration_info['state'],
                     zip=registration_info['zip'],
-                    role='user'  # Ensure role is set
+                    role='user'
                 )
                 new_user.set_password(password)
                 db.session.add(new_user)
                 db.session.commit()
 
                 # Assign default tools
-                User.assign_default_tools(new_user.id)
+                Tool.assign_default_tools_to_user(new_user.id)
 
                 session.pop("registration_info", None)
 
@@ -384,7 +394,9 @@ def register_routes(app):
                 session["username"] = username
                 session["role"] = user.role
                 session["user_id"] = user.id
+                # Refresh tool access information
                 session["user_tools"] = [access.tool_name for access in user.tool_access]
+                
                 if user.role == "super_admin":
                     return redirect(url_for("superadmin_dashboard"))
                 elif user.role == "admin":
@@ -409,26 +421,32 @@ def register_routes(app):
     # User dashboard route
     @app.route("/user_dashboard", methods=["GET"])
     def user_dashboard():
-        if "logged_in" in session:
-            username = session.get("username")
-            role = session.get("role")
-            if role == "admin":
-                return redirect(url_for("admin_dashboard"))
-            elif role == "super_admin":
-                return redirect(url_for("superadmin_dashboard"))
-            elif username:
-                user = User.query.filter_by(username=username).first()
-                if user:
-                    # Fetch the latest tool access information
-                    user_tools = [access.tool_name for access in user.tool_access]
-                    return render_template("user_dashboard.html", user=user, user_tools=user_tools)
-                else:
-                    flash("User not found. Please log in again.", "error")
-                    return redirect(url_for("logout"))
-            else:
-                flash("Session error. Please log in again.", "error")
-                return redirect(url_for("logout"))
-        return redirect(url_for("login"))
+        logging.debug("Entering user_dashboard route")
+        if "logged_in" not in session:
+            logging.debug("User not logged in, redirecting to login")
+            return redirect(url_for("login"))
+
+        role = session.get("role")
+        logging.debug(f"User role: {role}")
+        if role == "admin":
+            logging.debug("Redirecting admin to admin_dashboard")
+            return redirect(url_for("admin_dashboard"))
+        elif role == "super_admin":
+            logging.debug("Redirecting super_admin to superadmin_dashboard")
+            return redirect(url_for("superadmin_dashboard"))
+
+        username = session.get("username")
+        logging.debug(f"Username: {username}")
+        user = User.query.filter_by(username=username).first()
+        if user:
+            user_tools = [access.tool_name for access in user.tool_access]
+            logging.debug(f"User tools: {user_tools}")
+            session["user_tools"] = user_tools  # Update session
+            return render_template("user_dashboard.html", user=user, user_tools=user_tools)
+        else:
+            logging.error(f"User not found for username: {username}")
+            flash("User not found. Please log in again.", "error")
+            return redirect(url_for("logout"))
 
     @app.route("/profile", methods=["GET"])
     def profile():
@@ -494,6 +512,11 @@ def register_routes(app):
                 flash("User not found!", "error")
             return redirect(url_for("user_dashboard"))
         return redirect(url_for("login"))
+    
+    def refresh_user_tools(user_id):
+        user = User.query.get(user_id)
+        if user:
+            session["user_tools"] = [access.tool_name for access in user.tool_access]
 
     # Admin dashboard route
     @app.route("/admin_dashboard", methods=["GET"])
@@ -529,15 +552,10 @@ def register_routes(app):
             tool_name = request.form.get("tool_name")
             user = User.query.get(user_id)
             if user:
-                # Check if the access already exists
-                existing_access = ToolAccess.query.filter_by(user_id=user_id, tool_name=tool_name).first()
-                if not existing_access:
-                    tool_access = ToolAccess(user_id=user_id, tool_name=tool_name)
-                    db.session.add(tool_access)
-                    db.session.commit()
-                    flash(f"Tool access granted for {tool_name} to {user.username}", "success")
-                else:
-                    flash(f"{user.username} already has access to {tool_name}", "info")
+                # ... (existing code)
+                db.session.commit()
+                refresh_user_tools(user_id)  # Refresh session data
+                flash(f"Tool access granted for {tool_name} to {user.username}", "success")
             else:
                 flash("User not found", "error")
             return redirect(url_for("superadmin_dashboard" if session.get("role") == "super_admin" else "admin_dashboard"))
@@ -553,32 +571,58 @@ def register_routes(app):
             if tool_access:
                 db.session.delete(tool_access)
                 db.session.commit()
+                refresh_user_tools(user_id)  # Refresh session data
                 flash(f"Tool access revoked for {tool_name}", "success")
             else:
                 flash("Tool access not found", "error")
             return redirect(url_for("superadmin_dashboard" if session.get("role") == "super_admin" else "admin_dashboard"))
         return redirect(url_for("login"))
     
+
     @app.route("/check_tool_access/<tool_name>")
     def check_tool_access(tool_name):
+        logging.debug(f"Checking access for tool: {tool_name}")
         if "logged_in" in session:
             user_id = session.get('user_id')
-            tool_access = ToolAccess.query.filter_by(user_id=user_id, tool_name=tool_name).first()
-            if tool_access:
-                return jsonify({"access": True})
+            logging.debug(f"User ID: {user_id}")
+            has_access = User.user_has_tool_access(user_id, tool_name)
+            logging.debug(f"Has access: {has_access}")
+            
+            if has_access:
+                logging.debug(f"Access granted for tool: {tool_name}")
+                tool_urls = {
+                    "Tax Calculator": url_for("tax_calculator_route"),
+                    "Character Counter": url_for("char_counter"),
+                    "Canada Tax Calculator": url_for("canada_tax_calculator"),
+                    # Add other tools and their corresponding URLs here
+                }
+                
+                if tool_name in tool_urls:
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        return jsonify({"access": True, "url": tool_urls[tool_name]})
+                    else:
+                        return redirect(tool_urls[tool_name])
+                else:
+                    message = f"Tool {tool_name} is not implemented yet."
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        return jsonify({"access": False, "message": message})
+                    else:
+                        flash(message, "warning")
+                        return redirect(url_for("user_dashboard"))
             else:
-                return jsonify({"access": False, "message": "You don't have access to this tool."})
-        return jsonify({"access": False, "message": "Please log in to access tools."})
-    
-    @app.route("/get_user_tools")
-    def get_user_tools():
-        if "logged_in" in session:
-            user = User.query.filter_by(username=session.get("username")).first()
-            if user:
-                user_tools = [access.tool_name for access in user.tool_access]
-                return jsonify(user_tools)
-        return jsonify([])
-
+                message = f"You don't have access to {tool_name}. Please contact an administrator."
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({"access": False, "message": message})
+                else:
+                    flash(message, "error")
+                    return redirect(url_for("user_dashboard"))
+        
+        message = "Please log in to access tools."
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({"access": False, "message": message})
+        else:
+            flash(message, "error")
+            return redirect(url_for("login"))
 
     # New route for changing user role
     @app.route("/change_user_role/<int:user_id>", methods=["POST"])
@@ -608,7 +652,7 @@ def register_routes(app):
                 db.session.add(new_tool)
                 db.session.commit()
                 if is_default:
-                    Tool.assign_default_tool_to_users(tool_name)
+                    Tool.assign_default_tool_to_all_users(tool_name)
                 flash("Tool created successfully", "success")
         elif request.method == 'PUT':
             tool_name = request.form.get('tool_name')
@@ -621,7 +665,7 @@ def register_routes(app):
                 tool.description = description
                 db.session.commit()
                 if not old_is_default and is_default:
-                    Tool.assign_default_tool_to_users(tool_name)
+                    Tool.assign_default_tool_to_all_users(tool_name)
                 elif old_is_default and not is_default:
                     Tool.remove_default_tool_from_users(tool_name)
                 flash("Tool updated successfully", "success")
@@ -667,7 +711,7 @@ def register_routes(app):
                         new_user = Admin().create_user(user_data)
                     else:
                         new_user = SuperAdmin().create_user(user_data)
-                    User.assign_default_tools(new_user.id)
+                    Tool.assign_default_tools_to_user(new_user.id)
                     flash("User created successfully", "success")
                 except SQLAlchemyError as e:
                     db.session.rollback()

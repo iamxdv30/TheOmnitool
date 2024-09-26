@@ -1,46 +1,23 @@
 {% extends "base.html" %}
-
 {% block content %}
 <h1>User Dashboard</h1>
 <p>Welcome, {{ session['username'] }}!</p>
 
-
 <h2>Available Tools</h2>
-<ul id="tool-list">
+<ul>
     {% for tool in user_tools %}
-        <li><a href="#" onclick="checkToolAccess('{{ tool }}', '{{ url_for('user_dashboard') }}'); return false;">{{ tool }}</a></li>
+    <li><a href="{{ url_for('check_tool_access', tool_name=tool) }}">{{ tool }}</a></li>
     {% endfor %}
 </ul>
 
-<script>
-        function updateToolList() {
-            fetch('/get_user_tools')
-                .then(response => response.json())
-                .then(tools => {
-                    const toolList = document.getElementById('tool-list');
-                    toolList.innerHTML = '';
-                    tools.forEach(tool => {
-                        const li = document.createElement('li');
-                        li.innerHTML = `<a href="#" onclick="checkToolAccess('${tool}', '{{ url_for('user_dashboard') }}'); return false;">${tool}</a>`;
-                        toolList.appendChild(li);
-                    });
-                });
-        }
-        
-        function checkToolAccess(toolName, url) {
-            fetch(`/check_tool_access/${toolName}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.access) {
-                        window.location.href = url;
-                    } else {
-                        alert(data.message);
-                        updateToolList();  // Update the tool list if access is denied
-                    }
-                });
-        }
-        
-        // Update tool list on page load
-        document.addEventListener('DOMContentLoaded', updateToolList);
-</script>
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <ul class="flashes">
+    {% for category, message in messages %}
+      <li class="{{ category }}">{{ message }}</li>
+    {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+
 {% endblock %}

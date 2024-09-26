@@ -74,6 +74,10 @@ class User(db.Model):
     
     def has_tool_access(self, tool_name):
         return ToolAccess.query.filter_by(user_id=self.id, tool_name=tool_name).first() is not None
+    
+    @classmethod
+    def user_has_tool_access(cls, user_id, tool_name):
+        return ToolAccess.query.filter_by(user_id=user_id, tool_name=tool_name).first() is not None
 
     
     @classmethod
@@ -279,8 +283,20 @@ class Tool(db.Model):
     def get_default_tools(cls):
         return cls.query.filter_by(is_default=True).all()
 
-    @staticmethod
-    def assign_default_tool_to_users(tool_name):
+    @classmethod
+    def assign_default_tools_to_user(cls, user_id):
+        user = User.query.get(user_id)
+        if not user:
+            raise ValueError(f"No user found with id {user_id}")
+        default_tools = cls.get_default_tools()
+        for tool in default_tools:
+            if not ToolAccess.query.filter_by(user_id=user.id, tool_name=tool.name).first():
+                tool_access = ToolAccess(user_id=user.id, tool_name=tool.name)
+                db.session.add(tool_access)
+        db.session.commit()
+
+    @classmethod
+    def assign_default_tool_to_all_users(cls, tool_name):
         users = User.query.all()
         for user in users:
             if not user.has_tool_access(tool_name):
@@ -288,10 +304,12 @@ class Tool(db.Model):
                 db.session.add(new_access)
         db.session.commit()
 
-    @staticmethod
-    def remove_default_tool_from_users(tool_name):
+    @classmethod
+    def remove_default_tool_from_users(cls, tool_name):
         ToolAccess.query.filter_by(tool_name=tool_name).delete()
         db.session.commit()
+    
+    
 
 
 # Design Pattern: Factory Pattern
