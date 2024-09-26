@@ -263,8 +263,8 @@
     const country = document.getElementById('country').value;
     window.location.href =
       country === 'CA'
-        ? "{{ url_for('canada_tax_calculator') }}"
-        : "{{ url_for('tax_calculator_route') }}";
+        ? "{{ url_for('tool.canada_tax_calculator') }}"
+        : "{{ url_for('tool.tax_calculator_route') }}";
   }
 
   document.addEventListener('DOMContentLoaded', () => {

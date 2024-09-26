@@ -49,7 +49,7 @@
             document.getElementById("result").innerText = `Converted Time: ${formattedDate}`;
         };
     </script>
-    <a href="{{ url_for('dashboard') }}">Back to Dashboard</a>
-    <a href="{{ url_for('logout') }}">Logout</a>
+    <a href="{{ url_for('user.user_dashboard') }}">Back to Dashboard</a>
+    <a href="{{ url_for('auth.logout') }}">Logout</a>
     {% endblock %}
 </body>

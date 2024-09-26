@@ -9,7 +9,7 @@
 <div class="char-container">
   <h1>Character Counter</h1>
   <p>Maximum of 3,532 characters</p>
-  <form class="char-form" method="POST" action="{{ url_for('char_counter') }}">
+  <form class="char-form" method="POST" action="{{ url_for('tool.char_counter') }}">
     <textarea class="char-textarea" name="text" rows="20" cols="65">
 {{ input_text | default('') }}</textarea
     >

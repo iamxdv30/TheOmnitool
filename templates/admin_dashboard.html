@@ -3,7 +3,7 @@
 <h1 id="admin-dashboard" class="admin-dashboard-title">Admin Dashboard</h1>
 
 <h2>Create New User</h2>
-<form action="{{ url_for('create_user') }}" method="post">
+<form action="{{ url_for('admin.create_user') }}" method="post">
     <input type="text" name="username" placeholder="Username" required>
     <input type="email" name="email" placeholder="Email" required>
     <input type="password" name="password" placeholder="Password" required>
@@ -40,7 +40,7 @@
             <td>{{ user.role }}</td>
             <td>
                 <button onclick="showUpdateForm('{{ user.id }}')">Update</button>
-                <form action="{{ url_for('delete_user', user_id=user.id) }}" method="post" onsubmit="return confirm('Are you sure you want to delete this user?');">
+                <form action="{{ url_for('admin.delete_user', user_id=user.id) }}" method="post" onsubmit="return confirm('Are you sure you want to delete this user?');">
                     <button type="submit">Delete</button>
                 </form>
             </td>
@@ -51,7 +51,7 @@
                     {% if tool not in user_tools[user.id] %}
                     <li>
                         {{ tool }}
-                        <form action="{{ url_for('grant_tool_access') }}" method="post">
+                        <form action="{{ url_for('admin.grant_tool_access') }}" method="post">
                             <input type="hidden" name="user_id" value="{{ user.id }}">
                             <input type="hidden" name="tool_name" value="{{ tool }}">
                             <button type="submit">Grant Access</button>
@@ -66,7 +66,7 @@
                     {% for tool in user_tools[user.id] %}
                     <li>
                         {{ tool }}
-                        <form action="{{ url_for('revoke_tool_access') }}" method="post">
+                        <form action="{{ url_for('tool.revoke_tool_access') }}" method="post">
                             <input type="hidden" name="user_id" value="{{ user.id }}">
                             <input type="hidden" name="tool_name" value="{{ tool }}">
                             <button type="submit">Revoke Access</button>
@@ -83,7 +83,7 @@
 
 <div id="updateForm" style="display:none;">
     <h2>Update User</h2>
-    <form action="{{ url_for('update_user', user_id=0) }}" method="post" id="updateUserForm">
+    <form action="{{ url_for('admin.update_user', user_id=0) }}" method="post" id="updateUserForm">
         <input type="text" name="username" placeholder="Username" required>
         <input type="email" name="email" placeholder="Email" required>
         <input type="text" name="fname" placeholder="First Name" required>
@@ -99,7 +99,7 @@
 <script>
 function showUpdateForm(userId) {
     document.getElementById('updateForm').style.display = 'block';
-    document.getElementById('updateUserForm').action = "{{ url_for('update_user', user_id=0) }}".replace('0', userId);
+    document.getElementById('updateUserForm').action = "{{ url_for('admin.update_user', user_id=0) }}".replace('0', userId);
 }
 </script>
 {% endblock %}

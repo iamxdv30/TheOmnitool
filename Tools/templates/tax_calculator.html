@@ -8,7 +8,7 @@
 <div class="tax-calculator">
     <h1>Tax Calculator</h1>
 
-    <form id="taxForm" method="POST" action="{{ url_for('tax_calculator_route') }}">
+    <form id="taxForm" method="POST" action="{{ url_for('tool.tax_calculator_route') }}">
         <div class="calculator-selection">
             <label for="calculator-type">Select Country:</label>
             <select id="calculator-type" name="calculator_type" onchange="handleCalculatorChange(this)">
@@ -89,10 +89,10 @@
 
     function handleCalculatorChange(selectElement) {
         if (selectElement.value === 'canada') {
-            document.getElementById('taxForm').action = "{{ url_for('canada_tax_calculator') }}";
+            document.getElementById('taxForm').action = "{{ url_for('tool.canada_tax_calculator') }}";
             document.getElementById('taxForm').submit();
         } else {
-            document.getElementById('taxForm').action = "{{ url_for('tax_calculator_route') }}";
+            document.getElementById('taxForm').action = "{{ url_for('tool.tax_calculator_route') }}";
         }
     }
 

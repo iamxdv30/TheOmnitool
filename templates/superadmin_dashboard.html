@@ -20,7 +20,7 @@
 <!-- Create user form (initially hidden) -->
 <div id="createUserForm" style="display:none;">
     <h2 class="section-title">Create New User/Admin</h2>
-    <form action="{{ url_for('create_user') }}" method="post" class="user-form">
+    <form action="{{ url_for('admin.create_user') }}" method="post" class="user-form">
         <input type="text" name="username" placeholder="Username" required class="form-input">
         <input type="email" name="email" placeholder="Email" required class="form-input">
         <input type="password" name="password" placeholder="Password" required class="form-input">
@@ -67,7 +67,7 @@
             </tr>
             <tr class="update-form" style="display:none;">
                 <td colspan="4">
-                    <form action="{{ url_for('update_user', user_id=user.id) }}" method="post" class="user-form">
+                    <form action="{{ url_for('admin.update_user', user_id=user.id) }}" method="post" class="user-form">
                         <input type="text" name="username" value="{{ user.username }}" required class="form-input">
                         <input type="email" name="email" value="{{ user.email }}" required class="form-input">
                         <input type="text" name="fname" value="{{ user.fname }}" required class="form-input">
@@ -83,7 +83,7 @@
             </tr>
             <tr class="tool-access" style="display:none;">
                 <td colspan="4">
-                    <form action="{{ url_for('grant_tool_access') }}" method="post" class="tool-form">
+                    <form action="{{ url_for('tool.grant_tool_access') }}" method="post" class="tool-form">
                         <input type="hidden" name="user_id" value="{{ user.id }}">
                         <select name="tool_name" class="form-select">
                             {% for tool in tools %}
@@ -95,7 +95,7 @@
                         <button type="submit" class="btn btn-primary">Grant Access</button>
                     </form>
 
-                    <form action="{{ url_for('revoke_tool_access') }}" method="post" class="tool-form">
+                    <form action="{{ url_for('tool.revoke_tool_access') }}" method="post" class="tool-form">
                         <input type="hidden" name="user_id" value="{{ user.id }}">
                         <select name="tool_name" class="form-select">
                             {% for tool in user_tools[user.id] %}
@@ -108,7 +108,7 @@
             </tr>
             <tr class="change-role" style="display:none;">
                 <td colspan="4">
-                    <form action="{{ url_for('change_user_role', user_id=user.id) }}" method="post" class="role-form">
+                    <form action="{{ url_for('admin.change_user_role', user_id=user.id) }}" method="post" class="role-form">
                         <select name="new_role" class="form-select">
                             <option value="user" {% if user.role == 'user' %}selected{% endif %}>User</option>
                             <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
@@ -119,7 +119,7 @@
             </tr>
             <tr>
                 <td colspan="4">
-                    <form action="{{ url_for('delete_user', user_id=user.id) }}" method="post" class="delete-form">
+                    <form action="{{ url_for('admin.delete_user', user_id=user.id) }}" method="post" class="delete-form">
                         <button type="submit" class="btn btn-danger">Delete User</button>
                     </form>
                 </td>
