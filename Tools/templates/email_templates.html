@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="email-templates-container">
+    <h1>Email Templates</h1>
+
+    <form action="{{ url_for('tool.email_templates') }}" method="POST">
+        <input type="text" name="title" placeholder="Template Title" required>
+        <textarea name="content" placeholder="Template Content" required></textarea>
+        <button type="submit">Add Template</button>
+    </form>
+
+    <h2>Your Templates</h2>
+    {% for template in templates %}
+    <div class="template">
+        <h3>{{ template.title }}</h3>
+        <p>{{ template.content }}</p>
+        <form action="{{ url_for('tool.email_templates') }}" method="POST">
+            <input type="hidden" name="_method" value="PUT">
+            <input type="hidden" name="template_id" value="{{ template.id }}">
+            <input type="text" name="title" value="{{ template.title }}" required>
+            <textarea name="content" required>{{ template.content }}</textarea>
+            <button type="submit">Update</button>
+        </form>
+        <form action="{{ url_for('tool.email_templates') }}" method="POST">
+            <input type="hidden" name="_method" value="DELETE">
+            <input type="hidden" name="template_id" value="{{ template.id }}">
+            <button type="submit">Delete</button>
+        </form>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

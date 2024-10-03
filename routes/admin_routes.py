@@ -162,3 +162,6 @@ def manage_tools():
     
     tools = Tool.query.all()
     return render_template('manage_tools.html', tools=tools)
+
+
+

@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, redirect, url_for, render_template, session, flash, make_response
-from model.model import User, ToolAccess, Tool, db
+from model.model import User, ToolAccess, Tool, db, EmailTemplate
 from functools import wraps
 import pytz
 from datetime import datetime
@@ -169,6 +169,62 @@ def canada_tax_calculator():
     else:
         data = {}
         return render_template("canada_tax_calculator.html", data=data)
+
+@tool.route("/email_templates", methods=["GET", "POST", "PUT", "DELETE"])
+@tool_access_required("Email Templates")
+def email_templates():
+    if "user_id" not in session:
+        flash("You must be logged in to access this feature.", "error")
+        return redirect(url_for("auth.login"))
+
+    if request.method == "GET":
+        templates = EmailTemplate.query.filter_by(user_id=session["user_id"]).all()
+        return render_template("email_templates.html", templates=templates)
+    
+    elif request.method == "POST":
+        title = request.form.get("title")
+        content = request.form.get("content")
+        if not title or not content:
+            flash("Both title and content are required.", "error")
+        else:
+            try:
+                new_template = EmailTemplate(
+                    user_id=session["user_id"],
+                    title=title,
+                    content=content
+                )
+                db.session.add(new_template)
+                db.session.commit()
+                flash("Email template added successfully!", "success")
+            except Exception as e:
+                db.session.rollback()
+                flash(f"An error occurred while adding the template: {str(e)}", "error")
+    
+    elif request.method in ["PUT", "DELETE"]:
+        template_id = request.form.get("template_id")
+        if not template_id:
+            flash("Template ID is required for update and delete operations.", "error")
+        else:
+            template = EmailTemplate.query.get(template_id)
+            if not template:
+                flash("Template not found.", "error")
+            elif template.user_id != session["user_id"]:
+                flash("You don't have permission to modify this template.", "error")
+            else:
+                try:
+                    if request.method == "PUT":
+                        template.title = request.form.get("title")
+                        template.content = request.form.get("content")
+                        flash("Email template updated successfully!", "success")
+                    elif request.method == "DELETE":
+                        db.session.delete(template)
+                        flash("Email template deleted successfully!", "success")
+                    db.session.commit()
+                except Exception as e:
+                    db.session.rollback()
+                    flash(f"An error occurred: {str(e)}", "error")
+    
+    return redirect(url_for("tool.email_templates"))
     
     #Admin capabilities to handle tool access
 

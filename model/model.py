@@ -58,6 +58,9 @@ class User(db.Model):
     tool_access = db.relationship(
         "ToolAccess", back_populates="user", cascade="all, delete-orphan"
     )
+    email_templates = db.relationship(
+        "EmailTemplate", order_by="EmailTemplate.id", back_populates="user", cascade="all, delete-orphan"
+    )
 
     __mapper_args__ = {"polymorphic_identity": "user", "polymorphic_on": role}
 
@@ -242,6 +245,22 @@ class UsageLog(db.Model):
 
     def __repr__(self):
         return f"<UsageLog(user_id={self.user_id}, tool_name={self.tool_name}, timestamp={self.timestamp})>"
+    
+# Design Pattern: Active Record Pattern
+class EmailTemplate(db.Model):
+    __tablename__ = "email_templates"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    title = db.Column(db.String(100), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+
+    user = db.relationship("User", back_populates="email_templates")
+
+    def __init__(self, user_id: int, title: str, content: str):  # Add user_id to __init__
+        self.user_id = user_id
+        self.title = title
+        self.content = content
 
 
 # Design Pattern: Active Record Pattern
@@ -333,7 +352,3 @@ class UserFactory:
         user.set_password(kwargs.pop('password'))
         return user
 
-
-
-
-# Date: September 23, 2024
