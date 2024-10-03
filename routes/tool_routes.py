@@ -1,17 +1,30 @@
-from flask import Blueprint, request, jsonify, redirect, url_for, render_template, session, flash, make_response
+from flask import (
+    Blueprint,
+    request,
+    jsonify,
+    redirect,
+    url_for,
+    render_template,
+    session,
+    flash,
+    make_response,
+    Response,
+)
 from model.model import User, ToolAccess, Tool, db, EmailTemplate
 from functools import wraps
 import pytz
 from datetime import datetime
+from typing import Union
 from Tools.char_counter import count_characters
 from Tools.tax_calculator import tax_calculator as calculate_tax
 import logging
 
-tool = Blueprint('tool', __name__)
+tool = Blueprint("tool", __name__)
 
 # This function is a decorator that checks if a user has access to a specific tool.
 # It verifies if the user is logged in and if they have the necessary permissions
 # based on their role or specific tool access.
+
 
 def tool_access_required(tool_name):
     def decorator(f):
@@ -24,13 +37,22 @@ def tool_access_required(tool_name):
             user_role = session.get("role")
             user_id = session.get("user_id")
 
-            if user_role not in ["admin", "superadmin"] and not User.user_has_tool_access(user_id, tool_name):
-                flash(f"You don't have access to {tool_name}. Please contact an administrator.", "error")
+            if user_role not in [
+                "admin",
+                "superadmin",
+            ] and not User.user_has_tool_access(user_id, tool_name):
+                flash(
+                    f"You don't have access to {tool_name}. Please contact an administrator.",
+                    "error",
+                )
                 return redirect(url_for("user.user_dashboard"))
 
             return f(*args, **kwargs)
+
         return decorated_function
+
     return decorator
+
 
 @tool.route("/convert", methods=["GET", "POST"])
 @tool_access_required("Unix Timestamp Converter")
@@ -55,6 +77,7 @@ def convert():
             )
     return make_response(render_template("convert.html"))
 
+
 @tool.route("/char_counter", methods=["GET", "POST"])
 @tool_access_required("Character Counter")
 def char_counter():
@@ -78,6 +101,7 @@ def char_counter():
         )
     return make_response(render_template("char_counter.html"))
 
+
 @tool.route("/tax_calculator", methods=["GET", "POST"])
 @tool_access_required("Tax Calculator")
 def tax_calculator_route():
@@ -98,18 +122,13 @@ def tax_calculator_route():
                 price = data[f"item_price_{i}"].strip()
                 tax_rate = data[f"item_tax_rate_{i}"].strip()
                 if price and tax_rate:
-                    items.append(
-                        {"price": float(price), "tax_rate": float(tax_rate)}
-                    )
+                    items.append({"price": float(price), "tax_rate": float(tax_rate)})
                 i += 1
 
             # Process discounts
             discounts = []
             i = 1
-            while (
-                f"discount_amount_{i}" in data
-                and f"is_discount_taxable_{i}" in data
-            ):
+            while f"discount_amount_{i}" in data and f"is_discount_taxable_{i}" in data:
                 amount = data[f"discount_amount_{i}"].strip()
                 if amount:
                     discounts.append(
@@ -157,76 +176,136 @@ def tax_calculator_route():
         data = {}
         return render_template("tax_calculator.html", data=data)
 
+
 @tool.route("/canada_tax_calculator", methods=["GET", "POST"])
 @tool_access_required("Canada Tax Calculator")
 def canada_tax_calculator():
     if request.method == "POST":
         data = request.form.to_dict()
         result = calculate_tax(data)
-        return render_template(
-            "canada_tax_calculator.html", result=result, data=data
-        )
+        return render_template("canada_tax_calculator.html", result=result, data=data)
     else:
         data = {}
         return render_template("canada_tax_calculator.html", data=data)
 
-@tool.route("/email_templates", methods=["GET", "POST", "PUT", "DELETE"])
+
+@tool.route("/email_templates", methods=["GET", "POST"])
 @tool_access_required("Email Templates")
-def email_templates():
+def email_templates() -> Union[Response, str]:
     if "user_id" not in session:
-        flash("You must be logged in to access this feature.", "error")
-        return redirect(url_for("auth.login"))
+        return make_response(
+            jsonify({"error": "You must be logged in to access this feature."}), 401
+        )
 
     if request.method == "GET":
         templates = EmailTemplate.query.filter_by(user_id=session["user_id"]).all()
         return render_template("email_templates.html", templates=templates)
-    
+
     elif request.method == "POST":
         title = request.form.get("title")
         content = request.form.get("content")
         if not title or not content:
-            flash("Both title and content are required.", "error")
-        else:
-            try:
-                new_template = EmailTemplate(
-                    user_id=session["user_id"],
-                    title=title,
-                    content=content
-                )
-                db.session.add(new_template)
-                db.session.commit()
-                flash("Email template added successfully!", "success")
-            except Exception as e:
-                db.session.rollback()
-                flash(f"An error occurred while adding the template: {str(e)}", "error")
-    
-    elif request.method in ["PUT", "DELETE"]:
-        template_id = request.form.get("template_id")
-        if not template_id:
-            flash("Template ID is required for update and delete operations.", "error")
-        else:
-            template = EmailTemplate.query.get(template_id)
-            if not template:
-                flash("Template not found.", "error")
-            elif template.user_id != session["user_id"]:
-                flash("You don't have permission to modify this template.", "error")
-            else:
-                try:
-                    if request.method == "PUT":
-                        template.title = request.form.get("title")
-                        template.content = request.form.get("content")
-                        flash("Email template updated successfully!", "success")
-                    elif request.method == "DELETE":
-                        db.session.delete(template)
-                        flash("Email template deleted successfully!", "success")
-                    db.session.commit()
-                except Exception as e:
-                    db.session.rollback()
-                    flash(f"An error occurred: {str(e)}", "error")
-    
-    return redirect(url_for("tool.email_templates"))
-    
-    #Admin capabilities to handle tool access
+            return make_response(
+                jsonify({"error": "Both title and content are required."}), 400
+            )
+
+        try:
+            new_template = EmailTemplate(
+                user_id=session["user_id"], title=title, content=content
+            )
+            db.session.add(new_template)
+            db.session.commit()
+            return make_response(
+                jsonify({"message": "Email template added successfully!"}), 200
+            )
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Error adding new template: {str(e)}")
+            return make_response(
+                jsonify(
+                    {"error": f"An error occurred while adding the template: {str(e)}"}
+                ),
+                500,
+            )
+
+    # This should never be reached, but we include it to satisfy the type checker
+    return make_response(jsonify({"error": "Invalid request method"}), 405)
+
+
+@tool.route("/email_templates/<int:template_id>", methods=["PUT", "DELETE"])
+@tool_access_required("Email Templates")
+def manage_email_template(template_id: int) -> Response:
+    if "user_id" not in session:
+        return make_response(
+            jsonify({"error": "You must be logged in to access this feature."}), 401
+        )
+
+    template = EmailTemplate.query.get(template_id)
+    if not template or template.user_id != session["user_id"]:
+        return make_response(
+            jsonify(
+                {
+                    "error": "Template not found or you don't have permission to modify it."
+                }
+            ),
+            404,
+        )
+
+    if request.method == "PUT":
+        data = request.json
+        if not data:
+            return make_response(jsonify({"error": "No data provided"}), 400)
+
+        title = data.get("title")
+        content = data.get("content")
+        if not title or not content:
+            return make_response(
+                jsonify({"error": "Both title and content are required."}), 400
+            )
+
+        try:
+            template.title = title
+            template.content = content
+            db.session.commit()
+            return make_response(
+                jsonify({"message": "Email template updated successfully!"}), 200
+            )
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Error updating template: {str(e)}")
+            return make_response(
+                jsonify(
+                    {
+                        "error": f"An error occurred while updating the template: {str(e)}"
+                    }
+                ),
+                500,
+            )
+
+    elif request.method == "DELETE":
+        try:
+            db.session.delete(template)
+            db.session.commit()
+            return make_response(
+                jsonify({"message": "Email template deleted successfully!"}), 200
+            )
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Error deleting template: {str(e)}")
+            return make_response(
+                jsonify(
+                    {
+                        "error": f"An error occurred while deleting the template: {str(e)}"
+                    }
+                ),
+                500,
+            )
+
+    # This line should never be reached, but we include it to satisfy type checking
+    return make_response(jsonify({"error": "Invalid method"}), 405)
+
+    # Admin capabilities to handle tool access
+
 
 @tool.route("/grant_tool_access", methods=["POST"])
 def grant_tool_access():
@@ -235,47 +314,70 @@ def grant_tool_access():
         tool_name = request.form.get("tool_name")
         user = User.query.get(user_id)
         if user:
-            if not ToolAccess.query.filter_by(user_id=user_id, tool_name=tool_name).first():
+            if not ToolAccess.query.filter_by(
+                user_id=user_id, tool_name=tool_name
+            ).first():
                 new_access = ToolAccess(user_id=user_id, tool_name=tool_name)
                 db.session.add(new_access)
                 db.session.commit()
-                if 'user_tools' in session:
-                    del session['user_tools']  # Clear the session to force a refresh
-                flash(f"Tool access granted for {tool_name} to {user.username}", "success")
+                if "user_tools" in session:
+                    del session["user_tools"]  # Clear the session to force a refresh
+                flash(
+                    f"Tool access granted for {tool_name} to {user.username}", "success"
+                )
             else:
                 flash(f"User already has access to {tool_name}", "info")
         else:
             flash("User not found", "error")
-        return redirect(url_for("admin.superadmin_dashboard" if session.get("role") == "super_admin" else "admin.admin_dashboard"))
+        return redirect(
+            url_for(
+                "admin.superadmin_dashboard"
+                if session.get("role") == "super_admin"
+                else "admin.admin_dashboard"
+            )
+        )
     return redirect(url_for("auth.login"))
+
 
 @tool.route("/revoke_tool_access", methods=["POST"])
 def revoke_tool_access():
     if "logged_in" in session and session.get("role") in ["admin", "super_admin"]:
         user_id = request.form.get("user_id")
         tool_name = request.form.get("tool_name")
-        tool_access = ToolAccess.query.filter_by(user_id=user_id, tool_name=tool_name).first()
+        tool_access = ToolAccess.query.filter_by(
+            user_id=user_id, tool_name=tool_name
+        ).first()
         if tool_access:
             db.session.delete(tool_access)
             db.session.commit()
-            if 'user_tools' in session:
-                del session['user_tools']  # Clear the session to force a refresh
+            if "user_tools" in session:
+                del session["user_tools"]  # Clear the session to force a refresh
             flash(f"Tool access revoked for {tool_name}", "success")
         else:
             flash(f"User doesn't have access to {tool_name}", "info")
-        return redirect(url_for("admin.superadmin_dashboard" if session.get("role") == "super_admin" else "admin.admin_dashboard"))
+        return redirect(
+            url_for(
+                "admin.superadmin_dashboard"
+                if session.get("role") == "super_admin"
+                else "admin.admin_dashboard"
+            )
+        )
     return redirect(url_for("auth.login"))
+
 
 @tool.route("/check_tool_access/<tool_name>")
 def check_tool_access(tool_name):
     logging.debug(f"Checking access for tool: {tool_name}")
     if "logged_in" in session:
-        user_id = session.get('user_id')
+        user_id = session.get("user_id")
         logging.debug(f"User ID: {user_id}")
-        
-        has_access = ToolAccess.query.filter_by(user_id=user_id, tool_name=tool_name).first() is not None
+
+        has_access = (
+            ToolAccess.query.filter_by(user_id=user_id, tool_name=tool_name).first()
+            is not None
+        )
         logging.debug(f"Has access: {has_access}")
-        
+
         if has_access:
             logging.debug(f"Access granted for tool: {tool_name}")
             tool_urls = {
@@ -285,18 +387,18 @@ def check_tool_access(tool_name):
                 "Unix Timestamp Converter": "tool.convert",
                 "Email Templates": "tool.email_templates",
             }
-            
+
             if tool_name in tool_urls:
                 tool_url = url_for(tool_urls[tool_name])
                 logging.debug(f"Redirecting to: {tool_url}")
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                if request.headers.get("X-Requested-With") == "XMLHttpRequest":
                     return jsonify({"access": True, "url": tool_url})
                 else:
                     return redirect(tool_url)
             else:
                 message = f"Tool {tool_name} is not implemented yet."
                 logging.warning(message)
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                if request.headers.get("X-Requested-With") == "XMLHttpRequest":
                     return jsonify({"access": False, "message": message})
                 else:
                     flash(message, "warning")
@@ -304,15 +406,15 @@ def check_tool_access(tool_name):
         else:
             message = f"You don't have access to {tool_name}. Please contact an administrator."
             logging.warning(f"Access denied for user {user_id} to tool {tool_name}")
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
                 return jsonify({"access": False, "message": message})
             else:
                 flash(message, "error")
                 return redirect(url_for("user.user_dashboard"))
-    
+
     message = "Please log in to access tools."
     logging.warning("Attempted tool access without login")
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         return jsonify({"access": False, "message": message})
     else:
         flash(message, "error")

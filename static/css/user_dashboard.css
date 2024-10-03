@@ -1,0 +1,71 @@
+.user-dashboard-container {
+  font-family: 'Noto Sans Mono', monospace;
+  font-size: 16px;
+  padding: 20px;
+  margin: 20px;
+  background-color: #f9f9f9;
+  color: #333;
+  width: 80%;
+  max-width: 800px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.user-dashboard-container h1 {
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+.user-dashboard-container p {
+  margin-bottom: 10px;
+}
+
+.tool-list {
+  list-style-type: none;
+  padding: 0;
+  font-family: 'Noto Sans Mono', monospace;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.tool-list a {
+  text-decoration: none;
+  color: #007bff;
+  margin-left: 10px;
+  padding: 5px 0px;
+  font-family: 'Noto Sans Mono', monospace;
+  display: inline-block;
+}
+
+.tool-list a:hover {
+  color: #0056b3;
+}
+
+.tool-list li {
+  margin-bottom: 10px;
+}
+
+/* dark mode */
+
+body.dark-theme .user-dashboard-container {
+  background-color: #2e2e2e;
+  color: #e0e0e0;
+  border: 1px solid #555;
+  font-family: 'Noto Sans Mono', monospace;
+  font-size: 16px;
+  box-shadow: 0 0 10px 0 rgba(0, 128, 0, 0.5);
+}
+
+body.dark-theme .user-dashboard-container h1,
+body.dark-theme .user-dashboard-container p,
+body.user-dashboard-container h2 {
+  color: #e0e0e0;
+}
+
+body.dark-theme .tool-list a {
+  color: #ff9800;
+}
+
+body.dark-theme .tool-list a:hover {
+  color: #ff9800;
+}

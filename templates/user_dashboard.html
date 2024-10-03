@@ -1,10 +1,15 @@
 {% extends "base.html" %}
 {% block content %}
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/user_dashboard.css') }}">
+{% endblock %}
+
+<div class="user-dashboard-container">
     <h1>User Dashboard</h1>
     <p>Welcome, {{ session['username'] }}!</p>
 
     <h2>Available Tools</h2>
-    <ul>
+    <ul class="tool-list">
     {% for tool in user_tools %}
         <li><a href="{{ url_for('tool.check_tool_access', tool_name=tool) }}">{{ tool }}</a></li>
     {% endfor %}
@@ -19,4 +24,6 @@
             </ul>
         {% endif %}
     {% endwith %}
+
+</div>
 {% endblock %}
