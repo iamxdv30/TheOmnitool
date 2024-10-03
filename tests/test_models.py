@@ -4,7 +4,7 @@ from werkzeug.security import check_password_hash
 
 def test_user_creation(app):
     with app.app_context():
-        user = User(username='testuser', email='test@test.com', fname='Test', lname='User',
+        user = User(username='testuser123', email='test@test.com', fname='Test', lname='User',
                     address='123 Test St', city='Testville', state='TS', zip='12345')
         user.set_password('testpass')
         db.session.add(user)

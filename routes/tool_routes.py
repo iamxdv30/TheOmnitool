@@ -279,19 +279,23 @@ def check_tool_access(tool_name):
         if has_access:
             logging.debug(f"Access granted for tool: {tool_name}")
             tool_urls = {
-                "Tax Calculator": url_for("tool.tax_calculator_route"),
-                "Character Counter": url_for("tool.char_counter"),
-                "Canada Tax Calculator": url_for("tool.canada_tax_calculator"),
-                "Unix Timestamp Converter": url_for("tool.convert"),
+                "Tax Calculator": "tool.tax_calculator_route",
+                "Character Counter": "tool.char_counter",
+                "Canada Tax Calculator": "tool.canada_tax_calculator",
+                "Unix Timestamp Converter": "tool.convert",
+                "Email Templates": "tool.email_templates",
             }
             
             if tool_name in tool_urls:
+                tool_url = url_for(tool_urls[tool_name])
+                logging.debug(f"Redirecting to: {tool_url}")
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return jsonify({"access": True, "url": tool_urls[tool_name]})
+                    return jsonify({"access": True, "url": tool_url})
                 else:
-                    return redirect(tool_urls[tool_name])
+                    return redirect(tool_url)
             else:
                 message = f"Tool {tool_name} is not implemented yet."
+                logging.warning(message)
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return jsonify({"access": False, "message": message})
                 else:
@@ -299,6 +303,7 @@ def check_tool_access(tool_name):
                     return redirect(url_for("user.user_dashboard"))
         else:
             message = f"You don't have access to {tool_name}. Please contact an administrator."
+            logging.warning(f"Access denied for user {user_id} to tool {tool_name}")
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return jsonify({"access": False, "message": message})
             else:
@@ -306,6 +311,7 @@ def check_tool_access(tool_name):
                 return redirect(url_for("user.user_dashboard"))
     
     message = "Please log in to access tools."
+    logging.warning("Attempted tool access without login")
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return jsonify({"access": False, "message": message})
     else:

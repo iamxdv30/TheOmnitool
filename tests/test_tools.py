@@ -38,4 +38,6 @@ def test_tax_calculator():
     assert result['discount_total'] == 10
     assert result['shipping_cost'] == 15
     assert result['total_tax'] == pytest.approx(13.0, abs=0.01)
-    assert result['total_amount'] == pytest.approx(169.0, abs=0.01)  # Changed back to 169.0
+    assert result['total_amount'] == pytest.approx(169.0, abs=0.01)  # Changed back to 169.
+    
+
