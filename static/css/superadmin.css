@@ -1,0 +1,234 @@
+/* Superadmin Dashboard Styles */
+body {
+  font-family: 'Noto Sans Mono', monospace;
+}
+
+.dashboard-container {
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-title {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.btn {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-right: 5px;
+  display: inline-block;
+  text-align: center;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+a.btn-manage-tools {
+    display: inline-block;
+    padding: 5px 20px;
+    background-color: #007bff; /* Change to your desired button color */
+    color: white;
+    text-align: center;
+    text-decoration: none; /* Removes the underline */
+    border-radius: 5px; /* Optional: makes the button have rounded corners */
+    font-size: 16px;
+    font-weight: bold;
+}
+
+a.btn-manage-tools:hover {
+    background-color: #0056b3; /* Darkens the button on hover */
+}
+
+
+
+.btn.btn-primary {
+  background-color: #4caf50;
+  color: white;
+}
+
+.btn.btn-secondary {
+  background-color: #008cba;
+  color: white;
+}
+
+.btn.btn-danger {
+  background-color: #f44336;
+  color: white;
+}
+
+.btn.btn-warning {
+  background-color: #ff9800;
+  color: white;
+}
+
+.search-container {
+  margin: 20px 0;
+}
+
+.search-input {
+  width: 98%;
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.user-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 10px;
+  margin-bottom: 30px;
+}
+
+.user-table th,
+.user-table td {
+  border: 1px solid #ddd;
+  padding: 12px;
+  text-align: left;
+}
+
+.user-table th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+.form-input,
+.form-select {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.submit-btn {
+  background-color: #4caf50;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.alert {
+  padding: 15px;
+  margin-bottom: 20px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+}
+
+.alert-success {
+  color: #155724;
+  background-color: #d4edda;
+  border-color: #c3e6cb;
+}
+
+.alert-danger {
+  color: #721c24;
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
+}
+
+/* Styles for forms */
+.user-form,
+.tool-form,
+.role-form,
+.delete-form {
+  margin-top: 10px;
+}
+
+.user-row td:last-child {
+  white-space: nowrap;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.user-row td:last-child .btn,
+.user-row td:last-child .delete-form {
+  flex: 1;
+  min-width: 100px; /* Adjust this value as needed */
+}
+
+.user-row td:last-child .delete-form {
+  margin: 0;
+}
+
+.user-row td:last-child .delete-form .btn {
+  width: 100%;
+}
+
+/* Responsive styles */
+@media screen and (max-width: 768px) {
+  .user-row td:last-child {
+    flex-direction: column;
+  }
+
+  .user-row td:last-child .btn,
+  .user-row td:last-child .delete-form {
+    width: 100%;
+  }
+}
+
+/* Dark theme */
+body.dark-theme {
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+}
+
+body.dark-theme .dashboard-container {
+  background-color: #2c2c2c;
+  box-shadow: 0 0 10px 0 rgba(0, 128, 0, 0.5);
+}
+
+body.dark-theme .user-table th,
+body.dark-theme .user-table td {
+  border-color: #444;
+}
+
+body.dark-theme .user-table th {
+  background-color: #3c3c3c;
+}
+
+body.dark-theme .btn.btn-primary {
+  background-color: #45a049;
+}
+
+body.dark-theme .btn.btn-secondary {
+  background-color: #0073a1;
+}
+
+body.dark-theme .btn.btn-danger {
+  background-color: #d32f2f;
+}
+
+body.dark-theme .btn.btn-warning {
+  background-color: #f57c00;
+}
+
+body.dark-theme .search-input,
+body.dark-theme .form-input,
+body.dark-theme .form-select {
+  background-color: #3c3c3c;
+  color: #e0e0e0;
+  border-color: #555;
+}
+
+body.dark-theme .alert-success {
+  color: #c6e6d2;
+  background-color: #1e4620;
+  border-color: #2f6b31;
+}
+
+body.dark-theme .alert-danger {
+  color: #f8d7da;
+  background-color: #5c1c24;
+  border-color: #842029;
+}
