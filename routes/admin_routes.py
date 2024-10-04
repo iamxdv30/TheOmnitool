@@ -18,7 +18,7 @@ def admin_dashboard():
 def superadmin_dashboard():
     if "logged_in" in session and session.get("role") == "super_admin":
         users = User.query.all()
-        tools = ToolAccess.get_distinct_tool_names()
+        tools = Tool.query.all()  # Fetch all tools, regardless of default status
         user_tools = {user.id: [access.tool_name for access in user.tool_access] for user in users}
         messages = session.pop('_flashes', [])
         return render_template("superadmin_dashboard.html", users=users, tools=tools, user_tools=user_tools, messages=messages)
@@ -112,56 +112,56 @@ def change_user_role(user_id):
         return redirect(url_for("admin.superadmin_dashboard"))
     return redirect(url_for("auth.login"))
 
-@admin.route('/manage_tools', methods=['GET', 'POST', 'PUT', 'DELETE'])
+@admin.route('/manage_tools', methods=['GET', 'POST', 'DELETE'])
 def manage_tools():
     if "logged_in" not in session or session.get("role") not in ["admin", "super_admin"]:
         flash("You don't have permission to manage tools.", "error")
         return redirect(url_for("auth.login"))
 
     if request.method == 'POST':
+        # Handle both creation and updates
+        tool_id = request.form.get('tool_id')
         tool_name = request.form.get('tool_name')
         is_default = 'is_default' in request.form
         description = request.form.get('description', '')
-        existing_tool = Tool.query.filter_by(name=tool_name).first()
-        if existing_tool:
-            flash("A tool with this name already exists.", "error")
+
+        if tool_id:
+            # This is an update operation
+            tool = Tool.query.get(tool_id)
+            if tool:
+                tool.name = tool_name
+                tool.is_default = is_default
+                tool.description = description
+                db.session.commit()
+                flash("Tool updated successfully", "success")
+            else:
+                flash("Tool not found", "error")
         else:
-            new_tool = Tool(name=tool_name, description=description, is_default=is_default)
-            db.session.add(new_tool)
-            db.session.commit()
-            if is_default:
-                Tool.assign_default_tool_to_all_users(tool_name)
-            flash("Tool created successfully", "success")
-    elif request.method == 'PUT':
-        tool_name = request.form.get('tool_name')
-        is_default = 'is_default' in request.form
-        description = request.form.get('description', '')
-        tool = Tool.query.filter_by(name=tool_name).first()
-        if tool:
-            old_is_default = tool.is_default
-            tool.is_default = is_default
-            tool.description = description
-            db.session.commit()
-            if not old_is_default and is_default:
-                Tool.assign_default_tool_to_all_users(tool_name)
-            elif old_is_default and not is_default:
-                Tool.remove_default_tool_from_users(tool_name)
-            flash("Tool updated successfully", "success")
-        else:
-            flash("Tool not found", "error")
+            # This is a create operation
+            existing_tool = Tool.query.filter_by(name=tool_name).first()
+            if existing_tool:
+                flash("A tool with this name already exists.", "error")
+            else:
+                new_tool = Tool(name=tool_name, description=description, is_default=is_default)
+                db.session.add(new_tool)
+                db.session.commit()
+                flash("Tool created successfully", "success")
+
     elif request.method == 'DELETE':
-        tool_name = request.form.get('tool_name')
-        tool = Tool.query.filter_by(name=tool_name).first()
+        # Handle deletion
+        tool_id = request.form.get('tool_id')
+        if tool_id is None:
+            return jsonify({"error": "No tool_id provided"}), 400
+        
+        tool = Tool.query.get(tool_id)
         if tool:
-            ToolAccess.query.filter_by(tool_name=tool_name).delete()
             db.session.delete(tool)
             db.session.commit()
-            flash("Tool deleted successfully", "success")
+            return jsonify({"message": "Tool deleted successfully"}), 200
         else:
-            flash("Tool not found", "error")
-    
+            return jsonify({"error": "Tool not found"}), 404
+
     tools = Tool.query.all()
     return render_template('manage_tools.html', tools=tools)
-
 
 

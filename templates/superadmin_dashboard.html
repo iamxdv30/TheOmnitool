@@ -64,7 +64,7 @@
                 <td>{{ user.role }}</td>
                 <td>
                     <button class="btn btn-secondary showUpdateForm">Update</button>
-                    <button class="btn btn-secondary showToolAccess">Tool Access</button>
+                    <button class="btn btn-secondary showToolAccess" >Tool Access</button>
                     <button class="btn btn-secondary showChangeRole">Change Role</button>
                     <form action="{{ url_for('admin.delete_user', user_id=user.id) }}" method="post" class="delete-form">
                         <button type="submit" class="btn btn-danger">Delete User</button>
@@ -93,8 +93,8 @@
                             <input type="hidden" name="user_id" value="{{ user.id }}">
                             <select name="tool_name" class="form-select">
                                 {% for tool in tools %}
-                                    <option value="{{ tool }}" {% if tool in user_tools[user.id] %}disabled{% endif %}>
-                                        {{ tool }}{% if tool in user_tools[user.id] %} (Already granted){% endif %}
+                                    <option value="{{ tool.name }}" {% if tool.name in user_tools[user.id] %}disabled{% endif %}>
+                                        {{ tool.name }}{% if tool.name in user_tools[user.id] %} (Already granted){% endif %}
                                     </option>
                                 {% endfor %}
                             </select>
@@ -104,8 +104,8 @@
                         <form action="{{ url_for('tool.revoke_tool_access') }}" method="post" class="tool-form">
                             <input type="hidden" name="user_id" value="{{ user.id }}">
                             <select name="tool_name" class="form-select">
-                                {% for tool in user_tools[user.id] %}
-                                    <option value="{{ tool }}">{{ tool }}</option>
+                                {% for tool_name in user_tools[user.id] %}
+                                    <option value="{{ tool_name }}">{{ tool_name }}</option>
                                 {% endfor %}
                             </select>
                             <button type="submit" class="btn btn-danger" {% if not user_tools[user.id] %}disabled{% endif %}>Revoke Access</button>

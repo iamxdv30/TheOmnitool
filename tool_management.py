@@ -58,7 +58,6 @@ def add_new_tool(name, description, is_default=False):
     db.session.commit()
     print(f"New tool '{name}' added successfully.")
 
-
 def assign_default_tools_to_user(user_id):
     user = User.query.get(user_id)
     if not user:
@@ -97,6 +96,8 @@ def assign_email_templates_to_users():
         print("Email Templates tool assigned to all users")
     else:
         print("Email Templates tool not found in the database")
+
+
 
 
 if __name__ == "__main__":

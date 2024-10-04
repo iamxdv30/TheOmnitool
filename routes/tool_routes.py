@@ -313,29 +313,23 @@ def grant_tool_access():
         user_id = request.form.get("user_id")
         tool_name = request.form.get("tool_name")
         user = User.query.get(user_id)
-        if user:
-            if not ToolAccess.query.filter_by(
-                user_id=user_id, tool_name=tool_name
-            ).first():
+        tool = Tool.query.filter_by(name=tool_name).first()
+        
+        if user and tool:
+            if tool.is_default and session.get("role") != "super_admin":
+                flash(f"Only super admins can grant access to default tools", "error")
+            elif not ToolAccess.query.filter_by(user_id=user_id, tool_name=tool_name).first():
                 new_access = ToolAccess(user_id=user_id, tool_name=tool_name)
                 db.session.add(new_access)
                 db.session.commit()
                 if "user_tools" in session:
                     del session["user_tools"]  # Clear the session to force a refresh
-                flash(
-                    f"Tool access granted for {tool_name} to {user.username}", "success"
-                )
+                flash(f"Tool access granted for {tool_name} to {user.username}", "success")
             else:
                 flash(f"User already has access to {tool_name}", "info")
         else:
-            flash("User not found", "error")
-        return redirect(
-            url_for(
-                "admin.superadmin_dashboard"
-                if session.get("role") == "super_admin"
-                else "admin.admin_dashboard"
-            )
-        )
+            flash("User or tool not found", "error")
+        return redirect(url_for("admin.superadmin_dashboard" if session.get("role") == "super_admin" else "admin.admin_dashboard"))
     return redirect(url_for("auth.login"))
 
 
