@@ -1,55 +1,85 @@
 {% extends "base.html" %}
-{% block title %}Timestamp Converter{% endblock %}
+{% block title %}Unix Timestamp Converter{% endblock %}
+
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/unix_timestamp.css') }}">
+{% endblock %}
+
 {% block content %}
-    <h1>Unix Timestamp Converter</h1>
-    <form id="timestampForm">
-        <input type="text" id="timestamp" name="timestamp" placeholder="Enter timestamp" required> <!-- Example: 1725389600 -->
-        <select id="timezone" name="timezone">
-            <option value="UTC">UTC</option>
-            <option value="America/New_York">Eastern Time (US & Canada)</option>
-            <option value="America/Los_Angeles">Pacific Time (US & Canada)</option>
-            <option value="Europe/London">London</option>
-            <option value="Asia/Tokyo">Tokyo</option>
-            <option value="Asia/Manila">Manila</option>
-            <!-- Add more timezones as needed -->
-        </select>
-        <button type="submit">Convert</button>
+<div class="unix-timestamp-converter">
+    <h1 class="unix-timestamp-converter__title">Unix Timestamp Converter</h1>
+    
+    <div class="unix-timestamp-converter__info">
+        <p>Enter a Unix timestamp (seconds since January 1, 1970) to convert it to a human-readable date and time.</p>
+    </div>
+    
+    <form id="timestampForm" class="unix-timestamp-converter__form">
+        <div class="unix-timestamp-converter__input-group">
+            <label for="timestamp" class="unix-timestamp-converter__label">Unix Timestamp:</label>
+            <input type="number" id="timestamp" name="timestamp" placeholder="e.g., 1625097600" required class="unix-timestamp-converter__input" aria-describedby="timestampHint">
+            <small id="timestampHint" class="unix-timestamp-converter__hint">Enter a 10-digit Unix timestamp</small>
+        </div>
+        
+        <div class="unix-timestamp-converter__input-group">
+            <label for="timezone" class="unix-timestamp-converter__label">Timezone:</label>
+            <select id="timezone" name="timezone" class="unix-timestamp-converter__select">
+                <option value="UTC">UTC</option>
+                <option value="America/New_York">Eastern Time (US & Canada)</option>
+                <option value="America/Los_Angeles">Pacific Time (US & Canada)</option>
+                <option value="Europe/London">London</option>
+                <option value="Asia/Tokyo">Tokyo</option>
+                <option value="Asia/Manila">Manila</option>
+            </select>
+        </div>
+        
+        <button type="submit" class="unix-timestamp-converter__submit-btn">Convert</button>
     </form>
-    <div id="result" style="font-weight: bold;">Converted Time:</div>
-    <script>
-        // This line sets up an event handler for the form submission event.
-        // When the form with the ID "timestampForm" is submitted, the function will be called.
-        // The 'event' parameter represents the event object associated with the submission.
-        // The next line prevents the default form submission behavior, which would normally refresh the page.
-        document.getElementById("timestampForm").onsubmit = function(event) {
-            event.preventDefault();
+    
+    <div id="result" class="unix-timestamp-converter__result" aria-live="polite">
+        Converted time will appear here
+    </div>
+    
+    <button id="getCurrentTimestamp" class="unix-timestamp-converter__current-time-btn">Get Current Timestamp</button>
+    
+    <div class="unix-timestamp-converter__explanation">
+        <h2>What is a Unix Timestamp?</h2>
+        <p>A Unix timestamp is the number of seconds that have elapsed since January 1, 1970 (midnight UTC/GMT), not counting leap seconds. It's used widely in Unix systems and file formats.</p>
+    </div>
+</div>
 
-            const timestamp = document.getElementById("timestamp").value;
-            const timezone = document.getElementById("timezone").value;  // Get selected timezone
-            
-            // Convert timestamp to JavaScript Date object
-            const date = new Date(parseInt(timestamp) * 1000);  // Unix timestamp is in seconds, multiply by 1000 to get milliseconds
+<script>
+document.getElementById("timestampForm").onsubmit = function(event) {
+    event.preventDefault();
 
-            // Use Intl.DateTimeFormat to get localized time with proper timezone and DST handling
-            const options = {
-                timeZone: timezone,
-                year: 'numeric',
-                month: 'numeric',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: 'numeric',
-                second: 'numeric',
-                timeZoneName: 'long'  // This will return "Eastern Daylight Time", "Pacific Standard Time", etc.
-            };
+    const timestamp = document.getElementById("timestamp").value;
+    const timezone = document.getElementById("timezone").value;
+    
+    const date = new Date(parseInt(timestamp) * 1000);
 
-            const formatter = new Intl.DateTimeFormat('en-US', options);
-            const formattedDate = formatter.format(date);
+    const options = {
+        timeZone: timezone,
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+        timeZoneName: 'long'
+    };
 
-            // Display the result with automatic DST handling
-            document.getElementById("result").innerText = `Converted Time: ${formattedDate}`;
-        };
-    </script>
-    <a href="{{ url_for('user.user_dashboard') }}">Back to Dashboard</a>
-    <a href="{{ url_for('auth.logout') }}">Logout</a>
-    {% endblock %}
-</body>
+    const formatter = new Intl.DateTimeFormat('en-US', options);
+    const formattedDate = formatter.format(date);
+
+    document.getElementById("result").innerHTML = `
+        <strong>Converted Time:</strong><br>
+        ${formattedDate}<br>
+        <small>(Unix Timestamp: ${timestamp})</small>
+    `;
+};
+
+document.getElementById("getCurrentTimestamp").onclick = function() {
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    document.getElementById("timestamp").value = currentTimestamp;
+};
+</script>
+{% endblock %}

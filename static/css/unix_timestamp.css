@@ -1,0 +1,151 @@
+/* Remove the dot before body, as it's not a class */
+body {
+  background-color: #f9f9f9;
+  font-family: 'Noto Sans Mono', monospace;
+  color: #333;
+}
+
+.unix-timestamp-converter {
+  background-color: #ffffff;
+  max-width: 800px;
+  margin: 20px auto;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  font-family: 'Noto Sans Mono', monospace;
+  color: #333;
+}
+
+.unix-timestamp-converter__title {
+  font-size: 24px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.unix-timestamp-converter__info {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.unix-timestamp-converter__form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.unix-timestamp-converter__input-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 15px;
+  width: 100%;
+  max-width: 300px;
+}
+
+.unix-timestamp-converter__label {
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.unix-timestamp-converter__input {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 95%;
+}
+.unix-timestamp-converter__select {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 100%;
+}
+
+.unix-timestamp-converter__hint {
+  font-size: 12px;
+  color: #666;
+  margin-top: 5px;
+}
+
+.unix-timestamp-converter__submit-btn,
+.unix-timestamp-converter__current-time-btn {
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 15px;
+  font-family: 'Noto Sans Mono', monospace;
+  display: block;
+  margin: 15px auto;
+}
+
+.unix-timestamp-converter__submit-btn:hover,
+.unix-timestamp-converter__current-time-btn:hover {
+  background-color: #0056b3;
+}
+
+.unix-timestamp-converter__result {
+  margin-top: 20px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.unix-timestamp-converter__explanation {
+  margin-top: 30px;
+  text-align: center;
+}
+
+.unix-timestamp-converter__explanation h2 {
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .unix-timestamp-converter {
+    padding: 15px;
+  }
+
+  .unix-timestamp-converter__input-group {
+    max-width: 95%;
+  }
+
+  .unix-timestamp-converter__submit-btn,
+  .unix-timestamp-converter__current-time-btn {
+    width: 100%;
+  }
+}
+/* End of Responsive Design */
+
+/* Dark Mode */
+
+body.dark-theme .unix-timestamp-converter {
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+  font-family: 'Noto Sans Mono', monospace;
+}
+
+body.dark-theme .unix-timestamp-converter__label,
+body.dark-theme .unix-timestamp-converter__hint {
+  color: #ccc;
+}
+
+body.dark-theme .unix-timestamp-converter__input,
+body.dark-theme .unix-timestamp-converter__select {
+  background-color: #555;
+  color: #fff;
+  border-color: #777;
+}
+
+body.dark-theme .unix-timestamp-converter__submit-btn,
+body.dark-theme .unix-timestamp-converter__current-time-btn {
+  background-color: #38b000;
+  color: #fff;
+}
+
+body.dark-theme .unix-timestamp-converter__submit-btn:hover,
+body.dark-theme .unix-timestamp-converter__current-time-btn:hover {
+  background-color: #2d8a00;
+}
+/* End of Dark Mode */
