@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, redirect, url_for, render_template, session, flash
+from flask import Blueprint, request, jsonify, redirect, url_for, render_template, session, flash, get_flashed_messages
 from model.model import User, Admin, SuperAdmin, Tool, ToolAccess, db
 from sqlalchemy.exc import SQLAlchemyError
 import logging
@@ -160,6 +160,9 @@ def manage_tools():
             return jsonify({"message": "Tool deleted successfully"}), 200
         else:
             return jsonify({"error": "Tool not found"}), 404
+
+    # Clear any unused flash messages
+    _ = get_flashed_messages()
 
     tools = Tool.query.all()
     return render_template('manage_tools.html', tools=tools)
