@@ -21,7 +21,6 @@ def logged_in_user(client, app, init_database):
         username = "usertesting"
         email = "usertesting@test.com"
         
-        # Check if user already exists
         user = User.query.filter_by(username=username).first()
         if not user:
             user = User(
@@ -36,31 +35,25 @@ def logged_in_user(client, app, init_database):
             )
             user.set_password("testpass")
             db.session.add(user)
-            try:
-                db.session.commit()
-            except IntegrityError:
-                db.session.rollback()
-                user = User.query.filter_by(username=username).first()
+            db.session.commit()
 
-        # Ensure user is not None before proceeding
-        if user is None:
-            pytest.fail("Failed to create or retrieve user")
-
-        # Ensure Email Templates tool exists
+        # Ensure Email Templates tool exists and user has access
         tool = Tool.query.filter_by(name="Email Templates").first()
         if not tool:
             tool = Tool(name="Email Templates", description="Email template tool", is_default=True)
             db.session.add(tool)
             db.session.commit()
 
-        # Ensure user has access to Email Templates
         if not ToolAccess.query.filter_by(user_id=user.id, tool_name="Email Templates").first():
             tool_access = ToolAccess(user_id=user.id, tool_name="Email Templates")
             db.session.add(tool_access)
             db.session.commit()
 
-    login(client, username, "testpass")
-    yield user
+        login(client, username, "testpass")
+        
+        # Return the user object
+        yield User.query.get(user.id)
+        
     logout(client)
 
 def login(client, username, password):
@@ -90,7 +83,11 @@ def email_template_access(app, logged_in_user):
 
 def test_add_email_template(client, init_database, app, logged_in_user, email_template_access):
     with app.app_context():
-        assert email_template_access(logged_in_user.id), "User should have access to Email Templates"
+        # Refresh the user object within this context
+        user = User.query.get(logged_in_user.id)
+        assert user is not None, "User not found in the database"
+        
+        assert email_template_access(user.id), "User should have access to Email Templates"
         
         response = client.post('/email_templates', data=dict(
             title='Test Template',
