@@ -15,9 +15,11 @@
           <button type="submit">Login</button>
       </form>
     </div>
+    
     {% if error %}
-        <p style="color: red;">{{ error }}</p>
+        <div class="flash-message error">{{ error }}</div>
     {% endif %}
+
 
     {% if role == 'admin' %}
         <p>Welcome, {{ username }}! You have full access.</p>
@@ -27,13 +29,4 @@
         <p>Welcome, {{ username }}!</p>
     {% endif %}
 
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        <ul>
-          {% for message in messages %}
-            <li>{{ message }}</li>
-          {% endfor %}
-        </ul>
-      {% endif %}
-    {% endwith %}
 {% endblock %}
