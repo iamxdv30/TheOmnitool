@@ -391,39 +391,32 @@ body.dark-theme .footer-nav ul li a:hover {
   color: #a9d9b7; /* Dark theme link hover color */
 }
 
-.flashes {
-  list-style-type: none;
+.flash-message {
   padding: 10px;
   margin: 10px 0;
   border-radius: 5px;
-
+  text-align: center;
 }
 
-.flashes li {
-  padding: 10px;
-  margin-bottom: 5px;
-  border-radius: 3px;
-}
-
-.flashes .error {
+.flash-message.error {
   background-color: #ffebee;
   color: #c62828;
   border: 1px solid #ef9a9a;
 }
 
-.flashes .success {
+.flash-message.success {
   background-color: #e8f5e9;
   color: #2e7d32;
   border: 1px solid #a5d6a7;
 }
 
-.flashes .info {
+.flash-message.info {
   background-color: #e3f2fd;
   color: #1565c0;
   border: 1px solid #90caf9;
 }
 
-.flashes .warning {
+.flash-message.warning {
   background-color: #fff3e0;
   color: #ef6c00;
   border: 1px solid #ffcc80;
