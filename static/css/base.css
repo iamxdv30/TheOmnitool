@@ -7,11 +7,6 @@ body {
   flex-direction: column;
 }
 
-ul {
-  border: 2px solid red !important;
-}
-
-
 /* The main content container should flex to take available space */
 .container {
   flex: 1; /* Makes the container take up remaining space between the header and footer */
