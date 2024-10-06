@@ -1,7 +1,7 @@
 import os
 os.environ["FLASK_APP"] = "main.py"
 
-from flask import Flask, request, get_flashed_messages
+from flask import Flask, request, get_flashed_messages, redirect
 from flask_migrate import Migrate
 from jinja2 import FileSystemLoader, ChoiceLoader
 
@@ -20,6 +20,7 @@ import logging
 def create_app():
     app = Flask(__name__, static_folder="static")
     app.config['METHOD_OVERRIDE_EXCEPTIONS'] = True
+    app.config['PREFERRED_URL_SCHEME'] = 'https'
 
     # Register blueprints
     app.register_blueprint(auth)
@@ -34,6 +35,29 @@ def create_app():
             method = request.form['_method'].upper()
             if method in ['PUT', 'DELETE', 'PATCH']:
                 request.environ['REQUEST_METHOD'] = method
+
+    @app.before_request
+    def handle_headers():
+        # Ensure HTTPS is recognized when behind a proxy
+        if request.headers.get('X-Forwarded-Proto') == 'https':
+            request.environ['wsgi.url_scheme'] = 'https'
+        
+        # Instead of modifying request.host, we'll use X-Forwarded-Host when present
+        forwarded_host = request.headers.get('X-Forwarded-Host')
+        if forwarded_host:
+            # Store the forwarded host in the request environment
+            request.environ['HTTP_HOST'] = forwarded_host
+
+        # Optionally, enforce HTTPS
+        if not request.is_secure:
+            url = request.url.replace('http://', 'https://', 1)
+            return redirect(url, code=301)
+        
+    @app.after_request
+    def add_security_headers(response):
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+        response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';"
+        return response
 
     # Database configuration
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///users.db"  # Use SQLite for simplicity
