@@ -2,7 +2,7 @@ name: CI/CD
 
 on:
   push:
-    branches: [main, staging]  # Trigger on push to both main and staging
+    branches: [main, staging] # Trigger on push to both main and staging
   pull_request:
     branches: [main]
 
@@ -10,38 +10,38 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.12'
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    - name: Run tests
-      run: python -m unittest discover tests
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run tests
+        run: pytest
 
   deploy-staging:
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/staging' && github.event_name == 'push'  # Change trigger to staging branch
+    if: github.ref == 'refs/heads/staging' && github.event_name == 'push' # Change trigger to staging branch
     steps:
-    - uses: actions/checkout@v2
-    - name: Deploy to Heroku (Staging)
-      env:
-        HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-      run: |
-        git push https://heroku:$HEROKU_API_KEY@git.heroku.com/omnitool-by-xdv-staging.git main
+      - uses: actions/checkout@v2
+      - name: Deploy to Heroku (Staging)
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          git push https://heroku:$HEROKU_API_KEY@git.heroku.com/omnitool-by-xdv-staging.git main
 
   deploy-production:
     needs: [test, deploy-staging]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
-    - uses: actions/checkout@v2
-    - name: Deploy to Heroku (Production)
-      env:
-        HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-      run: |
-        git push https://heroku:$HEROKU_API_KEY@git.heroku.com/omnitool-by-xdv-production.git main
+      - uses: actions/checkout@v2
+      - name: Deploy to Heroku (Production)
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          git push https://heroku:$HEROKU_API_KEY@git.heroku.com/omnitool-by-xdv-production.git main
