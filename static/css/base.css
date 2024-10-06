@@ -7,9 +7,19 @@ body {
   flex-direction: column;
 }
 
+ul {
+  border: 2px solid red !important;
+}
+
+
 /* The main content container should flex to take available space */
 .container {
   flex: 1; /* Makes the container take up remaining space between the header and footer */
+}
+
+.main-content ul {
+  list-style-type: disc;
+  padding-left: 20px;
 }
 
 .light-theme {
@@ -391,6 +401,7 @@ body.dark-theme .footer-nav ul li a:hover {
   padding: 10px;
   margin: 10px 0;
   border-radius: 5px;
+
 }
 
 .flashes li {
