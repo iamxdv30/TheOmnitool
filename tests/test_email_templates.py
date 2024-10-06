@@ -1,58 +1,30 @@
 import pytest
 from flask import session
 from model.model import EmailTemplate, db, User, Tool, ToolAccess
+from sqlalchemy.exc import IntegrityError
+
+# ... (previous fixtures remain unchanged)
 
 @pytest.fixture
-def client(app):
-    return app.test_client()
+def email_template_access(app, logged_in_user):
+    def _check_access(user_id):
+        with app.app_context():
+            user = User.query.get(user_id)
+            if not user:
+                return False
 
-@pytest.fixture
-def init_database(app):
+            if not ToolAccess.query.filter_by(user_id=user.id, tool_name="Email Templates").first():
+                tool_access = ToolAccess(user_id=user.id, tool_name="Email Templates")
+                db.session.add(tool_access)
+                db.session.commit()
+        
+        return True
+    return _check_access
+
+def test_add_email_template(client, init_database, app, logged_in_user, email_template_access):
     with app.app_context():
-        db.create_all()
-        yield db
-        db.drop_all()
-
-@pytest.fixture
-def logged_in_user(client, app):
-    with app.app_context():
-        user = User(
-            username="testuser",
-            email="test@test.com",
-            fname="Test",
-            lname="User",
-            address="123 Test St",
-            city="Testville",
-            state="TS",
-            zip="12345",
-        )
-        user.set_password("testpass")
-        db.session.add(user)
-        db.session.commit()
-
-        tool = Tool(name="Email Templates", description="Email template tool", is_default=True)
-        db.session.add(tool)
-        db.session.commit()
-
-        tool_access = ToolAccess(user_id=user.id, tool_name="Email Templates")
-        db.session.add(tool_access)
-        db.session.commit()
-
-    login(client, "testuser", "testpass")
-    yield user
-    logout(client)
-
-def login(client, username, password):
-    return client.post('/login', data=dict(
-        username=username,
-        password=password
-    ), follow_redirects=True)
-
-def logout(client):
-    return client.get("/logout", follow_redirects=True)
-
-def test_add_email_template(client, init_database, app, logged_in_user):
-    with app.app_context():
+        assert email_template_access(logged_in_user.id), "User should have access to Email Templates"
+        
         response = client.post('/email_templates', data=dict(
             title='Test Template',
             content='This is a test template content'
@@ -68,13 +40,16 @@ def test_add_email_template(client, init_database, app, logged_in_user):
         assert template is not None
         assert template.content == "This is a test template content"
 
-def test_update_email_template(client, init_database, app, logged_in_user):
+def test_update_email_template(client, init_database, app, logged_in_user, email_template_access):
     with app.app_context():
+        assert email_template_access(logged_in_user.id), "User should have access to Email Templates"
+        
         # First, add a template
-        client.post(
+        response = client.post(
             "/email_templates",
             data=dict(title="Template to Update", content="Original content"),
         )
+        assert response.status_code == 200
 
         # Get the ID of the added template
         template = EmailTemplate.query.filter_by(title="Template to Update").first()
@@ -97,13 +72,16 @@ def test_update_email_template(client, init_database, app, logged_in_user):
         assert updated_template.title == "Updated Template"
         assert updated_template.content == "Updated content"
 
-def test_delete_email_template(client, init_database, app, logged_in_user):
+def test_delete_email_template(client, init_database, app, logged_in_user, email_template_access):
     with app.app_context():
+        assert email_template_access(logged_in_user.id), "User should have access to Email Templates"
+        
         # First, add a template
-        client.post(
+        response = client.post(
             "/email_templates",
             data=dict(title="Template to Delete", content="Content to delete"),
         )
+        assert response.status_code == 200
 
         # Get the ID of the added template
         template = EmailTemplate.query.filter_by(title="Template to Delete").first()
@@ -121,18 +99,26 @@ def test_delete_email_template(client, init_database, app, logged_in_user):
         deleted_template = EmailTemplate.query.get(template_id)
         assert deleted_template is None
 
-def test_get_email_templates(client, init_database, app, logged_in_user):
+def test_get_email_templates(client, init_database, app, logged_in_user, email_template_access):
     with app.app_context():
+        assert email_template_access(logged_in_user.id), "User should have access to Email Templates"
+        
         # Add a couple of templates
-        client.post(
+        response1 = client.post(
             "/email_templates", data=dict(title="Template 1", content="Content 1")
         )
-        client.post(
+        assert response1.status_code == 200
+        response2 = client.post(
             "/email_templates", data=dict(title="Template 2", content="Content 2")
         )
+        assert response2.status_code == 200
 
         # Get all templates
         response = client.get("/email_templates")
         assert response.status_code == 200
         assert b"Template 1" in response.data
         assert b"Template 2" in response.data
+
+def test_email_template_access(app, logged_in_user, email_template_access):
+    with app.app_context():
+        assert email_template_access(logged_in_user.id), "User should have access to Email Templates"
