@@ -3,7 +3,74 @@ from flask import session
 from model.model import EmailTemplate, db, User, Tool, ToolAccess
 from sqlalchemy.exc import IntegrityError
 
-# ... (previous fixtures remain unchanged)
+@pytest.fixture
+def client(app):
+    return app.test_client()
+
+@pytest.fixture
+def init_database(app):
+    with app.app_context():
+        db.create_all()
+        yield db
+        db.session.remove()
+        db.drop_all()
+
+@pytest.fixture
+def logged_in_user(client, app, init_database):
+    with app.app_context():
+        username = "usertesting"
+        email = "usertesting@test.com"
+        
+        # Check if user already exists
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            user = User(
+                username=username,
+                email=email,
+                fname="User",
+                lname="Testing",
+                address="123 Test St",
+                city="Testville",
+                state="TS",
+                zip="12345",
+            )
+            user.set_password("testpass")
+            db.session.add(user)
+            try:
+                db.session.commit()
+            except IntegrityError:
+                db.session.rollback()
+                user = User.query.filter_by(username=username).first()
+
+        # Ensure user is not None before proceeding
+        if user is None:
+            pytest.fail("Failed to create or retrieve user")
+
+        # Ensure Email Templates tool exists
+        tool = Tool.query.filter_by(name="Email Templates").first()
+        if not tool:
+            tool = Tool(name="Email Templates", description="Email template tool", is_default=True)
+            db.session.add(tool)
+            db.session.commit()
+
+        # Ensure user has access to Email Templates
+        if not ToolAccess.query.filter_by(user_id=user.id, tool_name="Email Templates").first():
+            tool_access = ToolAccess(user_id=user.id, tool_name="Email Templates")
+            db.session.add(tool_access)
+            db.session.commit()
+
+    login(client, username, "testpass")
+    yield user
+    logout(client)
+
+def login(client, username, password):
+    return client.post('/login', data=dict(
+        username=username,
+        password=password
+    ), follow_redirects=True)
+
+def logout(client):
+    return client.get("/logout", follow_redirects=True)
 
 @pytest.fixture
 def email_template_access(app, logged_in_user):
