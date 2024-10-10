@@ -1,7 +1,8 @@
 import os
 os.environ["FLASK_APP"] = "main.py"
+from urllib.parse import urlparse
 
-from flask import Flask, request, get_flashed_messages, redirect
+from flask import Flask, request, get_flashed_messages, redirect, abort
 from flask_migrate import Migrate
 from jinja2 import FileSystemLoader, ChoiceLoader
 
@@ -13,11 +14,14 @@ from routes.tool_routes import tool
 
 # Import models
 from model.model import db
-
+import re
 import logging
 
 # Factory function to create a Flask app
 def create_app():
+    environment = os.getenv('DEPLOY_ENV', 'local')
+    print(f"Current environment: {environment}")
+
     app = Flask(__name__, static_folder="static")
     app.config['METHOD_OVERRIDE_EXCEPTIONS'] = True
     app.config['PREFERRED_URL_SCHEME'] = 'https'
@@ -27,6 +31,16 @@ def create_app():
     app.register_blueprint(user)
     app.register_blueprint(admin)
     app.register_blueprint(tool)
+
+    @app.route('/environment')
+    def show_environment():
+        if os.getenv('DEPLOY_ENV') == 'production':
+            abort(404)
+        env = os.getenv('DEPLOY_ENV', 'local')
+        db_url = app.config['SQLALCHEMY_DATABASE_URI']
+        # Mask the password in the DB URL
+        masked_db_url = re.sub(r'://[^:]+:[^@]+@', '://****:****@', db_url)
+        return f"Current environment: {env}<br>Database URL: {masked_db_url}"
     
     # Custom method override
     @app.before_request
@@ -60,9 +74,23 @@ def create_app():
         return response
 
     # Database configuration
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///users.db"  # Use SQLite for simplicity
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False  # Disable tracking modifications
-    app.config["SECRET_KEY"] = "XDVsuperuser@1993"  # Set a secret key for session management
+    environment = os.getenv('DEPLOY_ENV', 'local')  # Default to local if not specified
+    
+    if environment == 'production':
+        database_url = os.getenv('DATABASE_URL_PRODUCTION', 'postgresql://postgres:AQtYQtjOxxItlHHycrYZduiNMhldOPBh@postgres.railway.internal:5432/railway')
+    elif environment == 'staging':
+        database_url = os.getenv('DATABASE_URL_STAGING', 'postgresql://postgres:WvllZGauoptALTJQZizPBIkjEfjRIXFk@postgres.railway.internal:5432/railway')
+    else:
+        database_url = os.getenv('DATABASE_URL_LOCAL', 'postgresql://postgres:iamxdv-172530@localhost/omnitool" /M')
+
+    if not database_url:
+        raise ValueError(f"No database URL found for {environment} environment")
+
+    if database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+    
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     # Initialize the db with the app
     db.init_app(app)

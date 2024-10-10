@@ -1,4 +1,8 @@
 .vscode/
 templates/test.html
 setup_route_for_admin.md
+*.pyc
+__pycache__/
+instance/
+.env
 
