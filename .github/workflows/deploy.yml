@@ -2,7 +2,7 @@ name: CI/CD
 
 on:
   push:
-    branches: [main, staging] # Trigger on push to both main and staging
+    branches: [main, staging]
   pull_request:
     branches: [main]
 
@@ -25,23 +25,25 @@ jobs:
   deploy-staging:
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/staging' && github.event_name == 'push' # Change trigger to staging branch
+    if: github.ref == 'refs/heads/staging'
     steps:
       - uses: actions/checkout@v2
-      - name: Deploy to Heroku (Staging)
+      - name: Install Railway
+        run: npm i -g @railway/cli
+      - name: Deploy to Railway
+        run: railway up
         env:
-          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-        run: |
-          git push https://heroku:$HEROKU_API_KEY@git.heroku.com/omnitool-by-xdv-staging.git main
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_STAGING }}
 
   deploy-production:
     needs: [test, deploy-staging]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v2
-      - name: Deploy to Heroku (Production)
+      - name: Install Railway
+        run: npm i -g @railway/cli
+      - name: Deploy to Railway
+        run: railway up
         env:
-          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-        run: |
-          git push https://heroku:$HEROKU_API_KEY@git.heroku.com/omnitool-by-xdv-production.git main
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_PRODUCTION }}
