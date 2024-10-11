@@ -11,9 +11,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout code from the development branch
+      # Checkout code from the development branch with full history
       - name: Checkout Code
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Fetch all history to avoid shallow clone issues
 
       # Configure Git for GitHub Actions
       - name: Configure Git
@@ -45,4 +47,5 @@ jobs:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
           git remote add heroku https://heroku:${{ secrets.HEROKU_API_KEY }}@git.heroku.com/omnitool-by-xdv-staging.git
+          git fetch --unshallow  # Unshallow the repository
           git push heroku staging:main --force
