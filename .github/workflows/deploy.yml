@@ -1,50 +1,63 @@
-name: CI/CD Workflow
+name: Production Deployment Workflow
 
 on:
   push:
     branches:
-      - development
+      - main
 
 jobs:
-  # Step 1: Push changes to Staging and Deploy to Heroku
-  deploy-to-staging:
+  # Step 1: Test Code Before Deploying to Production
+  test:
     runs-on: ubuntu-latest
-
     steps:
-      # Checkout code from the development branch with full history
+      # Checkout code from the main branch
       - name: Checkout Code
         uses: actions/checkout@v2
+
+      # Set up Python environment
+      - name: Set up Python
+        uses: actions/setup-python@v2
         with:
-          fetch-depth: 0  # Fetch all history to avoid shallow clone issues
+          python-version: '3.x' # Specify your Python version
 
-      # Configure Git for GitHub Actions
-      - name: Configure Git
+      # Install dependencies
+      - name: Install Dependencies
         run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
+          pip install -r requirements.txt
 
-      # Authenticate with GitHub using the GITHUB_TOKEN
-      - name: Authenticate with GitHub
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Run tests
+      - name: Run Tests
         run: |
-          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}
+          pytest # Use your test framework
 
-      # Push changes to staging branch
-      - name: Push to Staging Branch
-        run: |
-          git checkout -b staging
-          git push origin staging --force
+  # Step 2: Deploy to Production
+  deploy-to-production:
+    runs-on: ubuntu-latest
+    needs: test # Only run this job if the test job succeeds
 
-      # Set up Heroku CLI for deployment
+    steps:
+      # Checkout code from the main branch
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      # Set up Heroku CLI
       - name: Set up Heroku CLI
         run: |
           curl https://cli-assets.heroku.com/install.sh | sh
 
-      # Deploy to Heroku Staging App
-      - name: Deploy to Heroku Staging
+      # Deploy to Heroku Production App
+      - name: Deploy to Heroku Production
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
-          git remote add heroku https://heroku:${{ secrets.HEROKU_API_KEY }}@git.heroku.com/omnitool-by-xdv-staging.git
-          git push heroku staging:main --force
+          git remote add heroku https://heroku:${{ secrets.HEROKU_API_KEY }}@git.heroku.com/omnitool-by-xdv.git
+          git push heroku main --force
+
+      # Run Database Migrations for Production
+      - name: Run Database Migrations
+        env:
+          FLASK_ENV: production
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          pip install -r requirements.txt
+          flask db upgrade
