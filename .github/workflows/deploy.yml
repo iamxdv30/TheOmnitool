@@ -10,11 +10,11 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      # Checkout code from the main branch
+      # Checkout code from the main branch with full history
       - name: Checkout Code
         uses: actions/checkout@v2
         with:
-          fetch-depth: 0 # Fetch all history to avoid shallow clone issues
+          fetch-depth: 0  # Fetch all history to avoid shallow clone issues
 
       # Set up Python environment
       - name: Set up Python
@@ -38,18 +38,20 @@ jobs:
     needs: test # Only run this job if the test job succeeds
 
     steps:
-      # Checkout code from the main branch
+      # Checkout code from the main branch with full history
       - name: Checkout Code
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Ensure full history is fetched
 
-      # Set up FLASK_APP environment variable
-      - name: Set FLASK_APP environment variable
-        run: echo "FLASK_APP=main:create_app" >> $GITHUB_ENV
-
-      # Install Python dependencies (again, to ensure the environment is ready for Flask commands)
-      - name: Install Dependencies for Deployment
+      # Unshallow the repository if it's shallow
+      - name: Unshallow the repository if needed
         run: |
-          pip install -r requirements.txt
+          if [ -f .git/shallow ]; then
+            git fetch --prune --unshallow
+          else
+            echo "Repository is already a full clone."
+          fi
 
       # Set up Heroku CLI
       - name: Set up Heroku CLI
@@ -71,4 +73,5 @@ jobs:
           FLASK_APP: main:create_app
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
+          pip install -r requirements.txt
           flask db upgrade
