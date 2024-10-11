@@ -42,13 +42,6 @@ def create_app():
         database_url = database_url.replace("postgres://", "postgresql://", 1)
 
     app.config["SQLALCHEMY_DATABASE_URI"] = database_url
-
-    # Replace deprecated PostgreSQL connection string format
-    if database_url.startswith("postgres://"):
-        database_url = database_url.replace("postgres://", "postgresql://", 1)
-
-    # Configure SQLAlchemy
-    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     # Initialize the db and migrations
@@ -112,9 +105,6 @@ def create_app():
             FileSystemLoader("Tools/templates"),  # Load templates from Tools/templates
             FileSystemLoader("templates"),  # Load templates from the model templates directory
         ])
-
-        # Create all tables in the database
-        db.create_all()  # Create tables based on models
 
     # Inject flashed messages for templates
     @app.context_processor
