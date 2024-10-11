@@ -13,8 +13,6 @@ jobs:
       # Checkout code from the main branch
       - name: Checkout Code
         uses: actions/checkout@v2
-        with:
-          fetch-depth: 0  # Fetch all history to avoid shallow clone issues
 
       # Set up Python environment
       - name: Set up Python
@@ -41,17 +39,10 @@ jobs:
       # Checkout code from the main branch
       - name: Checkout Code
         uses: actions/checkout@v2
-        with:
-          fetch-depth: 0  # Fetch all history to avoid shallow clone issues
 
-      # Check if the repository is shallow and unshallow it if necessary
-      - name: Unshallow the Repository if Needed
-        run: |
-          if [ -f .git/shallow ]; then
-            git fetch --all --unshallow
-          else
-            echo "Repository is already a full clone."
-          fi
+      # Set up FLASK_APP environment variable
+      - name: Set FLASK_APP environment variable
+        run: echo "FLASK_APP=main.py" >> $GITHUB_ENV
 
       # Set up Heroku CLI
       - name: Set up Heroku CLI
