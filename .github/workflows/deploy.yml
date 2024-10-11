@@ -48,3 +48,12 @@ jobs:
         run: |
           git remote add heroku https://heroku:${{ secrets.HEROKU_API_KEY }}@git.heroku.com/omnitool-by-xdv-staging.git
           git push heroku staging:main --force
+
+      # Run Database Migrations
+      - name: Run Database Migrations
+        env:
+          FLASK_ENV: staging
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          pip install -r requirements.txt
+          flask db upgrade
