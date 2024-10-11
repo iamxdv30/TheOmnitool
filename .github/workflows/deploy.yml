@@ -2,38 +2,40 @@ name: CI/CD
 
 on:
   push:
-    branches: [main, staging]
-  pull_request:
-    branches: [main]
+    branches:
+      - development
 
 jobs:
-  test:
+  # Step 1: Push changes to Staging and Deploy to Heroku
+  deploy-to-staging:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.12'
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      - name: Run tests
-        run: pytest
 
-  deploy-staging:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/staging'
     steps:
-      - uses: actions/checkout@v2
+      # Checkout code from the development branch
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      # Configure Git for GitHub Actions
+      - name: Configure Git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+      # Push changes to staging branch
+      - name: Push to Staging Branch
+        run: |
+          git checkout -b staging
+          git push origin staging --force
+
+      # Set up Heroku CLI for deployment
       - name: Set up Heroku CLI
         run: |
           curl https://cli-assets.heroku.com/install.sh | sh
+
+      # Deploy to Heroku Staging App
       - name: Deploy to Heroku Staging
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
           git remote add heroku https://heroku:${{ secrets.HEROKU_API_KEY }}@git.heroku.com/omnitool-by-xdv-staging.git
-          git push heroku staging:main
+          git push heroku staging:main --force
