@@ -13,6 +13,8 @@ jobs:
       # Checkout code from the main branch
       - name: Checkout Code
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Fetch all history to avoid shallow clone issues
 
       # Set up Python environment
       - name: Set up Python
@@ -39,6 +41,13 @@ jobs:
       # Checkout code from the main branch
       - name: Checkout Code
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Fetch all history to avoid shallow clone issues
+
+      # Fetch all history to unshallow the repository
+      - name: Unshallow the Repository
+        run: |
+          git fetch --all --unshallow
 
       # Set up Heroku CLI
       - name: Set up Heroku CLI
