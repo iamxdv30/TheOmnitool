@@ -46,7 +46,7 @@ def create_app():
 
     # Initialize the db and migrations
     db.init_app(app)
-    Migrate(app, db)
+    migrate = Migrate(app, db)  # Ensure that Migrate is properly set up
 
     # Register blueprints
     app.register_blueprint(auth)
