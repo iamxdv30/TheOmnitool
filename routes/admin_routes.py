@@ -168,49 +168,6 @@ def manage_tools():
     tools = Tool.query.all()
     return render_template('manage_tools.html', tools=tools)
 
-@admin.route("/setup", methods=["GET"])
-def setup():
-    logging.info("Setup route accessed")
-    try:
-        if not User.query.filter_by(role="super_admin").first():
-            logging.info("Creating superadmin...")
-            superadmin = User(
-                username="superadmin",
-                email="super@admin.com",
-                fname="Super",
-                lname="Admin",
-                address="123 Admin St",
-                city="Admin City",
-                state="AS",
-                zip="12345",
-                role="super_admin",
-            )
-            superadmin.set_password("superpass")
 
-            logging.info("Creating admin...")
-            admin = User(
-                username="admin",
-                email="admin@example.com",
-                fname="Regular",
-                lname="Admin",
-                address="456 Admin Ave",
-                city="Admin Town",
-                state="AT",
-                zip="67890",
-                role="admin",
-            )
-            admin.set_password("adminpass")
-
-            db.session.add(superadmin)
-            db.session.add(admin)
-            db.session.commit()
-            logging.info("Setup complete")
-            return "Setup complete. Superadmin and Admin created."
-        logging.info("Setup already done")
-        return "Setup already done."
-    except Exception as e:
-        db.session.rollback()
-        logging.error(f"Error during setup: {str(e)}")
-        return f"Error during setup: {str(e)}"
 
 
