@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/contact.css') }}" />
+{% endblock %}
+{% block content %}
+
+<div class="contact-container">
+  <h1>Contact Us</h1>
+
+  <form id="contactForm">
+    <div class="query-type">
+      <label for="query-type">Query Type:</label>
+      <select id="query-type" name="query_type" required>
+        <option value="general">General</option>
+        <option value="bug">Bug</option>
+        <option value="suggestion">Suggestion</option>
+      </select>
+    </div>
+
+    <input type="text" id="name" name="name" placeholder="Name" required />
+    <input type="email" id="email" name="email" placeholder="Email" required />
+    <button type="button" id="verifyEmailBtn">Verify Email</button>
+
+    <textarea id="message" name="message" placeholder="Message" required disabled></textarea>
+    <button class="btn contact-btn" type="submit" disabled>Submit</button>
+  </form>
+</div>
+
+<script>
+  const verifyEmailBtn = document.getElementById('verifyEmailBtn');
+  const messageTextarea = document.getElementById('message');
+  const submitButton = document.querySelector('.contact-btn');
+
+  // Disable message and submit button initially
+  messageTextarea.disabled = true;
+  submitButton.disabled = true;
+
+  function validateEmail(email) {
+    const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    return re.test(String(email).toLowerCase());
+  }
+
+  verifyEmailBtn.addEventListener('click', async function () {
+    const email = document.getElementById('email').value;
+    const name = document.getElementById('name').value;
+  
+    if (!validateEmail(email)) {
+      alert('Please enter a valid email address.');
+      return;
+    }
+  
+    try {
+      const response = await fetch('/contact/verify-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, name })
+      });
+  
+      if (response.ok) {
+        const result = await response.json();
+        alert(result.message);
+        // Unlock the message textarea and submit button upon successful verification
+        messageTextarea.disabled = false;
+        submitButton.disabled = false;
+      } else {
+        const errorData = await response.text(); // Try to read the response as text
+        console.error('Server error:', errorData); // Log the error details
+        alert('Verification failed. Please check the server logs.');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error verifying email. Please try again later.');
+    }
+  });
+  
+
+  // Submit form handler
+  document.getElementById('contactForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+
+    const formData = new FormData(this);
+    const jsonData = Object.fromEntries(formData.entries());
+
+    try {
+      const response = await fetch('/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(jsonData),
+      });
+
+      if (response.ok) {
+        alert('Message sent successfully!');
+        this.reset();
+        messageTextarea.disabled = true;
+        submitButton.disabled = true;
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.message}`);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error sending message. Please try again later.');
+    }
+  });
+</script>
+
+{% endblock %}

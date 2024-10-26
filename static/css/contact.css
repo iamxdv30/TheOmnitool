@@ -1,0 +1,102 @@
+/* static/css/contact.css */
+.contact-container {
+  margin: 20px auto;
+  max-width: 600px;
+  padding: 20px;
+  font-family: 'Noto Sans Mono', monospace;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.contact-container h1 {
+  text-align: center;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+#contactForm {
+  display: flex;
+  flex-direction: column;
+}
+
+.query-type,
+#contactForm input,
+#contactForm textarea {
+  width: 96%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-family: inherit;
+}
+
+#contactForm textarea {
+  min-height: 150px;
+  resize: vertical;
+}
+
+.contact-btn {
+  background-color: #0056b3;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 16px;
+  transition: background-color 0.3s ease;
+}
+
+.contact-btn:hover {
+  background-color: #003d82;
+}
+
+/* Dark theme styles */
+body.dark-theme .contact-container {
+  background-color: #2c2c2c;
+  color: #e0e0e0;
+}
+
+body.dark-theme .contact-container h1 {
+  color: #fff;
+}
+
+body.dark-theme #contactForm input,
+body.dark-theme #contactForm textarea,
+body.dark-theme .query-type select {
+  background-color: #333;
+  color: #fff;
+  border-color: #555;
+}
+
+body.dark-theme .query-type {
+  background-color: #333;
+  color: #fff;
+  font-weight: bold;
+  border-color: #555;
+}
+
+body.dark-theme .query-type label, 
+body.dark-theme .query-type select {
+  color: #fff;
+  padding: 5px 10px;
+  border-radius: 4px;
+
+}
+
+body.dark-theme .contact-btn {
+  background-color: #38b000;
+}
+
+body.dark-theme .contact-btn:hover {
+  background-color: #008000;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .contact-container {
+    width: 90%;
+    padding: 15px;
+  }
+}

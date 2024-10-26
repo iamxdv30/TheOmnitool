@@ -11,10 +11,20 @@ from model.model import db
 import re
 import logging
 
+
+#New imports as of October 12, 2024
+from routes.contact_routes import contact, configure_mail
+from dotenv import load_dotenv
+
+
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
+
+# Load environment variables from .env
+load_dotenv()
 
 # Factory function to create a Flask app
 def create_app():
@@ -25,6 +35,20 @@ def create_app():
     logging.info(f"Current environment: {environment}")
 
     app = Flask(__name__, static_folder="static")
+
+
+    # Configure logging
+    if not app.debug:
+        if not os.path.exists('logs'):
+            os.mkdir('logs')
+        file_handler = logging.FileHandler('logs/app.log')
+        file_handler.setFormatter(logging.Formatter(
+            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+        ))
+        file_handler.setLevel(logging.ERROR)
+        app.logger.addHandler(file_handler)
+        app.logger.setLevel(logging.ERROR)
+        app.logger.info('Application startup')
 
     # Set the secret key based on the environment
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default_secret_key_for_development')
@@ -53,6 +77,10 @@ def create_app():
     app.register_blueprint(user)
     app.register_blueprint(admin)
     app.register_blueprint(tool)
+    app.register_blueprint(contact)
+
+    # Configure Flask-Mail
+    configure_mail(app)
 
     @app.route("/environment")
     def show_environment():
