@@ -268,9 +268,20 @@ jobs:
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
-          heroku pg:backups --app omnitool-by-xdv | tail -n +6 | while read -r backup; do
-            heroku pg:backups:delete "$backup" --app omnitool-by-xdv --confirm omnitool-by-xdv
-          done
+          # Get list of backups and extract only the backup IDs
+          backup_list=$(heroku pg:backups --app omnitool-by-xdv | grep '^b' | awk '{print $1}' | tail -n +6)
           
+          # Check if there are backups to delete
+          if [ ! -z "$backup_list" ]; then
+            echo "Found old backups to clean up: $backup_list"
+            for backup_id in $backup_list; do
+              echo "Deleting backup $backup_id..."
+              heroku pg:backups:delete $backup_id --app omnitool-by-xdv --confirm omnitool-by-xdv || true
+            done
+          else
+            echo "No old backups to clean up"
+          fi
+          
+          # Notify Discord about cleanup
           curl -H "Content-Type: application/json" -X POST "https://discord.com/api/webhooks/1299838194728177684/DuMFG_NFU1__YLawLIlovT4Dth8iUn9vNu2HLj4PibImQq6QL0iCDLd1lObrVGhV7BbK" \
-            -d "{\"embeds\":[{\"title\":\"🧹 Cleanup Complete\",\"color\":3447003,\"description\":\"Old backups have been cleaned up\"}]}"
+            -d "{\"embeds\":[{\"title\":\"🧹 Cleanup Complete\",\"color\":3447003,\"description\":\"Backup cleanup process finished\"}]}"
