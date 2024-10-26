@@ -94,12 +94,10 @@ jobs:
           if git rev-parse HEAD~1 >/dev/null 2>&1; then
             MIGRATION_CHANGES=$(git diff --name-only HEAD HEAD~1 | grep -c "migrations/" || echo "0")
           else
-            # If this is the first commit or shallow clone
             MIGRATION_CHANGES=$(git diff --name-only $(git hash-object -t tree /dev/null) HEAD | grep -c "migrations/" || echo "0")
           fi
           echo "has_changes=$([[ $MIGRATION_CHANGES -gt 0 ]] && echo "true" || echo "false")" >> $GITHUB_OUTPUT
           
-          # Notify Discord about migration status
           if [[ $MIGRATION_CHANGES -gt 0 ]]; then
             curl -H "Content-Type: application/json" -X POST "https://discord.com/api/webhooks/1299838194728177684/DuMFG_NFU1__YLawLIlovT4Dth8iUn9vNu2HLj4PibImQq6QL0iCDLd1lObrVGhV7BbK" \
               -d "{\"embeds\":[{\"title\":\"🔄 Database Changes Detected\",\"color\":16776960,\"description\":\"Found $MIGRATION_CHANGES migration changes - Preparing backup\"}]}"
@@ -114,24 +112,20 @@ jobs:
           TIMESTAMP=$(date +%Y%m%d_%H%M%S)
           BACKUP_FILE="backup_${TIMESTAMP}.dump"
           
-          # Create Heroku backup
           echo "Creating database backup..."
           heroku pg:backups:capture --app omnitool-by-xdv
           
           echo "Downloading backup..."
           heroku pg:backups:download --app omnitool-by-xdv --output "backups/${BACKUP_FILE}"
           
-          # Export user data
           echo "Exporting user data..."
-          heroku pg:psql --app omnitool-by-xdv << EOF > "backups/users_${TIMESTAMP}.sql"
-          COPY (SELECT * FROM users) TO STDOUT WITH CSV HEADER;
-          COPY (SELECT * FROM tool_access) TO STDOUT WITH CSV HEADER;
-          COPY (SELECT * FROM email_templates) TO STDOUT WITH CSV HEADER;
-          EOF
+          heroku pg:psql --app omnitool-by-xdv -c "COPY users TO STDOUT WITH CSV HEADER" > "backups/users_${TIMESTAMP}.csv"
+          heroku pg:psql --app omnitool-by-xdv -c "COPY tool_access TO STDOUT WITH CSV HEADER" > "backups/tool_access_${TIMESTAMP}.csv"
+          heroku pg:psql --app omnitool-by-xdv -c "COPY email_templates TO STDOUT WITH CSV HEADER" > "backups/email_templates_${TIMESTAMP}.csv"
           
           echo "backup_file=${BACKUP_FILE}" >> $GITHUB_OUTPUT
+          echo "timestamp=${TIMESTAMP}" >> $GITHUB_OUTPUT
           
-          # Notify Discord about backup completion
           curl -H "Content-Type: application/json" -X POST "https://discord.com/api/webhooks/1299838194728177684/DuMFG_NFU1__YLawLIlovT4Dth8iUn9vNu2HLj4PibImQq6QL0iCDLd1lObrVGhV7BbK" \
             -d "{\"embeds\":[{\"title\":\"💾 Backup Created\",\"color\":3447003,\"description\":\"Database backup completed successfully\",\"fields\":[{\"name\":\"Backup File\",\"value\":\"${BACKUP_FILE}\",\"inline\":true}]}]}"
 
@@ -224,23 +218,30 @@ jobs:
         run: |
           echo "Restoring user data..."
           
-          # Function to restore a specific table
-          restore_table() {
-            local table=$1
-            local file=$2
-            echo "Restoring ${table}..."
-            heroku pg:psql --app omnitool-by-xdv << EOF
-            ALTER TABLE ${table} DISABLE TRIGGER ALL;
-            \COPY ${table} FROM '${file}' WITH CSV HEADER;
-            ALTER TABLE ${table} ENABLE TRIGGER ALL;
-            EOF
-          }
+          for file in backups/users_*.csv; do
+            echo "Restoring users table..."
+            heroku pg:psql --app omnitool-by-xdv -c "
+              ALTER TABLE users DISABLE TRIGGER ALL;
+              \COPY users FROM '$file' WITH CSV HEADER;
+              ALTER TABLE users ENABLE TRIGGER ALL;"
+          done
+
+          for file in backups/tool_access_*.csv; do
+            echo "Restoring tool_access table..."
+            heroku pg:psql --app omnitool-by-xdv -c "
+              ALTER TABLE tool_access DISABLE TRIGGER ALL;
+              \COPY tool_access FROM '$file' WITH CSV HEADER;
+              ALTER TABLE tool_access ENABLE TRIGGER ALL;"
+          done
+
+          for file in backups/email_templates_*.csv; do
+            echo "Restoring email_templates table..."
+            heroku pg:psql --app omnitool-by-xdv -c "
+              ALTER TABLE email_templates DISABLE TRIGGER ALL;
+              \COPY email_templates FROM '$file' WITH CSV HEADER;
+              ALTER TABLE email_templates ENABLE TRIGGER ALL;"
+          done
           
-          restore_table "users" "backups/users_*.sql"
-          restore_table "tool_access" "backups/tool_access_*.sql"
-          restore_table "email_templates" "backups/email_templates_*.sql"
-          
-          # Notify Discord about restoration
           curl -H "Content-Type: application/json" -X POST "https://discord.com/api/webhooks/1299838194728177684/DuMFG_NFU1__YLawLIlovT4Dth8iUn9vNu2HLj4PibImQq6QL0iCDLd1lObrVGhV7BbK" \
             -d "{\"embeds\":[{\"title\":\"✅ Data Restored\",\"color\":5763719,\"description\":\"User data has been restored successfully\"}]}"
 
@@ -249,14 +250,11 @@ jobs:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
           echo "Verifying data restoration..."
-          verification_results=$(heroku pg:psql --app omnitool-by-xdv << EOF
-          SELECT COUNT(*) as user_count FROM users;
-          SELECT COUNT(*) as tool_access_count FROM tool_access;
-          SELECT COUNT(*) as template_count FROM email_templates;
-          EOF
-          )
+          verification_results=$(heroku pg:psql --app omnitool-by-xdv -c "
+            SELECT COUNT(*) as user_count FROM users;
+            SELECT COUNT(*) as tool_access_count FROM tool_access;
+            SELECT COUNT(*) as template_count FROM email_templates;")
           
-          # Send verification results to Discord
           curl -H "Content-Type: application/json" -X POST "https://discord.com/api/webhooks/1299838194728177684/DuMFG_NFU1__YLawLIlovT4Dth8iUn9vNu2HLj4PibImQq6QL0iCDLd1lObrVGhV7BbK" \
             -d "{\"embeds\":[{\"title\":\"📊 Verification Results\",\"color\":3447003,\"description\":\"${verification_results}\"}]}"
 
@@ -270,11 +268,9 @@ jobs:
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
-          # Keep only the last 5 backups
           heroku pg:backups --app omnitool-by-xdv | tail -n +6 | while read -r backup; do
             heroku pg:backups:delete "$backup" --app omnitool-by-xdv --confirm omnitool-by-xdv
           done
           
-          # Notify Discord about cleanup
           curl -H "Content-Type: application/json" -X POST "https://discord.com/api/webhooks/1299838194728177684/DuMFG_NFU1__YLawLIlovT4Dth8iUn9vNu2HLj4PibImQq6QL0iCDLd1lObrVGhV7BbK" \
             -d "{\"embeds\":[{\"title\":\"🧹 Cleanup Complete\",\"color\":3447003,\"description\":\"Old backups have been cleaned up\"}]}"
