@@ -39,17 +39,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Run tests with coverage reporting
+      # Run tests with coverage
       - name: Run Tests
         run: |
-          pytest --cov=./ --cov-report=xml
+          pytest --cov=./ --cov-report=html
 
-      # Upload coverage report
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+      # Archive the coverage report
+      - name: Archive code coverage results
+        uses: actions/upload-artifact@v3
         with:
-          file: ./coverage.xml
-          fail_ci_if_error: true
+          name: code-coverage-report
+          path: htmlcov/
+          retention-days: 14
 
   # Step 2: Push changes to Staging and Deploy to Heroku
   deploy-to-staging:
