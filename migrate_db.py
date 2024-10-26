@@ -65,30 +65,28 @@ def migrate_db(source_url, target_url):
 
 if __name__ == "__main__":
     try:
-        # Check the IS_LOCAL environment variable
-        is_local = os.getenv("IS_LOCAL", "true").lower() == "true"
-        if not is_local:
-            logging.info("Skipping migration because IS_LOCAL is set to false.")
-            exit(0)
-
-        source_url = "sqlite:///users.db"
-
-        # Choose the target based on the environment
         environment = os.getenv("FLASK_ENV", "development")
         logging.info(f"Running migration for {environment} environment")
 
+        # Determine database URLs based on environment
         if environment in ["production", "staging"]:
             target_url = os.getenv("DATABASE_URL", "")
+            if not target_url:
+                raise ValueError(f"No DATABASE_URL found for {environment} environment")
+            # Ensure PostgreSQL URL format
+            if target_url.startswith("postgres://"):
+                target_url = target_url.replace("postgres://", "postgresql://", 1)
+            source_url = target_url  # In staging/prod, source and target are the same
         else:
-            target_url = "sqlite:///users.db"  # Use SQLite for local development
+            # Local development uses SQLite
+            is_local = os.getenv("IS_LOCAL", "true").lower() == "true"
+            if not is_local:
+                logging.info("Not a local environment and not staging/production. Skipping migration.")
+                exit(0)
+            source_url = target_url = "sqlite:///users.db"
 
-        if not target_url:
-            raise ValueError(f"No DATABASE_URL found for {environment} environment")
-
-        # Ensure the target_url uses the correct format for PostgreSQL
-        if target_url.startswith("postgres://"):
-            target_url = target_url.replace("postgres://", "postgresql://", 1)
-
+        logging.info(f"Using database URL: {target_url.replace(os.getenv('DATABASE_URL', ''), '***')}")
+        
         # Perform the migration
         migrate_db(source_url, target_url)
     except Exception as e:

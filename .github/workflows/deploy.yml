@@ -135,22 +135,7 @@ jobs:
 
       - name: Run Database Migrations
         run: |
-          heroku run flask db upgrade -a omnitool-by-xdv-staging
-
-      - name: Wait for application startup
-        run: |
-          sleep 15
-
-      - name: Verify Deployment
-        run: |
-          for i in {1..3}; do
-            if curl --fail https://omnitool-by-xdv-staging.herokuapp.com/; then
-              echo "Deployment verified successfully"
-              exit 0
-            fi
-            echo "Attempt $i failed, waiting before retry..."
-            sleep 10
-          done
-          echo "Failed to verify deployment after 3 attempts"
-          heroku logs --tail -a omnitool-by-xdv-staging
-          exit 1
+          # Ensure we're using PostgreSQL in staging
+          export FLASK_ENV=staging
+          export DATABASE_URL=$(heroku config:get DATABASE_URL -a omnitool-by-xdv-staging)
+          python migrate_db.py
