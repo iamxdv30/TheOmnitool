@@ -134,8 +134,9 @@ jobs:
           heroku config:set SESSION_TYPE="filesystem" -a omnitool-by-xdv-staging
 
       - name: Run Database Migrations
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+          FLASK_ENV: staging
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
         run: |
-          # Ensure we're using PostgreSQL in staging
-          export FLASK_ENV=staging
-          export DATABASE_URL=$(heroku config:get DATABASE_URL -a omnitool-by-xdv-staging)
-          python migrate_db.py
+          heroku run python migrate_db.py -a omnitool-by-xdv-staging
