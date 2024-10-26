@@ -78,15 +78,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Unshallow the repository if it's shallow
-      - name: Unshallow the repository if needed
-        run: |
-          if [ -f .git/shallow ]; then
-            git fetch --prune --unshallow
-          else
-            echo "Repository is already a full clone."
-          fi
-
       # Configure Git for GitHub Actions
       - name: Configure Git
         run: |
@@ -106,13 +97,14 @@ jobs:
           git checkout -b staging
           git push origin staging --force
 
-      # Set up Heroku CLI for deployment
+      # Set up and deploy to Heroku
       - name: Deploy to Heroku
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+          HEROKU_EMAIL: ${{ secrets.HEROKU_EMAIL }}
         run: |
-          curl https://cli-assets.heroku.com/install.sh | sh
-          heroku git:remote -a omnitool-by-xdv-staging
+          git remote remove heroku || true
+          git remote add heroku https://heroku:${{ secrets.HEROKU_API_KEY }}@git.heroku.com/omnitool-by-xdv-staging.git
           git push heroku staging:main --force
 
       # Run Database Migrations
