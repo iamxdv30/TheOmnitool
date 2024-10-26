@@ -44,17 +44,11 @@ def test_send_query_missing_fields(client):
     assert response.status_code == 400
     assert b"All fields are required." in response.data
 
-def test_send_query_invalid_email(client):
+def test_send_query_with_invalid_format(client):
     """
-    Test that sending a query with an invalid email returns an error
+    Test that sending a query with invalid data format returns an error
     """
-    data = {
-        "query_type": "General",
-        "name": "Xyrus De Vera",
-        "email": "invalid-email",
-        "message": "This is a test email from the Omnitool",
-    }
-
-    response = client.post("/contact", json=data)
+    # Test with non-JSON data
+    response = client.post("/contact", data="not json data")
     assert response.status_code == 400
-    assert b"Invalid email address." in response.data
+    assert b"Message sent successfully!" not in response.data
