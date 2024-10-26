@@ -20,13 +20,15 @@ jobs:
       FLASK_APP: 'main.py'
       FLASK_ENV: 'testing'
       IS_LOCAL: 'true'
+      TEST_SECRET_KEY: 'test-secret-key-for-sessions'
+      SESSION_TYPE: 'filesystem'
       
     steps:
       # Checkout code from the development branch with full history
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0 # Fetch all history to avoid shallow clone issues
+          fetch-depth: 0
 
       # Set up Python environment
       - name: Set up Python
@@ -40,9 +42,23 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install pytest-flask-sqlalchemy pytest-env
+
+      # Create test configuration
+      - name: Create Test Config
+        run: |
+          echo "TESTING=True" > .env.test
+          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env.test
+          echo "SESSION_TYPE=filesystem" >> .env.test
+          mkdir -p instance
 
       # Run tests with coverage
       - name: Run Tests
+        env:
+          FLASK_ENV: testing
+          TESTING: "True"
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          SESSION_TYPE: "filesystem"
         run: |
           pytest --cov=./ --cov-report=html
 
@@ -57,54 +73,47 @@ jobs:
   # Step 2: Push changes to Staging and Deploy to Heroku
   deploy-to-staging:
     runs-on: ubuntu-latest
-    needs: test # Only run this job if the test job succeeds
+    needs: test
     environment: staging
 
     steps:
-      # Checkout code from the development branch with full history
+      # Previous deployment steps remain unchanged...
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0 # Fetch all history to avoid shallow clone issues
+          fetch-depth: 0
 
-      # Set up Python environment
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.12.0'
           cache: 'pip'
 
-      # Install dependencies
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Configure Git for GitHub Actions
       - name: Configure Git
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
 
-      # Authenticate with GitHub using the GITHUB_TOKEN
       - name: Authenticate with GitHub
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}
 
-      # Push changes to staging branch
       - name: Push to Staging Branch
         run: |
           git checkout -b staging
           git push origin staging --force
 
-      # Install Heroku CLI
       - name: Install Heroku CLI
         run: |
           curl https://cli-assets.heroku.com/install.sh | sh
 
-      # Deploy to Heroku
       - name: Deploy to Heroku
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
@@ -112,7 +121,6 @@ jobs:
           heroku git:remote -a omnitool-by-xdv-staging
           git push heroku staging:main --force
 
-      # Update Heroku Config
       - name: Update Heroku Config
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
@@ -125,20 +133,18 @@ jobs:
           heroku config:set TOKEN_SECRET_KEY=${{ secrets.TOKEN_SECRET_KEY }} -a omnitool-by-xdv-staging
           heroku config:set SECURITY_PASSWORD_SALT=${{ secrets.SECURITY_PASSWORD_SALT }} -a omnitool-by-xdv-staging
           heroku config:set SECRET_KEY=${{ secrets.SECRET_KEY }} -a omnitool-by-xdv-staging
+          heroku config:set SESSION_TYPE=filesystem -a omnitool-by-xdv-staging
 
-      # Run Database Migrations
       - name: Run Database Migrations
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
           heroku run flask db upgrade -a omnitool-by-xdv-staging
 
-      # Wait for application startup
       - name: Wait for application startup
         run: |
           sleep 15
 
-      # Verify the deployment
       - name: Verify Deployment
         run: |
           for i in {1..3}; do
