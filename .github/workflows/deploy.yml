@@ -15,7 +15,9 @@ jobs:
       MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
       TOKEN_SECRET_KEY: ${{ secrets.TOKEN_SECRET_KEY }}
       SECURITY_PASSWORD_SALT: ${{ secrets.SECURITY_PASSWORD_SALT }}
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
       DATABASE_URL: 'sqlite:///:memory:'
+      FLASK_APP: 'main.py'
       FLASK_ENV: 'testing'
       IS_LOCAL: 'true'
       
@@ -97,31 +99,56 @@ jobs:
           git checkout -b staging
           git push origin staging --force
 
-      # Set up and deploy to Heroku
+      # Install Heroku CLI
+      - name: Install Heroku CLI
+        run: |
+          curl https://cli-assets.heroku.com/install.sh | sh
+
+      # Deploy to Heroku
       - name: Deploy to Heroku
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-          HEROKU_EMAIL: ${{ secrets.HEROKU_EMAIL }}
         run: |
-          git remote remove heroku || true
-          git remote add heroku https://heroku:${{ secrets.HEROKU_API_KEY }}@git.heroku.com/omnitool-by-xdv-staging.git
+          heroku git:remote -a omnitool-by-xdv-staging
           git push heroku staging:main --force
+
+      # Update Heroku Config
+      - name: Update Heroku Config
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          heroku config:set FLASK_APP=main.py -a omnitool-by-xdv-staging
+          heroku config:set FLASK_ENV=staging -a omnitool-by-xdv-staging
+          heroku config:set IS_LOCAL=false -a omnitool-by-xdv-staging
+          heroku config:set MAIL_USERNAME=info.omnitools@gmail.com -a omnitool-by-xdv-staging
+          heroku config:set MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }} -a omnitool-by-xdv-staging
+          heroku config:set TOKEN_SECRET_KEY=${{ secrets.TOKEN_SECRET_KEY }} -a omnitool-by-xdv-staging
+          heroku config:set SECURITY_PASSWORD_SALT=${{ secrets.SECURITY_PASSWORD_SALT }} -a omnitool-by-xdv-staging
+          heroku config:set SECRET_KEY=${{ secrets.SECRET_KEY }} -a omnitool-by-xdv-staging
 
       # Run Database Migrations
       - name: Run Database Migrations
         env:
-          FLASK_ENV: 'staging'
-          FLASK_APP: 'main:create_app'
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          MAIL_USERNAME: 'info.omnitools@gmail.com'
-          MAIL_DEFAULT_SENDER: 'info@theomnitools.com'
-          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
-          TOKEN_SECRET_KEY: ${{ secrets.TOKEN_SECRET_KEY }}
-          SECURITY_PASSWORD_SALT: ${{ secrets.SECURITY_PASSWORD_SALT }}
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
-          flask db upgrade
+          heroku run flask db upgrade -a omnitool-by-xdv-staging
+
+      # Wait for application startup
+      - name: Wait for application startup
+        run: |
+          sleep 15
 
       # Verify the deployment
       - name: Verify Deployment
         run: |
-          curl --fail https://omnitool-by-xdv-staging.herokuapp.com/ || exit 1
+          for i in {1..3}; do
+            if curl --fail https://omnitool-by-xdv-staging.herokuapp.com/; then
+              echo "Deployment verified successfully"
+              exit 0
+            fi
+            echo "Attempt $i failed, waiting before retry..."
+            sleep 10
+          done
+          echo "Failed to verify deployment after 3 attempts"
+          heroku logs --tail -a omnitool-by-xdv-staging
+          exit 1
