@@ -91,7 +91,12 @@ jobs:
       - name: Check for Migration Changes
         id: check_migrations
         run: |
-          MIGRATION_CHANGES=$(git diff --name-only HEAD HEAD~1 | grep -c "migrations/")
+          if git rev-parse HEAD~1 >/dev/null 2>&1; then
+            MIGRATION_CHANGES=$(git diff --name-only HEAD HEAD~1 | grep -c "migrations/" || echo "0")
+          else
+            # If this is the first commit or shallow clone
+            MIGRATION_CHANGES=$(git diff --name-only $(git hash-object -t tree /dev/null) HEAD | grep -c "migrations/" || echo "0")
+          fi
           echo "has_changes=$([[ $MIGRATION_CHANGES -gt 0 ]] && echo "true" || echo "false")" >> $GITHUB_OUTPUT
           
           # Notify Discord about migration status
