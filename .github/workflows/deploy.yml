@@ -86,11 +86,11 @@ jobs:
           git push heroku staging:main --force
 
       # Run Database Migrations
-      - name: Run Database Migrations
-        env:
-          FLASK_ENV: staging
-          FLASK_APP: main:create_app # Assuming your app factory function is named 'create_app' in main.py
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: |
-          pip install -r requirements.txt
-          flask db upgrade
+      #- name: Run Database Migrations
+      #  env:
+      #    FLASK_ENV: staging
+      #    FLASK_APP: main:create_app # Assuming your app factory function is named 'create_app' in main.py
+      #    DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      #  run: |
+      #    pip install -r requirements.txt
+      #    flask db upgrade
