@@ -1,4 +1,5 @@
 /* static/css/contact.css */
+
 .contact-container {
   margin: 20px auto;
   max-width: 600px;
@@ -51,6 +52,30 @@
 .contact-btn:hover {
   background-color: #003d82;
 }
+
+#messageContainer, .contact-btn {
+  display: none;  /* Hide by default */
+}
+
+#verifyEmailBtn {
+  background-color: #0056b3;
+  color: white;
+  padding: 10px 20px;
+  margin-bottom: 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 16px;
+  transition: background-color 0.3s ease;
+  
+  
+}
+
+#verifyEmailBtn:hover {
+  background-color: #003d82;
+}
+
 
 /* Dark theme styles */
 body.dark-theme .contact-container {

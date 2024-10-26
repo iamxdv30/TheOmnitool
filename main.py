@@ -10,6 +10,7 @@ from routes.tool_routes import tool
 from model.model import db
 import re
 import logging
+from datetime import timedelta
 
 
 #New imports as of October 12, 2024
@@ -27,6 +28,19 @@ logging.basicConfig(
 load_dotenv()
 
 # Factory function to create a Flask app
+
+
+def configure_session(app):
+    # Configure session to expire when browser closes
+    app.config.update(
+        # Session will expire when browser closes
+        PERMANENT_SESSION_LIFETIME=timedelta(minutes=30),  # Backup expiry time
+        SESSION_PERMANENT=False,  # This ensures cookie expires when browser closes
+        SESSION_COOKIE_SECURE=True,  # Only send cookie over HTTPS
+        SESSION_COOKIE_HTTPONLY=True,  # Prevent JavaScript access to session cookie
+        SESSION_COOKIE_SAMESITE='Lax'  # Protect against CSRF
+    )
+
 def create_app():
     # Determine if we're running locally
     is_local = os.environ.get('IS_LOCAL', 'true').lower() == 'true'
@@ -36,6 +50,11 @@ def create_app():
 
     app = Flask(__name__, static_folder="static")
 
+    # Configure session settings
+    configure_session(app)
+
+    # Configure Flask-Mail
+    configure_mail(app)
 
     # Configure logging
     if not app.debug:
@@ -78,9 +97,6 @@ def create_app():
     app.register_blueprint(admin)
     app.register_blueprint(tool)
     app.register_blueprint(contact)
-
-    # Configure Flask-Mail
-    configure_mail(app)
 
     @app.route("/environment")
     def show_environment():
