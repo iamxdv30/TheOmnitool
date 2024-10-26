@@ -1,0 +1,100 @@
+.verification-success-container {
+    margin: 20px auto;
+    max-width: 600px;
+    padding: 20px;
+    font-family: 'Noto Sans Mono', monospace;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+  }
+  
+  .verification-content {
+    padding: 20px;
+  }
+  
+  .verification-title {
+    color: #333;
+    margin-bottom: 30px;
+    font-size: 24px;
+  }
+  
+  .verification-message {
+    margin: 20px 0;
+    line-height: 1.6;
+  }
+  
+  .verification-icon {
+    font-size: 48px;
+    color: #38b000;
+    margin: 20px 0;
+  }
+  
+  .verification-actions {
+    margin-top: 30px;
+  }
+  
+  .return-button {
+    display: inline-block;
+    background-color: #0056b3;
+    color: white;
+    padding: 10px 20px;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+  }
+  
+  .return-button:hover {
+    background-color: #003d82;
+    text-decoration: none;
+    color: white;
+  }
+  
+  /* Dark theme styles */
+  body.dark-theme .verification-success-container {
+    background-color: #2c2c2c;
+    color: #e0e0e0;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  }
+  
+  body.dark-theme .verification-title {
+    color: #fff;
+  }
+  
+  body.dark-theme .verification-message {
+    color: #e0e0e0;
+  }
+  
+  body.dark-theme .verification-icon {
+    color: #38b000;
+  }
+  
+  body.dark-theme .return-button {
+    background-color: #38b000;
+    color: #fff;
+  }
+  
+  body.dark-theme .return-button:hover {
+    background-color: #008000;
+  }
+  
+  /* Responsive design */
+  @media (max-width: 768px) {
+    .verification-success-container {
+      width: 90%;
+      padding: 15px;
+      margin: 10px auto;
+    }
+    
+    .verification-title {
+      font-size: 20px;
+    }
+    
+    .verification-icon {
+      font-size: 36px;
+    }
+    
+    .verification-message {
+      font-size: 14px;
+    }
+  }

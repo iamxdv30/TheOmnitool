@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{% block title %} XDV Tool For NSC{% endblock %}</title>
+    <title>{% block title %} The Omnitool{% endblock %}</title>
 
     <!-- Link to the global CSS file (base.css) -->
     <link
@@ -124,7 +124,7 @@
             <li><a href="#">Home</a></li>
             <li><a href="#">About</a></li>
             <li><a href="#">Services</a></li>
-            <li><a href="#">Contact</a></li>
+            <li><a href="{{ url_for('contact.contact_page') }}">Contact</a></li>
           </ul>
         </nav>
       </div>

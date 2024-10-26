@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/isVerifiedEmail.css') }}">
+{% endblock %}
+
+{% block title %}OmniTool: Email Verification{% endblock %}
+
+{% block content %}
+
+<div class="verification-success-container">
+    <div class="verification-content">
+        <h1 class="verification-title">Hi {{ name }}!</h1>
+        
+        <div class="verification-message">
+            <div class="verification-icon">✓</div>
+            <p>Your email: <strong>{{ email }}</strong> has been verified successfully!</p>
+            <p>You can now submit your query.</p>
+        </div>
+
+        <div class="verification-actions">
+            <a href="{{ url_for('contact.contact_page') }}" 
+               class="return-button"
+               onclick="sessionStorage.setItem('verified_user_name', '{{ name }}'); sessionStorage.setItem('verified_user_email', '{{ email }}');">
+                Return to Contact Form
+            </a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
