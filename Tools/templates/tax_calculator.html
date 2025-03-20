@@ -16,15 +16,20 @@
                 <option value="canada">Canada</option>
             </select>
         </div>
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="is_sales_before_tax" checked> Apply Discounts Before Tax
+            </label>
+        </div>
 
         <div id="itemsContainer">
             <h3>Items</h3>
             {% for i in range(1, (data.item_count|default(1))|int + 1) %}
             <div class="item">
                 <label for="item_price_{{ i }}">Item {{ i }} Price:</label>
-                <input type="number" step="0.01" name="item_price_{{ i }}" value="{{ data.get('item_price_' ~ i, '') }}" required>
+                <input type="number" step="0.0001" name="item_price_{{ i }}" value="{{ data.get('item_price_' ~ i, '') }}" required>
                 <label for="item_tax_rate_{{ i }}">Tax Rate (%):</label>
-                <input type="number" step="0.01" name="item_tax_rate_{{ i }}" value="{{ data.get('item_tax_rate_' ~ i, '') }}" required>
+                <input type="number" step="0.0001" name="item_tax_rate_{{ i }}" value="{{ data.get('item_tax_rate_' ~ i, '') }}" required>
             </div>
             {% endfor %}
         </div>
@@ -35,7 +40,7 @@
             {% for i in range(1, (data.discount_count|default(0))|int + 1) %}
             <div class="discount">
                 <label for="discount_amount_{{ i }}">Discount {{ i }} Amount:</label>
-                <input type="number" step="0.01" name="discount_amount_{{ i }}" value="{{ data.get('discount_amount_' ~ i, '') }}">
+                <input type="number" step="0.0001" name="discount_amount_{{ i }}" value="{{ data.get('discount_amount_' ~ i, '') }}">
                 <label for="is_discount_taxable_{{ i }}">Is Taxable?</label>
                 <select name="is_discount_taxable_{{ i }}">
                     <option value="N" {% if data.get('is_discount_taxable_' ~ i) == 'N' %}selected{% endif %}>No</option>
@@ -49,7 +54,7 @@
         <div class="shipping-section">
             <h3>Shipping</h3>
             <label for="shipping_cost">Shipping Cost:</label>
-            <input type="number" step="0.01" name="shipping_cost" value="{{ data.shipping_cost|default('') }}">
+            <input type="number" step="0.0001" name="shipping_cost" value="{{ data.shipping_cost|default('') }}">
             <label for="shipping_taxable">Is Shipping Taxable?</label>
             <select name="shipping_taxable" onchange="toggleShippingTaxRate()">
                 <option value="N" {% if data.shipping_taxable == 'N' %}selected{% endif %}>No</option>
@@ -57,7 +62,7 @@
             </select>
             <div id="shipping_tax_rate_section" {% if data.shipping_taxable != 'Y' %}style="display: none;"{% endif %}>
                 <label for="shipping_tax_rate">Shipping Tax Rate (%):</label>
-                <input type="number" step="0.01" name="shipping_tax_rate" value="{{ data.shipping_tax_rate|default('') }}">
+                <input type="number" step="0.0001" name="shipping_tax_rate" value="{{ data.shipping_tax_rate|default('') }}">
             </div>
         </div>
 
@@ -106,9 +111,9 @@
         newItem.classList.add('item');
         newItem.innerHTML = `
             <label for="item_price_${itemCount}">Item ${itemCount} Price:</label>
-            <input type="number" step="0.01" name="item_price_${itemCount}" required>
+            <input type="number" step="0.0001" name="item_price_${itemCount}" required>
             <label for="item_tax_rate_${itemCount}">Tax Rate (%):</label>
-            <input type="number" step="0.01" name="item_tax_rate_${itemCount}" required>
+            <input type="number" step="0.0001" name="item_tax_rate_${itemCount}" required>
         `;
         itemsContainer.appendChild(newItem);
     }
@@ -120,7 +125,7 @@
         newDiscount.classList.add('discount');
         newDiscount.innerHTML = `
             <label for="discount_amount_${discountCount}">Discount ${discountCount} Amount:</label>
-            <input type="number" step="0.01" name="discount_amount_${discountCount}">
+            <input type="number" step="0.0001" name="discount_amount_${discountCount}">
             <label for="is_discount_taxable_${discountCount}">Is Taxable?</label>
             <select name="is_discount_taxable_${discountCount}">
                 <option value="N">No</option>
