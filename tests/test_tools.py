@@ -51,7 +51,7 @@ def test_condition_1():
     
     assert result['item_total'] == 150
     assert result['discount_total'] == 12.5
-    assert round(result['total_tax'], 2) == 13.63
+    assert result['total_tax'] == 13.63
     assert result['shipping_cost'] == 15
     assert result['shipping_tax'] == 0
     assert round(result['total_amount'], 2) == 166.13

@@ -1,137 +1,108 @@
+from decimal import Decimal, ROUND_HALF_UP
+
 def calculate_tax(price, tax_rate):
-    """
-    Calculate tax amount based on price and tax rate
-    
-    Args:
-        price (float): The price amount
-        tax_rate (float): The tax rate percentage
-        
-    Returns:
-        float: The calculated tax amount
-    """
-    return round(price * (tax_rate / 100), 2)
+    """Calculate tax amount with precise decimal arithmetic"""
+    price_dec = Decimal(str(price))
+    rate_dec = Decimal(str(tax_rate)) / Decimal('100')
+    return price_dec * rate_dec
 
 def tax_calculator(data):
-    """
-    Calculate taxes for items with various conditions
-    
-    Args:
-        data (dict): Dictionary containing:
-            - items: List of dictionaries with price and tax_rate
-            - discounts: List of discount information
-            - shipping_cost: Cost of shipping
-            - shipping_taxable: Whether shipping is taxable
-            - shipping_tax_rate: Tax rate for shipping
-            - is_sales_before_tax: Whether sales are taxed after or before discount
-            - discount_is_taxable: Whether discounts are taxable
-            
-    Returns:
-        dict: Dictionary with tax calculation results
-    """
+    # Convert inputs to Decimal
     items = data.get('items', [])
     discounts = data.get('discounts', [])
-    shipping_cost = float(data.get('shipping_cost', 0))
+    shipping_cost = Decimal(str(data.get('shipping_cost', 0)))
     shipping_taxable = data.get('shipping_taxable', False)
-    shipping_tax_rate = float(data.get('shipping_tax_rate', 0))
+    shipping_tax_rate = Decimal(str(data.get('shipping_tax_rate', 0)))
     is_sales_before_tax = data.get('is_sales_before_tax', False)
-    discount_is_taxable = data.get('discount_is_taxable', False)
+    discount_is_taxable = data.get('discount_is_taxable', True)
 
-    total_tax = 0
-    total_amount = 0
-    item_total = 0
-    discount_total = 0
-    shipping_tax = 0
+    total_tax = Decimal('0')
+    total_amount = Decimal('0')
+    item_total = Decimal('0')
+    discount_total = Decimal('0')
+    shipping_tax = Decimal('0')
     tax_breakdown = []
 
     # Calculate item totals
     for i, item in enumerate(items, 1):
-        price = item['price']
-        tax_rate = item['tax_rate']
+        price = Decimal(str(item['price']))
+        tax_rate = Decimal(str(item['tax_rate']))
         item_total += price
 
     # Calculate discount totals
     for discount in discounts:
-        discount_total += discount['amount']
+        discount_total += Decimal(str(discount['amount']))
 
     # Process taxes based on conditions
     if is_sales_before_tax:
-        # Condition 2 or 4: Prices before tax
+        # Conditions 2 or 4
         if discount_is_taxable:
-            # Condition 2: Prices before tax, discount taxable
+            # Condition 2
             for i, item in enumerate(items, 1):
-                price = item['price']
-                tax_rate = item['tax_rate']
+                price = Decimal(str(item['price']))
+                tax_rate = Decimal(str(item['tax_rate']))
                 
-                # Find discounts for this item
                 item_discounts = [d for d in discounts if d.get('item_index') == i]
-                item_discount = sum(d['amount'] for d in item_discounts)
+                item_discount = sum(Decimal(str(d['amount'])) for d in item_discounts)
                 
-                # Calculate tax on item price minus discount
                 item_tax = calculate_tax(price - item_discount, tax_rate)
-                
-                # Add discount tax (since discount is taxable)
                 discount_tax = calculate_tax(item_discount, tax_rate)
                 
                 total_tax += item_tax + discount_tax
-                tax_breakdown.append({'item': f'Item {i}', 'tax': item_tax})
+                tax_breakdown.append({'item': f'Item {i}', 'tax': float(item_tax.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))})
                 if item_discount > 0:
-                    tax_breakdown.append({'item': f'Item {i} Discount', 'tax': discount_tax})
+                    tax_breakdown.append({'item': f'Item {i} Discount', 'tax': float(discount_tax.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))})
         else:
-            # Condition 4: Prices before tax, discount not taxable
+            # Condition 4
             for i, item in enumerate(items, 1):
-                price = item['price']
-                tax_rate = item['tax_rate']
+                price = Decimal(str(item['price']))
+                tax_rate = Decimal(str(item['tax_rate']))
                 
-                # Find discounts for this item
                 item_discounts = [d for d in discounts if d.get('item_index') == i]
-                item_discount = sum(d['amount'] for d in item_discounts)
+                item_discount = sum(Decimal(str(d['amount'])) for d in item_discounts)
                 
-                # Calculate tax on item price minus discount
                 item_tax = calculate_tax(price - item_discount, tax_rate)
                 
                 total_tax += item_tax
-                tax_breakdown.append({'item': f'Item {i}', 'tax': item_tax})
+                tax_breakdown.append({'item': f'Item {i}', 'tax': float(item_tax.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))})
     else:
-        # Condition 1 or 3: Prices after tax
+        # Conditions 1 or 3
         for i, item in enumerate(items, 1):
-            price = item['price']
-            tax_rate = item['tax_rate']
+            price = Decimal(str(item['price']))
+            tax_rate = Decimal(str(item['tax_rate']))
             
-            # Calculate item tax
             item_tax = calculate_tax(price, tax_rate)
             total_tax += item_tax
-            tax_breakdown.append({'item': f'Item {i}', 'tax': item_tax})
+            tax_breakdown.append({'item': f'Item {i}', 'tax': float(item_tax.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))})
             
             if discount_is_taxable:
-                # Condition 1: Prices after tax, discount taxable
-                # Find discounts for this item
+                # Condition 1
                 item_discounts = [d for d in discounts if d.get('item_index') == i]
                 for discount in item_discounts:
-                    discount_tax = calculate_tax(discount['amount'], tax_rate)
+                    discount_tax = calculate_tax(Decimal(str(discount['amount'])), tax_rate)
                     total_tax += discount_tax
-                    tax_breakdown.append({'item': f'Item {i} Discount', 'tax': discount_tax})
+                    tax_breakdown.append({'item': f'Item {i} Discount', 'tax': float(discount_tax.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))})
 
-    # Process shipping cost and tax
+    # Process shipping
     if shipping_cost > 0 and shipping_taxable:
         shipping_tax = calculate_tax(shipping_cost, shipping_tax_rate)
         total_tax += shipping_tax
-        tax_breakdown.append({'item': 'Shipping', 'tax': shipping_tax})
+        tax_breakdown.append({'item': 'Shipping', 'tax': float(shipping_tax.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))})
     
     # Calculate final amount
     total_amount = item_total + total_tax + shipping_cost - discount_total
     
-    # Fix tax breakdown to match expected structure
-    # For conditions with no discount tax, ensure we don't include it
     if not discount_is_taxable:
         tax_breakdown = [tb for tb in tax_breakdown if 'Discount' not in tb['item']]
 
+    # Round properly with Decimal
     result = {
-        'item_total': round(item_total, 2),
-        'discount_total': round(discount_total, 2),
-        'shipping_cost': round(shipping_cost, 2),
-        'shipping_tax': round(shipping_tax, 2),
-        'total_tax': round(total_tax, 2),
-        'total_amount': round(total_amount, 2),
+        'item_total': float(item_total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)),
+        'discount_total': float(discount_total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)),
+        'shipping_cost': float(shipping_cost.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)),
+        'shipping_tax': float(shipping_tax.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)),
+        'total_tax': float(total_tax.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)),
+        'total_amount': float(total_amount.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)),
         'tax_breakdown': tax_breakdown
     }
 
