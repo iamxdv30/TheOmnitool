@@ -23,6 +23,13 @@ def tax_calculator(data):
     shipping_tax = Decimal('0')
     tax_breakdown = []
 
+    # Validate shipping tax rate
+    if shipping_cost > 0 and shipping_taxable and shipping_tax_rate == Decimal('0'):
+        raise ValueError("Shipping is marked as taxable but no tax rate provided. Please enter a shipping tax rate.")
+    
+    # Initialize total tax
+    total_tax = Decimal('0')
+
     # Calculate item totals
     for i, item in enumerate(items, 1):
         price = Decimal(str(item['price']))
