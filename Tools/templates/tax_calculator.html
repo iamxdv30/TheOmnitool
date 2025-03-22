@@ -18,7 +18,14 @@
         </div>
         <div class="form-group">
             <label>
-                <input type="checkbox" name="is_sales_before_tax" checked> Apply Discounts Before Tax
+                <input type="checkbox" name="is_sales_before_tax" {% if data.is_sales_before_tax|default(true) %}checked{% endif %}> 
+                Apply Discounts Before Tax
+            </label>
+        </div>
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="discount_is_taxable" {% if data.discount_is_taxable|default(true) %}checked{% endif %}> 
+                Discounts Are Taxable
             </label>
         </div>
 
@@ -42,10 +49,6 @@
                 <label for="discount_amount_{{ i }}">Discount {{ i }} Amount:</label>
                 <input type="number" step="0.0001" name="discount_amount_{{ i }}" value="{{ data.get('discount_amount_' ~ i, '') }}">
                 <label for="is_discount_taxable_{{ i }}">Is Taxable?</label>
-                <select name="is_discount_taxable_{{ i }}">
-                    <option value="N" {% if data.get('is_discount_taxable_' ~ i) == 'N' %}selected{% endif %}>No</option>
-                    <option value="Y" {% if data.get('is_discount_taxable_' ~ i) == 'Y' %}selected{% endif %}>Yes</option>
-                </select>
             </div>
             {% endfor %}
         </div>
@@ -126,10 +129,12 @@
         newDiscount.innerHTML = `
             <label for="discount_amount_${discountCount}">Discount ${discountCount} Amount:</label>
             <input type="number" step="0.0001" name="discount_amount_${discountCount}">
-            <label for="is_discount_taxable_${discountCount}">Is Taxable?</label>
-            <select name="is_discount_taxable_${discountCount}">
-                <option value="N">No</option>
-                <option value="Y">Yes</option>
+            
+            <label for="discount_item_${discountCount}">Apply to Item:</label>
+            <select name="discount_item_${discountCount}">
+                ${Array.from({length: itemCount}, (_, i) => 
+                    `<option value="${i+1}">Item ${i+1}</option>`
+                ).join('')}
             </select>
         `;
         discountsContainer.appendChild(newDiscount);
