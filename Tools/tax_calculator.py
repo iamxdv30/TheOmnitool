@@ -46,6 +46,10 @@ def tax_calculator(data):
     for discount in discounts:
         discount_total += safe_decimal(discount['amount'])
 
+    # Subtract discounts from item_total for conditions 4 and 5
+    if is_sales_before_tax and not discount_is_taxable:
+        item_total -= discount_total
+
     # Process taxes based on conditions
     if is_sales_before_tax:
         # Conditions 2 or 4
@@ -102,8 +106,11 @@ def tax_calculator(data):
         total_tax += shipping_tax
         tax_breakdown.append({'item': 'Shipping', 'tax': float(shipping_tax.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))})
     
-    # Calculate final amount
-    total_amount = item_total + total_tax + shipping_cost - discount_total
+    # Calculate final amount for conditions 4 and 5
+    if is_sales_before_tax and not discount_is_taxable:
+        total_amount = item_total + total_tax + shipping_cost
+    else:
+        total_amount = item_total + total_tax + shipping_cost - discount_total
     
     if not discount_is_taxable:
         tax_breakdown = [tb for tb in tax_breakdown if 'Discount' not in tb['item']]

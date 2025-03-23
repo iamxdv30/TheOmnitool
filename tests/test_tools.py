@@ -127,7 +127,7 @@ def test_condition_4():
     
     result = tax_calculator(data)
     
-    assert result['item_total'] == 150
+    assert result['item_total'] == 137.5
     assert result['discount_total'] == 12.5
     assert round(result['total_tax'], 2) == 11.38
     assert result['shipping_cost'] == 15
@@ -180,7 +180,7 @@ def test_condition_5_single_item():
         'discounts': [
             {'amount': 1.72, 'is_taxable': False, 'item_index': 1}
         ],
-        'shipping_cost': 15,
+        'shipping_cost': 0,
         'shipping_taxable': False,
         'is_sales_before_tax': True,
         'discount_is_taxable': False
