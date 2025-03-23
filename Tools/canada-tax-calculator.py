@@ -54,7 +54,8 @@ def get_tax_rates(tax_structure):
             rates[rate_name] = get_float_input(f"Enter {rate_name} rate (%): ")
     return rates
 
-def calculate_tax(items, tax_rates, shipping_cost, shipping_taxable):
+# Modified function in canada-tax-calculator.py to include global settings
+def calculate_tax(items, tax_rates, shipping_cost, shipping_taxable, is_sales_before_tax=False, discount_taxable=True):
     order_total = 0
     item_total = 0
     tax_total = 0
@@ -64,11 +65,24 @@ def calculate_tax(items, tax_rates, shipping_cost, shipping_taxable):
     for i, item in enumerate(items, 1):
         item_price = item['price']
         item_total += item_price
-
+        
+        # Track discount total
         if 'discount' in item:
             discount = item['discount']
             discount_total += discount
-            taxable_amount = item_price - discount if item['discount_taxable'] else item_price
+            
+            # Calculate taxable amount based on global settings
+            if is_sales_before_tax:
+                # Apply discount before calculating tax
+                taxable_amount = item_price - discount
+            else:
+                # When not calculating tax on sales before discount
+                taxable_amount = item_price
+                
+                # Add tax on discount if applicable (only when not sales before tax)
+                if not discount_taxable:
+                    # Don't include discount in tax calculation
+                    taxable_amount = item_price
         else:
             taxable_amount = item_price
 
@@ -81,6 +95,7 @@ def calculate_tax(items, tax_rates, shipping_cost, shipping_taxable):
 
         tax_total += item_tax
 
+    # Handle shipping tax
     if shipping_taxable:
         shipping_tax = 0
         for tax_type, rate in tax_rates.items():

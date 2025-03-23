@@ -32,6 +32,17 @@
     </select>
   </div>
 
+  <div class="ca-options-form-group">
+    <label>
+      <input type="checkbox" id="isSalesBeforeTax" /> Apply Discounts Before Tax
+    </label>
+  </div>
+  <div class="ca-options-form-group">
+    <label>
+      <input type="checkbox" id="discountTaxable" checked /> Discounts Are Taxable
+    </label>
+  </div>
+
   <div id="taxRates"></div>
   <div id="itemsContainer"></div>
   <button class="ca-add-item" onclick="addItem()">Add Item</button>
@@ -45,6 +56,7 @@
       <input type="checkbox" id="shippingTaxable" /> Shipping Taxable
     </label>
   </div>
+
   <button class="ca-calculate-tax" onclick="calculateTax()">
     Calculate Tax
   </button>
@@ -120,7 +132,7 @@
       );
       taxRates[rate] = rateValue;
     });
-
+  
     const items = Array.from(document.querySelectorAll('.item')).map(
       (itemDiv) => ({
         price: parseFloat(itemDiv.querySelector('.itemPrice').value) || 0,
@@ -129,37 +141,49 @@
         discount_taxable: itemDiv.querySelector('.discountTaxable').checked,
       })
     );
-
+  
     const shippingCost =
       parseFloat(document.getElementById('shippingCost').value) || 0;
     const shippingTaxable = document.getElementById('shippingTaxable').checked;
-
+    
+    // Get global settings
+    const isSalesBeforeTax = document.getElementById('isSalesBeforeTax').checked;
+    const discountTaxable = document.getElementById('discountTaxable').checked;
+  
     const result = calculateTaxResult(
       items,
       taxRates,
       shippingCost,
-      shippingTaxable
+      shippingTaxable,
+      isSalesBeforeTax,
+      discountTaxable
     );
     displayResults(result);
   }
-
-  function calculateTaxResult(items, taxRates, shippingCost, shippingTaxable) {
+  
+  function calculateTaxResult(items, taxRates, shippingCost, shippingTaxable, isSalesBeforeTax, discountTaxable) {
     let orderTotal = 0;
     let itemTotal = 0;
     let taxTotal = 0;
     let discountTotal = 0;
     let taxBreakdown = {};
-
+  
     items.forEach((item, index) => {
       itemTotal += item.price;
       let taxableAmount = item.price;
+      
       if (item.discount > 0) {
         discountTotal += item.discount;
-        taxableAmount = item.discount_taxable
-          ? item.price - item.discount
-          : item.price;
+        
+        if (isSalesBeforeTax) {
+          // Apply discount before calculating tax
+          taxableAmount = item.price - item.discount;
+        } else {
+          // When not calculating tax on sales before discount
+          taxableAmount = item.price;
+        }
       }
-
+  
       let itemTax = 0;
       taxBreakdown[`item${index + 1}`] = {};
       for (const [taxType, rate] of Object.entries(taxRates)) {
@@ -170,7 +194,7 @@
       }
       taxTotal += itemTax;
     });
-
+  
     let shippingTax = 0;
     if (shippingTaxable) {
       taxBreakdown['shipping'] = {};
@@ -182,9 +206,9 @@
       }
       taxTotal += shippingTax;
     }
-
+  
     orderTotal = itemTotal + taxTotal + shippingCost - discountTotal;
-
+  
     return {
       orderTotal: Math.round(orderTotal * 100) / 100,
       itemTotal: Math.round(itemTotal * 100) / 100,

@@ -1,5 +1,11 @@
 from decimal import Decimal, ROUND_HALF_UP
 
+def safe_decimal(value, default=0):
+    try:
+        return Decimal(str(value or default))
+    except (ValueError, TypeError):
+        return Decimal(str(default))
+
 def calculate_tax(price, tax_rate):
     """Calculate tax amount with precise decimal arithmetic"""
     price_dec = Decimal(str(price))
@@ -10,9 +16,9 @@ def tax_calculator(data):
     # Convert inputs to Decimal
     items = data.get('items', [])
     discounts = data.get('discounts', [])
-    shipping_cost = Decimal(str(data.get('shipping_cost', 0)))
+    shipping_cost = safe_decimal(data.get('shipping_cost'))
     shipping_taxable = data.get('shipping_taxable', False)
-    shipping_tax_rate = Decimal(str(data.get('shipping_tax_rate', 0)))
+    shipping_tax_rate = safe_decimal(data.get('shipping_tax_rate'))
     is_sales_before_tax = data.get('is_sales_before_tax', False)
     discount_is_taxable = data.get('discount_is_taxable', True)
 
@@ -32,13 +38,13 @@ def tax_calculator(data):
 
     # Calculate item totals
     for i, item in enumerate(items, 1):
-        price = Decimal(str(item['price']))
-        tax_rate = Decimal(str(item['tax_rate']))
+        price = safe_decimal(item['price'])
+        tax_rate = safe_decimal(item['tax_rate'])
         item_total += price
 
     # Calculate discount totals
     for discount in discounts:
-        discount_total += Decimal(str(discount['amount']))
+        discount_total += safe_decimal(discount['amount'])
 
     # Process taxes based on conditions
     if is_sales_before_tax:
@@ -46,11 +52,11 @@ def tax_calculator(data):
         if discount_is_taxable:
             # Condition 2
             for i, item in enumerate(items, 1):
-                price = Decimal(str(item['price']))
-                tax_rate = Decimal(str(item['tax_rate']))
+                price = safe_decimal(item['price'])
+                tax_rate = safe_decimal(item['tax_rate'])
                 
                 item_discounts = [d for d in discounts if d.get('item_index') == i]
-                item_discount = sum(Decimal(str(d['amount'])) for d in item_discounts)
+                item_discount = sum(safe_decimal(d['amount']) for d in item_discounts)
                 
                 item_tax = calculate_tax(price - item_discount, tax_rate)
                 discount_tax = calculate_tax(item_discount, tax_rate)
@@ -62,11 +68,11 @@ def tax_calculator(data):
         else:
             # Condition 4
             for i, item in enumerate(items, 1):
-                price = Decimal(str(item['price']))
-                tax_rate = Decimal(str(item['tax_rate']))
+                price = safe_decimal(item['price'])
+                tax_rate = safe_decimal(item['tax_rate'])
                 
                 item_discounts = [d for d in discounts if d.get('item_index') == i]
-                item_discount = sum(Decimal(str(d['amount'])) for d in item_discounts)
+                item_discount = sum(safe_decimal(d['amount']) for d in item_discounts)
                 
                 item_tax = calculate_tax(price - item_discount, tax_rate)
                 
@@ -75,8 +81,8 @@ def tax_calculator(data):
     else:
         # Conditions 1 or 3
         for i, item in enumerate(items, 1):
-            price = Decimal(str(item['price']))
-            tax_rate = Decimal(str(item['tax_rate']))
+            price = safe_decimal(item['price'])
+            tax_rate = safe_decimal(item['tax_rate'])
             
             item_tax = calculate_tax(price, tax_rate)
             total_tax += item_tax
@@ -86,7 +92,7 @@ def tax_calculator(data):
                 # Condition 1
                 item_discounts = [d for d in discounts if d.get('item_index') == i]
                 for discount in item_discounts:
-                    discount_tax = calculate_tax(Decimal(str(discount['amount'])), tax_rate)
+                    discount_tax = calculate_tax(safe_decimal(discount['amount']), tax_rate)
                     total_tax += discount_tax
                     tax_breakdown.append({'item': f'Item {i} Discount', 'tax': float(discount_tax.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))})
 
