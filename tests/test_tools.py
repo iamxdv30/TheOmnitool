@@ -169,3 +169,28 @@ def test_empty_items():
     assert result['item_total'] == 0
     assert round(result['total_tax'], 2) == 0
     assert round(result['total_amount'], 2) == 15
+
+
+def test_condition_5_single_item():
+    """Condition 5: single item, prices before tax=true, discount taxable=false, shipping taxable=false"""
+    data = {
+        'items': [
+            {'price': 30, 'tax_rate': 7.9915}
+        ],
+        'discounts': [
+            {'amount': 1.72, 'is_taxable': False, 'item_index': 1}
+        ],
+        'shipping_cost': 15,
+        'shipping_taxable': False,
+        'is_sales_before_tax': True,
+        'discount_is_taxable': False
+    }
+    
+    result = tax_calculator(data)
+    
+    assert result['item_total'] == 28.28
+    assert result['discount_total'] == 1.72
+    assert round(result['total_tax'], 2) == 2.26
+    assert result['shipping_cost'] == 0
+    assert result['shipping_tax'] == 0
+    assert round(result['total_amount'], 2) == 30.54

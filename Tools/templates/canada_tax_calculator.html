@@ -45,7 +45,7 @@
 
   <div id="taxRates"></div>
   <div id="itemsContainer"></div>
-  <button class="ca-add-item" onclick="addItem()">Add Item</button>
+  <button id="addItemBtn" class="ca-add-item" onclick="addItem()">Add Item</button>
 
   <div class="ca-shipping-form-group">
     <label for="shippingCost">Shipping Cost:</label>
@@ -57,7 +57,7 @@
     </label>
   </div>
 
-  <button class="ca-calculate-tax" onclick="calculateTax()">
+  <button id="calculateTaxBtn" class="ca-calculate-tax" onclick="calculateTax()">
     Calculate Tax
   </button>
   <div id="results"></div>
@@ -131,9 +131,7 @@
     const items = Array.from(document.querySelectorAll('.item')).map(
       (itemDiv) => ({
         price: parseFloat(itemDiv.querySelector('.itemPrice').value) || 0,
-        discount:
-          parseFloat(itemDiv.querySelector('.discountAmount').value) || 0,
-        discount_taxable: itemDiv.querySelector('.discountTaxable').checked,
+        discount: parseFloat(itemDiv.querySelector('.discountAmount').value) || 0
       })
     );
   
@@ -173,9 +171,9 @@
         if (isSalesBeforeTax) {
           // Apply discount before calculating tax
           taxableAmount = item.price - item.discount;
-        } else {
-          // When not calculating tax on sales before discount
-          taxableAmount = item.price;
+        } else if (!discountTaxable) {
+          // When discounts are not taxable and not sales before tax
+          // No change to taxable amount needed
         }
       }
   
@@ -250,30 +248,6 @@
   }
 
   function initializeForm() {
-    const provinceSelect = document.getElementById('province');
-    const provinceNames = {
-      ON: 'Ontario',
-      BC: 'British Columbia',
-      AB: 'Alberta',
-      MB: 'Manitoba',
-      NB: 'New Brunswick',
-      NL: 'Newfoundland and Labrador',
-      NS: 'Nova Scotia',
-      NT: 'Northwest Territories',
-      NU: 'Nunavut',
-      PE: 'Prince Edward Island',
-      QC: 'Quebec',
-      SK: 'Saskatchewan',
-      YT: 'Yukon',
-    };
-
-    Object.entries(provinceNames).forEach(([abbr, fullName]) => {
-      const option = document.createElement('option');
-      option.value = abbr;
-      option.textContent = fullName;
-      provinceSelect.appendChild(option);
-    });
-
     updateTaxRates();
     addItem();
   }
@@ -294,10 +268,6 @@
     document
       .getElementById('country')
       .addEventListener('change', selectTaxCalculator);
-    document.getElementById('addItemBtn').addEventListener('click', addItem);
-    document
-      .getElementById('calculateTaxBtn')
-      .addEventListener('click', calculateTax);
   });
 </script>
 
