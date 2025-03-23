@@ -161,24 +161,37 @@
     let discountTotal = 0;
     let taxBreakdown = {};
   
-    items.forEach((item, index) => {
+    // Calculate item totals and discount totals
+    items.forEach((item) => {
       itemTotal += item.price;
+      if (item.discount > 0) {
+        discountTotal += item.discount;
+      }
+    });
+    
+    // Adjust itemTotal for display when conditions match
+    let adjustedItemTotal = itemTotal;
+    if (isSalesBeforeTax && !discountTaxable) {
+      adjustedItemTotal = itemTotal - discountTotal;
+    }
+  
+    // Calculate taxes for each item
+    items.forEach((item, index) => {
       let taxableAmount = item.price;
       
       if (item.discount > 0) {
-        discountTotal += item.discount;
-        
         if (isSalesBeforeTax) {
           // Apply discount before calculating tax
           taxableAmount = item.price - item.discount;
         } else if (!discountTaxable) {
-          // When discounts are not taxable and not sales before tax
-          // No change to taxable amount needed
+          // Don't include discount in tax calculation
+          taxableAmount = item.price;
         }
       }
   
       let itemTax = 0;
       taxBreakdown[`item${index + 1}`] = {};
+      
       for (const [taxType, rate] of Object.entries(taxRates)) {
         const taxAmount = (taxableAmount * rate) / 100;
         itemTax += taxAmount;
@@ -188,6 +201,7 @@
       taxTotal += itemTax;
     });
   
+    // Calculate shipping tax if applicable
     let shippingTax = 0;
     if (shippingTaxable) {
       taxBreakdown['shipping'] = {};
@@ -200,11 +214,18 @@
       taxTotal += shippingTax;
     }
   
-    orderTotal = itemTotal + taxTotal + shippingCost - discountTotal;
+    // Calculate final amount based on conditions
+    if (isSalesBeforeTax && !discountTaxable) {
+      // Special case for conditions 4 and 5
+      orderTotal = adjustedItemTotal + taxTotal + shippingCost;
+    } else {
+      // Standard formula for other conditions
+      orderTotal = itemTotal + taxTotal + shippingCost - discountTotal;
+    }
   
     return {
       orderTotal: Math.round(orderTotal * 100) / 100,
-      itemTotal: Math.round(itemTotal * 100) / 100,
+      itemTotal: Math.round(adjustedItemTotal * 100) / 100,
       taxTotal: Math.round(taxTotal * 100) / 100,
       shippingCost: Math.round(shippingCost * 100) / 100,
       shippingTax: Math.round(shippingTax * 100) / 100,
