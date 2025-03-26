@@ -160,11 +160,14 @@ def manage_tools():
             return jsonify({"message": "Tool deleted successfully"}), 200
         else:
             return jsonify({"error": "Tool not found"}), 404
+        
 
     # Clear any unused flash messages
     _ = get_flashed_messages()
 
     tools = Tool.query.all()
     return render_template('manage_tools.html', tools=tools)
+
+
 
 
