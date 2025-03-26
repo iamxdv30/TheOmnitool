@@ -101,7 +101,12 @@ jobs:
             curl -H "Content-Type: application/json" -X POST "https://discord.com/api/webhooks/1299838194728177684/DuMFG_NFU1__YLawLIlovT4Dth8iUn9vNu2HLj4PibImQq6QL0iCDLd1lObrVGhV7BbK" \
               -d "{\"embeds\":[{\"title\":\"🔄 Database Changes Detected\",\"color\":16776960,\"description\":\"Found $MIGRATION_CHANGES migration changes - Preparing backup\"}]}"
           fi
+      
+      - name: Install Heroku CLI
+        run: |
+          curl https://cli-assets.heroku.com/install.sh | sh
 
+          
       - name: Backup Production Database
         id: backup
         env:
