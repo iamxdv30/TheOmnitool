@@ -10,6 +10,7 @@ from routes.tool_routes import tool
 from model.model import db
 import re
 import logging
+from model.model import User, Admin, SuperAdmin, Tool, ToolAccess
 from datetime import timedelta
 
 
