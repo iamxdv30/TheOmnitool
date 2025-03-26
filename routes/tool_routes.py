@@ -128,16 +128,30 @@ def tax_calculator_route():
             # Process discounts
             discounts = []
             i = 1
-            while f"discount_amount_{i}" in data and f"is_discount_taxable_{i}" in data:
+            while f"discount_amount_{i}" in data:
                 amount = data[f"discount_amount_{i}"].strip()
                 if amount:
-                    discounts.append(
-                        {
-                            "amount": float(amount),
-                            "is_taxable": data[f"is_discount_taxable_{i}"] == "Y",
-                        }
-                    )
+                    item_index = int(data.get(f"discount_item_{i}", 1))
+                    discounts.append({
+                        "amount": float(amount),
+                        "item_index": item_index
+                    })
                 i += 1
+
+            # Global flags
+            is_sales_before_tax = "is_sales_before_tax" in data
+            discount_is_taxable = "discount_is_taxable" in data
+            shipping_taxable = "shipping_taxable" in data
+
+            calc_data = {
+                "items": items,
+                "discounts": discounts,
+                "shipping_cost": float(data.get("shipping_cost", 0) or 0),
+                "shipping_taxable": shipping_taxable,
+                "shipping_tax_rate": float(data.get("shipping_tax_rate", 0) or 0),
+                "is_sales_before_tax": is_sales_before_tax,
+                "discount_is_taxable": discount_is_taxable
+            }
 
             # Process shipping
             shipping_cost = data.get("shipping_cost", "").strip()
