@@ -119,8 +119,8 @@
         <p>&copy; 2025 IamXDV. All rights reserved.</p>
         <nav class="footer-nav">
           <ul>
-            <li><a href="#">Home</a></li>
-            <li><a href="#">About</a></li>
+            <li><a href="{{ url_for('user.index') }}">Home</a></li>
+            <li><a href="{{ url_for('user.about_page') }}">About</a></li>
             <li><a href="#">Services</a></li>
             <li><a href="{{ url_for('contact.contact_page') }}">Contact</a></li>
           </ul>

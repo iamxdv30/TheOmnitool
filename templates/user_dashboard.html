@@ -11,7 +11,7 @@
     <h2>Available Tools</h2>
     <ul class="tool-list">
     {% for tool in user_tools %}
-        <li><a href="{{ url_for('tool.check_tool_access', tool_name=tool) }}">{{ tool }}</a></li>
+        <li class="tool-card"><a href="{{ url_for('tool.check_tool_access', tool_name=tool) }}">{{ tool }}</a></li>
     {% endfor %}
     </ul>
 

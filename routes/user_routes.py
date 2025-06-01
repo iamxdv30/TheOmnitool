@@ -9,6 +9,11 @@ user = Blueprint('user', __name__)
 def index():
     return render_template("index.html")
 
+@user.route('/about')
+def about_page():
+    """Renders the about page."""
+    return render_template('about.html')
+
 @user.route("/user_dashboard", methods=["GET"])
 def user_dashboard():
     logging.debug("Entering user_dashboard route")
