@@ -135,10 +135,6 @@ body {
   font-size: 1.1em;
 }
 
-.search-bar {
-  padding: 0.3rem 0.5rem;
-  margin-right: 1rem;
-}
 
 .base-toggle-btn {
   padding: 0.3rem 0.5rem;
@@ -268,12 +264,6 @@ body.dark-theme .dropdown-menu {
   border-color: #454d55;
 }
 
-body.dark-theme .search-bar {
-  background-color: #495057;
-  color: #fff;
-  border: none;
-}
-
 body.dark-theme .base-toggle-btn {
   background-color: #495057;
   color: #fff;
@@ -316,6 +306,148 @@ body.dark-theme .base-toggle-btn {
 
 .btn:hover {
   background-color: #008000;
+}
+
+/* Theme Toggle Switch */
+.theme-toggle-btn {
+  --toggle-width: 80px;
+  --toggle-height: 32px;
+  --toggle-padding: 2px;
+  --thumb-size: calc(var(--toggle-height) - (var(--toggle-padding) * 2));
+  --thumb-offset: calc(var(--toggle-width) - var(--thumb-size) - (var(--toggle-padding) * 2));
+  
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  width: var(--toggle-width);
+  height: var(--toggle-height);
+  position: relative;
+  overflow: visible;
+  outline: none;
+}
+
+.theme-toggle-track {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  background: #e9ecef;
+  border-radius: 9999px;
+  position: relative;
+  transition: background-color 0.3s ease;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.dark-theme .theme-toggle-track {
+  background: #495057;
+}
+
+.theme-toggle-thumb {
+  position: absolute;
+  left: var(--toggle-padding);
+  top: 50%;
+  transform: translateY(-50%);
+  width: var(--thumb-size);
+  height: var(--thumb-size);
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 2;
+}
+
+.dark-theme .theme-toggle-thumb {
+  transform: translateY(-50%) translateX(calc(var(--thumb-offset)));
+  background: #f8f9fa;
+}
+
+.theme-toggle-icon {
+  font-size: 0.9rem;
+  line-height: 1;
+  position: absolute;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.theme-toggle-icon.sun {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+.theme-toggle-icon.moon {
+  opacity: 0;
+  transform: scale(0.8) rotate(90deg);
+}
+
+.dark-theme .theme-toggle-icon.sun {
+  opacity: 0;
+  transform: scale(0.8) rotate(-90deg);
+}
+
+.dark-theme .theme-toggle-icon.moon {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+.theme-toggle-text {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  pointer-events: none;
+  text-shadow: none;
+  opacity: 0;
+  will-change: opacity;
+}
+
+.theme-toggle-text.light {
+  left: calc(var(--thumb-size) + (var(--toggle-padding) * 3));
+  color: #6c757d;
+}
+
+.theme-toggle-text.dark {
+  right: calc(var(--thumb-size) + (var(--toggle-padding) * 3));
+  color: #f8f9fa;
+}
+
+/* Show only the active theme text */
+.theme-toggle-text.light {
+  opacity: 1;
+}
+
+.dark-theme .theme-toggle-text.light {
+  opacity: 0;
+}
+
+.dark-theme .theme-toggle-text.dark {
+  opacity: 1;
+}
+
+/* Hover and Active States */
+.theme-toggle-btn:focus-visible .theme-toggle-thumb {
+  box-shadow: 0 0 0 3px rgba(88, 129, 87, 0.5);
+}
+
+.theme-toggle-btn:active .theme-toggle-thumb {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.dark-theme .theme-toggle-btn:active .theme-toggle-thumb {
+  transform: translateY(-50%) translateX(calc(var(--thumb-offset))) scale(0.95);
+}
+
+/* Add smooth transition for theme change */
+body {
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Adjust navbar items alignment */

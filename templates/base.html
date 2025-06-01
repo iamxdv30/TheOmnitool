@@ -84,8 +84,16 @@
               >Sign Up</a
             >
             {% endif %}
-            <input type="text" class="search-bar" placeholder="Search..." />
-            <button class="base-toggle-btn">Toggle Theme</button>
+            <button class="theme-toggle-btn" role="switch" aria-checked="false" aria-label="Toggle theme">
+              <span class="theme-toggle-track">
+                <span class="theme-toggle-thumb">
+                  <span class="theme-toggle-icon sun">☀️</span>
+                  <span class="theme-toggle-icon moon">🌙</span>
+                </span>
+                <span class="theme-toggle-text light">Light</span>
+                <span class="theme-toggle-text dark">Dark</span>
+              </span>
+            </button>
           </div>
         </div>
       </div>
@@ -153,33 +161,56 @@
           });
       }
 
+      // Theme Toggle and Navbar Functionality
       document.addEventListener('DOMContentLoaded', function () {
-        const toggleButton = document.querySelector('.base-toggle-btn');
+        const toggleButton = document.querySelector('.theme-toggle-btn');
         const navbarToggler = document.getElementById('navbar-toggler');
         const navbarCollapse = document.getElementById('navbar-collapse');
         const body = document.body;
-
+        
+        // Check for saved theme preference or use OS preference
         const savedTheme = localStorage.getItem('theme');
-        if (savedTheme) {
-          body.classList.remove('light-theme', 'dark-theme');
-          body.classList.add(savedTheme);
-        }
-
-        toggleButton.addEventListener('click', function () {
-          if (body.classList.contains('dark-theme')) {
-            body.classList.remove('dark-theme');
-            body.classList.add('light-theme');
-            localStorage.setItem('theme', 'light-theme');
-          } else {
-            body.classList.remove('light-theme');
-            body.classList.add('dark-theme');
-            localStorage.setItem('theme', 'dark-theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        // Apply theme based on saved preference or OS preference
+        const initialIsDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
+        updateThemeState(initialIsDark);
+        
+        // Function to update theme state and accessibility
+        function updateThemeState(isDark) {
+          const toggleButton = document.querySelector('.theme-toggle-btn');
+          if (toggleButton) {
+            toggleButton.setAttribute('aria-checked', isDark ? 'true' : 'false');
+            document.body.classList.toggle('dark-theme', isDark);
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
           }
-        });
-
-        navbarToggler.addEventListener('click', function () {
-          navbarCollapse.classList.toggle('show');
-        });
+        }
+        
+        // Toggle theme function
+        function toggleTheme() {
+          const isDark = !document.body.classList.contains('dark-theme');
+          updateThemeState(isDark);
+          
+          // Add animation class for smooth transition
+          body.style.transition = 'background-color 0.3s ease, color 0.3s ease';
+          
+          // Remove transition after animation completes
+          setTimeout(() => {
+            body.style.transition = '';
+          }, 300);
+        }
+        
+        // Add click event to theme toggle button
+        if (toggleButton) {
+          toggleButton.addEventListener('click', toggleTheme);
+        }
+        
+        // Add click event to navbar toggler
+        if (navbarToggler && navbarCollapse) {
+          navbarToggler.addEventListener('click', function () {
+            navbarCollapse.classList.toggle('show');
+          });
+        }
       });
     </script>
   </body>
