@@ -112,26 +112,61 @@ jobs:
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
+          set -e # Exit immediately if a command exits with a non-zero status.
+          DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/1299838194728177684/DuMFG_NFU1__YLawLIlovT4Dth8iUn9vNu2HLj4PibImQq6QL0iCDLd1lObrVGhV7BbK"
+
           mkdir -p backups
           TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-          BACKUP_FILE="backup_${TIMESTAMP}.dump"
-          
+          BACKUP_FILE_NAME="backup_${TIMESTAMP}.dump"
+          BACKUP_FILE_PATH="backups/${BACKUP_FILE_NAME}"
+
           echo "Creating database backup..."
-          heroku pg:backups:capture --app omnitool-by-xdv
-          
+          if ! heroku pg:backups:capture --app omnitool-by-xdv; then
+            echo "::error::Failed to capture Heroku database backup."
+            curl -H "Content-Type: application/json" -X POST "${DISCORD_WEBHOOK_URL}" \
+              -d "{\"embeds\":[{\"title\":\"❌ Backup Capture Failed\",\"color\":15548997,\"description\":\"Failed to capture Heroku database backup for omnitool-by-xdv.\"}]}"
+            exit 1
+          fi
+
           echo "Downloading backup..."
-          heroku pg:backups:download --app omnitool-by-xdv --output "backups/${BACKUP_FILE}"
-          
-          echo "Exporting user data..."
+          if ! heroku pg:backups:download --app omnitool-by-xdv --output "${BACKUP_FILE_PATH}"; then
+            echo "::error::Failed to download Heroku database backup."
+            curl -H "Content-Type: application/json" -X POST "${DISCORD_WEBHOOK_URL}" \
+              -d "{\"embeds\":[{\"title\":\"❌ Backup Download Failed\",\"color\":15548997,\"description\":\"Failed to download Heroku database backup for omnitool-by-xdv.\"}]}"
+            exit 1
+          fi
+
+          echo "Verifying backup file: ${BACKUP_FILE_PATH}"
+          if [ ! -s "${BACKUP_FILE_PATH}" ]; then
+            echo "::error::Backup file ${BACKUP_FILE_PATH} is empty."
+            curl -H "Content-Type: application/json" -X POST "${DISCORD_WEBHOOK_URL}" \
+              -d "{\"embeds\":[{\"title\":\"❌ Backup Verification Failed\",\"color\":15548997,\"description\":\"Downloaded backup file ${BACKUP_FILE_PATH} is empty.\"}]}"
+            exit 1
+          fi
+
+          FILE_TYPE_MIME=$(file -b --mime-type "${BACKUP_FILE_PATH}")
+          echo "Detected MIME type: ${FILE_TYPE_MIME}"
+          if [[ "${FILE_TYPE_MIME}" == "text/plain" ]]; then
+            echo "::error::Backup file ${BACKUP_FILE_PATH} appears to be a text file (MIME: ${FILE_TYPE_MIME}), not a binary dump. Contents:"
+            cat "${BACKUP_FILE_PATH}" # Output the content for debugging in GitHub Actions logs
+            curl -H "Content-Type: application/json" -X POST "${DISCORD_WEBHOOK_URL}" \
+              -d "{\"embeds\":[{\"title\":\"❌ Backup File Invalid\",\"color\":15548997,\"description\":\"Backup file ${BACKUP_FILE_PATH} is a text file, not a binary dump. Check workflow logs for content.\"}]}"
+            exit 1
+          elif [[ "${FILE_TYPE_MIME}" != "application/octet-stream" && "${FILE_TYPE_MIME}" != "application/x-custom-pg-dump" ]]; then
+            echo "::warning::Backup file ${BACKUP_FILE_PATH} has an unexpected MIME type: ${FILE_TYPE_MIME}. Proceeding with caution."
+          fi
+          echo "Backup file ${BACKUP_FILE_PATH} verified as non-empty and likely binary."
+
+          echo "Exporting user data (CSV)..."
           heroku pg:psql --app omnitool-by-xdv -c "COPY users TO STDOUT WITH CSV HEADER" > "backups/users_${TIMESTAMP}.csv"
           heroku pg:psql --app omnitool-by-xdv -c "COPY tool_access TO STDOUT WITH CSV HEADER" > "backups/tool_access_${TIMESTAMP}.csv"
           heroku pg:psql --app omnitool-by-xdv -c "COPY email_templates TO STDOUT WITH CSV HEADER" > "backups/email_templates_${TIMESTAMP}.csv"
-          
-          echo "backup_file=${BACKUP_FILE}" >> $GITHUB_OUTPUT
+
+          echo "backup_file=${BACKUP_FILE_NAME}" >> $GITHUB_OUTPUT
           echo "timestamp=${TIMESTAMP}" >> $GITHUB_OUTPUT
-          
-          curl -H "Content-Type: application/json" -X POST "https://discord.com/api/webhooks/1299838194728177684/DuMFG_NFU1__YLawLIlovT4Dth8iUn9vNu2HLj4PibImQq6QL0iCDLd1lObrVGhV7BbK" \
-            -d "{\"embeds\":[{\"title\":\"💾 Backup Created\",\"color\":3447003,\"description\":\"Database backup completed successfully\",\"fields\":[{\"name\":\"Backup File\",\"value\":\"${BACKUP_FILE}\",\"inline\":true}]}]}"
+
+          curl -H "Content-Type: application/json" -X POST "${DISCORD_WEBHOOK_URL}" \
+            -d "{\"embeds\":[{\"title\":\"💾 Backup Created & Verified\",\"color\":3447003,\"description\":\"Database backup completed and verified successfully.\",\"fields\":[{\"name\":\"Backup File\",\"value\":\"${BACKUP_FILE_NAME}\",\"inline\":true}]}]}"
 
       - name: Upload backup artifacts
         uses: actions/upload-artifact@v4
