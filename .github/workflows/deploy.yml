@@ -80,20 +80,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Solution: Add this step to install and login to Heroku CLI
-      - name: Setup Heroku CLI
-        uses: akhileshns/heroku-deploy@v3.12.12 # Or latest version
-        with:
-          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
-          heroku_app_name: "omnitool-by-xdv" # Necessary for some CLI operations / context
-          heroku_email: "your-heroku-email@example.com" # Replace with your Heroku email
-
       - name: Install Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
+      - name: Install Heroku CLI
+        run: |
+          curl https://cli-assets.heroku.com/install.sh | sh
 
       - name: Check for Migration Changes
         id: check_migrations
@@ -113,7 +109,7 @@ jobs:
       - name: Backup Production Database
         id: backup
         env:
-          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }} # Still good to have if scripts call Heroku directly
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
           mkdir -p backups
           TIMESTAMP=$(date +%Y%m%d_%H%M%S)
@@ -154,14 +150,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Solution: Add this step to install and login to Heroku CLI
-      - name: Setup Heroku CLI
-        uses: akhileshns/heroku-deploy@v3.12.12 # Or latest version
-        with:
-          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
-          heroku_app_name: "omnitool-by-xdv"
-          heroku_email: "your-heroku-email@example.com" # Replace with your Heroku email
-
       - name: Set up Python and Dependencies
         uses: actions/setup-python@v4
         with:
@@ -175,14 +163,14 @@ jobs:
 
       - name: Deploy to Heroku
         env:
-          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }} # The akhileshns action should handle login, but direct git push might need it formatted in the remote URL
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
           git remote add heroku https://heroku:${{ secrets.HEROKU_API_KEY }}@git.heroku.com/omnitool-by-xdv.git
           git push heroku main --force
 
       - name: Update Heroku Config
         env:
-          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }} # CLI commands will use the login from setup step
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
           heroku config:set FLASK_APP="main.py" -a omnitool-by-xdv
           heroku config:set FLASK_ENV="production" -a omnitool-by-xdv
@@ -197,7 +185,7 @@ jobs:
       - name: Run Database Migrations
         if: needs.backup-and-migrate.outputs.has_schema_changes == 'true'
         env:
-          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }} # CLI commands will use the login from setup step
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
           echo "Running database migrations..."
           if heroku run python -m flask db upgrade --app omnitool-by-xdv; then
@@ -216,16 +204,8 @@ jobs:
     if: needs.backup-and-migrate.outputs.has_schema_changes == 'true'
 
     steps:
-      # Solution: Add this step to install and login to Heroku CLI
-      - name: Setup Heroku CLI
-        uses: akhileshns/heroku-deploy@v3.12.12 # Or latest version
-        with:
-          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
-          heroku_app_name: "omnitool-by-xdv"
-          heroku_email: "your-heroku-email@example.com" # Replace with your Heroku email
-
       - name: Download backup artifacts
-        uses: actions/download-artifact@v3 # Consider v4 if available and compatible
+        uses: actions/download-artifact@v3
         with:
           name: database-backup
           path: backups/
@@ -237,37 +217,31 @@ jobs:
 
       - name: Restore User Data
         env:
-          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }} # CLI commands will use the login from setup step
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
           echo "Restoring user data..."
           
           for file in backups/users_*.csv; do
-            echo "Restoring users table from $file ..."
-            # Ensure the file path for \COPY is accessible within the context of heroku pg:psql
-            # This usually means the file needs to be piped or accessible via a URL.
-            # For simplicity, if pg:psql can't directly access local files from the runner this way,
-            # you might need to upload the CSV to a temporary accessible location or pipe its content.
-            # However, let's assume for now it might work or you'll adjust the \COPY source.
-            # A safer bet is piping the content:
-            cat "$file" | heroku pg:psql --app omnitool-by-xdv -c "
+            echo "Restoring users table..."
+            heroku pg:psql --app omnitool-by-xdv -c "
               ALTER TABLE users DISABLE TRIGGER ALL;
-              \COPY users FROM STDIN WITH CSV HEADER;
+              \COPY users FROM '$file' WITH CSV HEADER;
               ALTER TABLE users ENABLE TRIGGER ALL;"
           done
 
           for file in backups/tool_access_*.csv; do
-            echo "Restoring tool_access table from $file ..."
-            cat "$file" | heroku pg:psql --app omnitool-by-xdv -c "
+            echo "Restoring tool_access table..."
+            heroku pg:psql --app omnitool-by-xdv -c "
               ALTER TABLE tool_access DISABLE TRIGGER ALL;
-              \COPY tool_access FROM STDIN WITH CSV HEADER;
+              \COPY tool_access FROM '$file' WITH CSV HEADER;
               ALTER TABLE tool_access ENABLE TRIGGER ALL;"
           done
 
           for file in backups/email_templates_*.csv; do
-            echo "Restoring email_templates table from $file ..."
-            cat "$file" | heroku pg:psql --app omnitool-by-xdv -c "
+            echo "Restoring email_templates table..."
+            heroku pg:psql --app omnitool-by-xdv -c "
               ALTER TABLE email_templates DISABLE TRIGGER ALL;
-              \COPY email_templates FROM STDIN WITH CSV HEADER;
+              \COPY email_templates FROM '$file' WITH CSV HEADER;
               ALTER TABLE email_templates ENABLE TRIGGER ALL;"
           done
           
@@ -276,7 +250,7 @@ jobs:
 
       - name: Verify Data Restoration
         env:
-          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }} # CLI commands will use the login from setup step
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
           echo "Verifying data restoration..."
           verification_results=$(heroku pg:psql --app omnitool-by-xdv -c "
@@ -289,60 +263,28 @@ jobs:
 
   cleanup:
     runs-on: ubuntu-latest
-    needs: [restore-data, deploy-and-migrate] # Should run after restore-data if it happens, or after deploy if no schema changes
-    if: always() # Ensure cleanup runs
+    needs: [restore-data, deploy-and-migrate]
+    if: always()
     
     steps:
-      # Solution: Add this step to install and login to Heroku CLI
-      - name: Setup Heroku CLI
-        uses: akhileshns/heroku-deploy@v3.12.12 # Or latest version
-        with:
-          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
-          heroku_app_name: "omnitool-by-xdv"
-          heroku_email: "your-heroku-email@example.com" # Replace with your Heroku email
-
       - name: Cleanup Old Backups
         env:
-          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }} # CLI commands will use the login from setup step
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
-          # Get list of backups and extract only the backup IDs, keeping the most recent 5 (N-5 backups to delete)
-          # Heroku CLI's pg:backups output can be a bit tricky to parse reliably for scripting.
-          # Consider using --json output if available and jq for more robust parsing.
-          # This example tries to skip the header and then keeps all but the most recent ones.
-          # The `heroku pg:backups --app <app>` usually lists newest first.
-          # So we want to delete backups that are older than the N most recent. Let's say we keep 5.
+          # Get list of backups and extract only the backup IDs
+          backup_list=$(heroku pg:backups --app omnitool-by-xdv | grep '^b' | awk '{print $1}' | tail -n +6)
           
-          echo "Fetching list of backups..."
-          # Attempt to get IDs, skip header (e.g., 1 line), and then skip the most recent 5 backups.
-          # The `tail -n +2` skips the header. `head -n -5` would remove the last 5. This needs careful handling.
-          # A safer approach is to get all, then decide which to delete.
-          
-          # Get all backup IDs (newest first)
-          ALL_BACKUP_IDS=$(heroku pg:backups --app omnitool-by-xdv --json | jq -r '.[] | select(.num != 0) | .uuid' | tac) # tac to reverse to oldest first for deletion
-                                        
-          # Number of backups to keep
-          KEEP_COUNT=5
-          
-          BACKUP_IDS_TO_DELETE=""
-          INDEX=0
-          TOTAL_BACKUPS=$(echo "$ALL_BACKUP_IDS" | wc -l)
-          
-          if [ "$TOTAL_BACKUPS" -gt "$KEEP_COUNT" ]; then
-            # Get IDs of backups to delete (all except the newest KEEP_COUNT)
-            # Since ALL_BACKUP_IDS is oldest first, we take the first (TOTAL_BACKUPS - KEEP_COUNT)
-            BACKUP_IDS_TO_DELETE=$(echo "$ALL_BACKUP_IDS" | head -n $((TOTAL_BACKUPS - KEEP_COUNT)))
-          fi
-          
-          if [ ! -z "$BACKUP_IDS_TO_DELETE" ]; then
-            echo "Found old backups to clean up:"
-            echo "$BACKUP_IDS_TO_DELETE"
-            for backup_id in $BACKUP_IDS_TO_DELETE; do
+          # Check if there are backups to delete
+          if [ ! -z "$backup_list" ]; then
+            echo "Found old backups to clean up: $backup_list"
+            for backup_id in $backup_list; do
               echo "Deleting backup $backup_id..."
-              heroku pg:backups:delete $backup_id --app omnitool-by-xdv --confirm omnitool-by-xdv || echo "Failed to delete $backup_id or it was already deleted."
+              heroku pg:backups:delete $backup_id --app omnitool-by-xdv --confirm omnitool-by-xdv || true
             done
           else
-            echo "No old backups to clean up (keeping last $KEEP_COUNT backups)."
+            echo "No old backups to clean up"
           fi
           
+          # Notify Discord about cleanup
           curl -H "Content-Type: application/json" -X POST "https://discord.com/api/webhooks/1299838194728177684/DuMFG_NFU1__YLawLIlovT4Dth8iUn9vNu2HLj4PibImQq6QL0iCDLd1lObrVGhV7BbK" \
             -d "{\"embeds\":[{\"title\":\"🧹 Cleanup Complete\",\"color\":3447003,\"description\":\"Backup cleanup process finished\"}]}"
