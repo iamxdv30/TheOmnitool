@@ -101,11 +101,6 @@ jobs:
             curl -H "Content-Type: application/json" -X POST "https://discord.com/api/webhooks/1299838194728177684/DuMFG_NFU1__YLawLIlovT4Dth8iUn9vNu2HLj4PibImQq6QL0iCDLd1lObrVGhV7BbK" \
               -d "{\"embeds\":[{\"title\":\"🔄 Database Changes Detected\",\"color\":16776960,\"description\":\"Found $MIGRATION_CHANGES migration changes - Preparing backup\"}]}"
           fi
-      
-      - name: Install Heroku CLI
-        run: |
-          curl https://cli-assets.heroku.com/install.sh | sh
-
 
       - name: Backup Production Database
         id: backup
@@ -169,10 +164,6 @@ jobs:
           git remote add heroku https://heroku:${{ secrets.HEROKU_API_KEY }}@git.heroku.com/omnitool-by-xdv.git
           git push heroku main --force
 
-      - name: Install Heroku CLI
-        run: |
-          curl https://cli-assets.heroku.com/install.sh | sh
-
       - name: Update Heroku Config
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
@@ -210,7 +201,7 @@ jobs:
 
     steps:
       - name: Download backup artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: database-backup
           path: backups/
@@ -219,10 +210,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client
-
-      - name: Install Heroku CLI
-        run: |
-          curl https://cli-assets.heroku.com/install.sh | sh
 
       - name: Restore User Data
         env:
@@ -276,10 +263,6 @@ jobs:
     if: always()
     
     steps:
-      - name: Install Heroku CLI
-        run: |
-          curl https://cli-assets.heroku.com/install.sh | sh
-
       - name: Cleanup Old Backups
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
