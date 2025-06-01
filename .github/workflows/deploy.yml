@@ -48,6 +48,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history
 
       - name: Install Heroku CLI
         run: |
@@ -58,8 +60,14 @@ jobs:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
           # Login to Heroku using API key
-          echo "machine api.heroku.com\n  login _\n  password $HEROKU_API_KEY" > ~/.netrc
+          echo "machine api.heroku.com
+            login _
+            password $HEROKU_API_KEY" > ~/.netrc
           
-          # Deploy to Heroku
+          # Configure git
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          
+          # Add Heroku remote and push
           git remote add heroku https://heroku:$HEROKU_API_KEY@git.heroku.com/omnitool-by-xdv-staging.git || true
           git push heroku development:main --force
