@@ -57,8 +57,8 @@ jobs:
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
-          # Login to Heroku
-          echo "$HEROKU_API_KEY" | heroku login --api-key --display-grant-info
+          # Login to Heroku using API key
+          echo "machine api.heroku.com\n  login _\n  password $HEROKU_API_KEY" > ~/.netrc
           
           # Deploy to Heroku
           git remote add heroku https://heroku:$HEROKU_API_KEY@git.heroku.com/omnitool-by-xdv-staging.git || true
