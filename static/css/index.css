@@ -1,74 +1,109 @@
-/* Heading styles for the index page */
-.index-heading {
-    color: #333; /* Default text color */
-    font-size: 2em; /* Font size for the heading */
-    text-align: center; /* Center the heading text */
-    margin-bottom: 20px; /* Space below the heading */
+/* static/css/index.css */
+
+/* Hero Section Styles */
+.hero-section {
+    background-color: #588157; /* Primary color from base.css navbar */
+    color: #ffffff;
+    padding: 60px 20px;
+    text-align: center;
+    font-family: 'Noto Sans Mono', monospace;
 }
 
-/* Dark theme styles for the index heading */
-body.dark-theme .index-heading {
-    color: #fff; /* Text color in dark theme */
-    font-family: 'Noto Sans Mono', monospace; /* Font family for dark theme */
+.hero-title {
+    font-size: 3em;
+    margin-bottom: 10px;
+    font-weight: bold;
 }
 
-/* Light theme styles for the index heading */
-body.light-theme .index-heading {
-    color: #0a0a0a; /* Text color in light theme */
+.hero-tagline {
+    font-size: 1.5em;
+    color: #e0e0e0; /* Lighter text for tagline */
 }
 
-/* Styles for the index list */
-.index-list {
-    list-style-type: none; /* Remove default bullet points */
-    padding: 0; /* No padding */
-    margin: 0; /* No margin */
-    text-align: center; /* Center the list text */
-    font-size: 1.2em; /* Font size for list items */
-    color: #333; /* Default text color */
+/* Features Section Styles */
+.features-section {
+    padding: 40px 20px;
+    text-align: center;
+    background-color: #ffffff; /* Light background for features */
 }
 
-/* Dark theme styles for the index list */
-body.dark-theme .index-list {
-    color: #fff; /* Text color in dark theme */
-    font-family: 'Noto Sans Mono', monospace; /* Font family for dark theme */
+.features-heading {
+    font-size: 2.2em;
+    color: #333333;
+    margin-bottom: 40px;
+    font-family: 'Noto Sans Mono', monospace;
 }
 
-/* Light theme styles for the index list */
-body.light-theme .index-list {
-    color: #0a0a0a; /* Text color in light theme */
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+    max-width: 1200px;
+    margin: 0 auto; /* Center the grid */
 }
 
-/* Styles for individual list items */
-.index-list li {
-    margin-bottom: 10px; /* Space below each list item */
-    text-align: left; /* Align text to the left */
-    padding-left: 8em; /* Adjust left padding to move it slightly to the right */
-    list-style-type: none; /* Remove default bullet points */
-    font-size: 1.1em; /* Font size for list items */
-    color: #333; /* Default text color */
-    position: relative; /* Changed to relative for proper positioning of bullets */
+.feature-card {
+    background-color: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 25px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    font-family: 'Noto Sans Mono', monospace;
 }
 
-/* Custom bullet styles for list items */
-.index-list li::before {
-    content: ''; /* Add a pseudo-element for custom bullet */
-    position: absolute; /* Position it absolutely */
-    left: 7em; /* Move the bullet slightly to the right */
-    top: 50%; /* Center the bullet vertically */
-    transform: translateY(-50%); /* Adjust for bullet height */
-    width: 0.5em; /* Width of the bullet */
-    height: 0.5em; /* Height of the bullet */
-    border-radius: 50%; /* Make it circular */
-    background-color: currentColor; /* Use the current text color for the bullet */
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 }
 
-/* Dark theme styles for individual list items */
-body.dark-theme .index-list li {
-    color: #fff; /* Text color in dark theme */
-    font-family: 'Noto Sans Mono', monospace; /* Font family for dark theme */
+.feature-title {
+    font-size: 1.6em;
+    color: #007bff; /* Accent color for feature titles */
+    margin-bottom: 15px;
 }
 
-/* Light theme styles for individual list items */
-body.light-theme .index-list li {
-    color: #0a0a0a; /* Text color in light theme */
+.feature-description {
+    font-size: 1em;
+    line-height: 1.6;
+    color: #555555;
+}
+
+/* Dark Theme Adjustments */
+body.dark-theme .hero-section {
+    background-color: #343a40; /* Darker primary for dark theme */
+}
+
+body.dark-theme .hero-title {
+    color: #f5f5f5;
+}
+
+body.dark-theme .hero-tagline {
+    color: #bbbbbb;
+}
+
+body.dark-theme .features-section {
+    background-color: #2c2c2c; /* Dark background for features section */
+}
+
+body.dark-theme .features-heading {
+    color: #e0e0e0;
+}
+
+body.dark-theme .feature-card {
+    background-color: #3a3a3a;
+    border-color: #555555;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+body.dark-theme .feature-card:hover {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+}
+
+body.dark-theme .feature-title {
+    color: #ff9800; /* Accent color for dark mode feature titles */
+}
+
+body.dark-theme .feature-description {
+    color: #c5c5c5;
 }
