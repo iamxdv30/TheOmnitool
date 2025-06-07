@@ -1,5 +1,5 @@
 import pytest
-from model.model import User, Admin, SuperAdmin, Tool, ToolAccess, db
+from model import User, Admin, SuperAdmin, Tool, ToolAccess, db
 from werkzeug.security import check_password_hash
 
 

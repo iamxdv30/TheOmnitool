@@ -1,7 +1,7 @@
 import pytest
 from flask import session
 from werkzeug.security import check_password_hash
-from model.model import User, Admin, SuperAdmin, Tool, ToolAccess, db
+from model import User, Admin, SuperAdmin, Tool, ToolAccess, db
 
 def test_login_post(client):
     response = client.post('/login', data={
