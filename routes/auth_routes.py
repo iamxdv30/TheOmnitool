@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, redirect, url_for, render_template, session, flash
-from model.model import User, db, UserFactory
+from model import User, db, UserFactory
 from werkzeug.security import check_password_hash
 from functools import wraps
 
@@ -7,6 +7,7 @@ auth = Blueprint('auth', __name__)
 
 @auth.route("/login", methods=["GET", "POST"])
 def login():
+
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
