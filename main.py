@@ -7,10 +7,9 @@ from routes.auth_routes import auth
 from routes.user_routes import user
 from routes.admin_routes import admin
 from routes.tool_routes import tool
-from model.model import db
+from model import db
 import re
 import logging
-from model.model import User, Admin, SuperAdmin, Tool, ToolAccess
 from datetime import timedelta
 
 

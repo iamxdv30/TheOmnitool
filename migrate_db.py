@@ -3,7 +3,7 @@ import logging
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy_utils import database_exists, create_database
 from main import create_app
-from model.model import db, User, Admin, SuperAdmin, UsageLog, EmailTemplate, ToolAccess, Tool
+from model import db, User, Admin, SuperAdmin, UsageLog, EmailTemplate, ToolAccess, Tool
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
