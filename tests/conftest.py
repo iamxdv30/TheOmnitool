@@ -4,7 +4,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 import pytest
 from main import create_app
-from model.model import db, User, Admin, SuperAdmin, Tool, ToolAccess
+from model import db, User, Admin, SuperAdmin, Tool, ToolAccess
 from dotenv import load_dotenv
 
 load_dotenv()

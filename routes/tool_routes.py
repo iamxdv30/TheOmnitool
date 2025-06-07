@@ -10,7 +10,7 @@ from flask import (
     make_response,
     Response,
 )
-from model.model import User, ToolAccess, Tool, db, EmailTemplate
+from model import User, ToolAccess, Tool, db, EmailTemplate
 from functools import wraps
 import pytz
 from datetime import datetime

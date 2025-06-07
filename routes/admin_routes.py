@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, redirect, url_for, render_template, session, flash, get_flashed_messages
-from model.model import User, Admin, SuperAdmin, Tool, ToolAccess, db
+from model import User, Admin, SuperAdmin, Tool, ToolAccess, db
 from sqlalchemy.exc import SQLAlchemyError
 import logging
 
