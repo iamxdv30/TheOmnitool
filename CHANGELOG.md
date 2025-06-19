@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 ## [1.4.0] - 2025-06-20
 ### Highlights
 
-[Unreleased]
+## [Unreleased] - Captcha in Login, Simple registration, and API request limit
 
 ✨ Added  - 2025-06-20
 
