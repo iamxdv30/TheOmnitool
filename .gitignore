@@ -4,7 +4,7 @@ setup_route_for_admin.md
 *.pyc
 __pycache__/
 instance/
-db/
-.env
+*.db
+.env*
 .windsurf\rules
 logs
