@@ -1,7 +1,10 @@
+import email
 from flask import Blueprint, request, jsonify, redirect, url_for, render_template, session, flash
 from model import User, db, UserFactory
 from werkzeug.security import check_password_hash
 from functools import wraps
+from routes.contact_routes import mail, generate_verification_token
+from flask_mail import Message
 
 auth = Blueprint('auth', __name__)
 
@@ -116,3 +119,64 @@ def register_step2():
             return redirect(url_for("auth.register_step2"))
 
     return render_template("register_step2.html")
+
+@auth.route("/forgot_password", methods=["GET", "POST"])
+def forgot_password():
+    if request.method == "POST":
+        email = request.form.get("email")
+        user = User.query.filter_by(email=email).first()
+
+        # For security, we don't reveal if the user was found or not.
+        # We always show a confirmation message.
+
+        if user:
+            # Generate a secure, timed token (expires in 1 hour by default)
+            token = generate_verification_token(email)
+            reset_link = url_for("auth.reset_password", token=token, _external=True)
+            
+            # Create and send the password reset email
+            msg = Message(
+                subject="Password Reset Request - OmniTools",
+                recipients=[email],
+            )
+
+            msg.html = render_template(
+                "email/password_reset.html",
+                name=user.fname + " " + user.lname,
+                reset_link=reset_link,
+            )
+            mail.send(msg)
+            
+            # For security, always flash the same message and redirect to login for POST requests.
+            flash("If an account with that email exists, a password reset link has been sent.", "info")
+        return redirect(url_for("auth.login"))
+        
+    return render_template("forgot_password_request.html")
+
+
+from routes.contact_routes import verify_verification_token
+@auth.route("/reset_password/<token>", methods=["GET", "POST"])
+def reset_password(token):
+    # Verify the token is valid and not expired
+    email = verify_verification_token(token)
+
+    if not email:
+        flash("The password reset link is invalid or has expired.", "error")
+        return redirect(url_for("auth.login"))
+
+    if request.method == "POST":
+        password = request.form.get("password")
+        confirm_password = request.form.get("confirm_password")
+
+        if password != confirm_password:
+            flash("Passwords do not match!", "error")
+            return render_template("reset_password.html")
+
+        user = User.query.filter_by(email=email).first()
+        if user:
+            user.set_password(password)
+            db.session.commit()
+            flash("Your password has been updated successfully! You can now log in.", "success")
+            return redirect(url_for("auth.login"))
+
+    return render_template("reset_password.html")

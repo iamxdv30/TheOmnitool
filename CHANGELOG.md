@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+
+## [1.4.0] - 2025-06-20
+### Highlights
+
+[Unreleased]
+
+✨ Added  - 2025-06-20
+
+🔐 Forgot Password functionality with a secure, multi-step reset process:
+- Users can initiate a password reset from the new /forgot_password page.
+- System generates a time-limited (1 hour) secure token using itsdangerous.
+- An email with a reset link is sent via Flask-Mail.
+- Users can reset their password through the /reset_password/<token> page.
+- On success, the user’s password is updated and they can log in again.
+
+🧭 UI update:
+- Added “Forgot Password?” link to the login page for quick access
+
 ---
 
 ## [1.3.0] - 2025-06-08
