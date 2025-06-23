@@ -6,6 +6,6 @@ __pycache__/
 instance/
 *.db
 .env*
-.windsurf\rules
+.windsurf
 logs
 .windsurf
