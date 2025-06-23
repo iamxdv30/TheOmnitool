@@ -8,3 +8,4 @@ instance/
 .env*
 .windsurf\rules
 logs
+.windsurf
