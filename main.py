@@ -7,15 +7,16 @@ from routes.auth_routes import auth
 from routes.user_routes import user
 from routes.admin_routes import admin
 from routes.tool_routes import tool
+from routes.contact_routes import contact, configure_mail
 from model import db
 import re
 import logging
 from datetime import timedelta
+from dotenv import load_dotenv
+
 
 
 #New imports as of October 12, 2024
-from routes.contact_routes import contact, configure_mail
-from dotenv import load_dotenv
 
 
 
@@ -25,18 +26,31 @@ logging.basicConfig(
 )
 
 # Load environment variables from .env
-load_dotenv()
+print("DEBUG: Current directory:", os.getcwd())
+print("DEBUG: .env file exists:", os.path.exists(os.path.join(os.path.dirname(__file__), '.env')))
+load_dotenv(os.path.join(os.path.dirname(__file__), '.env'), override=True)
+
+# Force set environment variables for development
+if os.path.exists(os.path.join(os.path.dirname(__file__), '.env')):
+    os.environ['FLASK_ENV'] = 'development'
+    os.environ['IS_LOCAL'] = 'true'
+
+# Debug: Print environment variables
+print("DEBUG: FLASK_ENV =", os.getenv('FLASK_ENV'))
+print("DEBUG: IS_LOCAL =", os.getenv('IS_LOCAL'))
 
 # Factory function to create a Flask app
 
 
 def configure_session(app):
+    is_local = os.getenv('IS_LOCAL', 'true').lower() == 'true'
+    
     # Configure session to expire when browser closes
     app.config.update(
         # Session will expire when browser closes
         PERMANENT_SESSION_LIFETIME=timedelta(minutes=30),  # Backup expiry time
         SESSION_PERMANENT=False,  # This ensures cookie expires when browser closes
-        SESSION_COOKIE_SECURE=True,  # Only send cookie over HTTPS
+        SESSION_COOKIE_SECURE=not is_local,  # Only require HTTPS in production
         SESSION_COOKIE_HTTPONLY=True,  # Prevent JavaScript access to session cookie
         SESSION_COOKIE_SAMESITE='Lax'  # Protect against CSRF
     )
@@ -118,7 +132,13 @@ def create_app():
     # Ensure HTTPS is recognized and redirects are properly handled
     @app.before_request
     def handle_headers():
-        # Recognize HTTPS if behind a proxy
+        is_local = os.getenv('IS_LOCAL', 'true').lower() == 'true'
+        
+        # Skip HTTPS checks in local development
+        if is_local:
+            return None
+            
+        # Production HTTPS handling
         if request.headers.get("X-Forwarded-Proto") == "https":
             request.environ["wsgi.url_scheme"] = "https"
 
@@ -128,19 +148,22 @@ def create_app():
             request.environ["HTTP_HOST"] = forwarded_host
 
         # Redirect to HTTPS in production
-        if environment == "production" and not request.is_secure:
+        if not request.is_secure:
             url = request.url.replace("http://", "https://", 1)
             return redirect(url, code=301)
 
     # Add security headers
     @app.after_request
     def add_security_headers(response):
-        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-        response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-            "font-src 'self' https://fonts.gstatic.com;"
-        )
+        is_local = os.getenv('IS_LOCAL', 'true').lower() == 'true'
+        
+        if not is_local:  # Only add strict security headers in production
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                "font-src 'self' https://fonts.gstatic.com;"
+            )
         return response
 
     # Configure Jinja2 template loading
@@ -160,4 +183,13 @@ def create_app():
 
 if __name__ == "__main__":
     app = create_app()
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=True)
+    is_local = os.getenv('IS_LOCAL', 'true').lower() == 'true'
+    host = '127.0.0.1' if is_local else '0.0.0.0'
+    ssl_context = None if is_local else 'adhoc'  # Use HTTP for local, HTTPS for production
+    
+    app.run(
+        host=host,
+        port=int(os.environ.get('PORT', 5000)),
+        debug=True,
+        ssl_context=ssl_context
+    )
