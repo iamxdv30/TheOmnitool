@@ -120,32 +120,32 @@ body {
 
 /* Dark Mode */
 
-body.dark-theme .unix-timestamp-converter {
+html.dark .unix-timestamp-converter {
   background-color: #1e1e1e;
   color: #e0e0e0;
   font-family: 'Noto Sans Mono', monospace;
 }
 
-body.dark-theme .unix-timestamp-converter__label,
-body.dark-theme .unix-timestamp-converter__hint {
+html.dark .unix-timestamp-converter__label,
+html.dark .unix-timestamp-converter__hint {
   color: #ccc;
 }
 
-body.dark-theme .unix-timestamp-converter__input,
-body.dark-theme .unix-timestamp-converter__select {
+html.dark .unix-timestamp-converter__input,
+html.dark .unix-timestamp-converter__select {
   background-color: #555;
   color: #fff;
   border-color: #777;
 }
 
-body.dark-theme .unix-timestamp-converter__submit-btn,
-body.dark-theme .unix-timestamp-converter__current-time-btn {
+html.dark .unix-timestamp-converter__submit-btn,
+html.dark .unix-timestamp-converter__current-time-btn {
   background-color: #38b000;
   color: #fff;
 }
 
-body.dark-theme .unix-timestamp-converter__submit-btn:hover,
-body.dark-theme .unix-timestamp-converter__current-time-btn:hover {
+html.dark .unix-timestamp-converter__submit-btn:hover,
+html.dark .unix-timestamp-converter__current-time-btn:hover {
   background-color: #2d8a00;
 }
 /* End of Dark Mode */

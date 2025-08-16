@@ -2,7 +2,16 @@
   margin: 20px auto;
   max-width: 1500px;
   padding: 20px;
-  font-family: 'Noto Sans Mono', monospace;
+  font-family: var(--font-family);
+  background-color: var(--container-bg);
+  color: var(--text-primary);
+  border-radius: 10px;
+  box-shadow: var(--shadow-light);
+}
+
+.email-templates-container h1,
+.email-templates-container h2 {
+  color: var(--text-primary);
 }
 
 #addTemplateForm {
@@ -16,9 +25,11 @@
   width: 70%;
   padding: 10px;
   margin-bottom: 10px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
   border-radius: 5px;
-  font-family: 'Noto Sans Mono', monospace;
+  font-family: var(--font-family);
+  background-color: var(--input-bg);
+  color: var(--text-primary);
 }
 
 #addTemplateForm textarea {
@@ -32,15 +43,15 @@
   padding: 10px 20px;
   border: none;
   border-radius: 3px;
-  background-color: #0056b3;
-  color: white;
+  background-color: var(--accent-color);
+  color: var(--text-light);
   cursor: pointer;
-  font-family: 'Noto Sans Mono', monospace;
+  font-family: var(--font-family);
   transition: background-color 0.3s ease;
 }
 
 #addTemplateForm button[type='submit']:hover {
-  background-color: #003d82;
+  background-color: var(--accent-hover);
 }
 
 /* Grid layout for template list */
@@ -52,8 +63,8 @@
 }
 
 .template {
-  background-color: #f9f9f9;
-  border: 1px solid #ddd;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
   padding: 15px;
   border-radius: 5px;
   display: flex;
@@ -63,12 +74,14 @@
 .template-title {
   font-weight: bold;
   margin-bottom: 10px;
+  color: var(--text-primary);
 }
 
 .template-content {
   white-space: pre-wrap;
   word-wrap: break-word;
   margin-bottom: 10px;
+  color: var(--text-primary);
 }
 
 .template input[type='text'],
@@ -76,9 +89,11 @@
   width: 100%;
   padding: 5px;
   margin-bottom: 10px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
   border-radius: 3px;
   font-family: inherit;
+  background-color: var(--input-bg);
+  color: var(--text-primary);
 }
 
 .template textarea {
@@ -101,21 +116,21 @@
 }
 
 .update-btn {
-  background-color: #0056b3;
-  color: white;
+  background-color: var(--accent-color);
+  color: var(--text-light);
 }
 
 .update-btn:hover {
-  background-color: #003d82;
+  background-color: var(--accent-hover);
 }
 
 .delete-btn {
-  background-color: #f44336;
-  color: white;
+  background-color: var(--danger-color);
+  color: var(--text-light);
 }
 
 .delete-btn:hover {
-  background-color: #d32f2f;
+  background-color: var(--danger-hover);
 }
 
 .save-btn,
@@ -124,98 +139,56 @@
 }
 
 .save-btn {
-  background-color: #2196f3;
-  color: white;
+  background-color: var(--info-color);
+  color: var(--text-light);
+}
+
+.save-btn:hover {
+  background-color: var(--info-hover);
 }
 
 .cancel-btn {
-  background-color: #ff9800;
-  color: white;
+  background-color: var(--warning-color);
+  color: var(--text-light);
 }
 
 .copy-btn {
-  background-color: #4CAF50;
-  color: white;
+  background-color: var(--success-color);
+  color: var(--text-light);
 }
 
 .copy-btn:hover {
-  background-color: #388e3c;
+  background-color: var(--success-hover);
 }
 
-/* Dark mode styles */
-body.dark-theme .email-templates-container {
-  background-color: #1e1e1e;
-  color: #fff;
-  font-family: 'Noto Sans Mono', monospace;
-  border-radius: 10px;
+/* Dark mode styles - only specific overrides needed */
+html.dark .email-templates-container {
   box-shadow: 0 0 10px 0 rgba(0, 128, 0, 0.5);
 }
 
-body.dark-theme .email-templates-container h1,
-body.dark-theme .email-templates-container h2 {
-  color: #fff;
+html.dark .update-btn {
+  background-color: var(--secondary-color);
 }
 
-body.dark-theme .template {
-  background-color: #2c2c2c;
-  border-color: #444;
+html.dark .update-btn:hover {
+  background-color: var(--secondary-hover);
 }
 
-body.dark-theme .template input[type='text'],
-body.dark-theme .template textarea {
-  background-color: #333;
-  color: #fff;
-  border-color: #555;
+html.dark #addTemplateForm button[type='submit'] {
+  background-color: var(--secondary-color);
 }
 
-body.dark-theme .update-btn {
-  background-color: #38b000;
+html.dark #addTemplateForm button[type='submit']:hover {
+  background-color: var(--secondary-hover);
 }
 
-body.dark-theme .update-btn:hover {
-  background-color: #008000;
-}
-
-body.dark-theme .delete-btn {
-  background-color: #d32f2f;
-}
-
-body.dark-theme .save-btn {
-  background-color: #1976d2;
-}
-
-body.dark-theme .save-btn:hover {
-  background-color: #1565c0;
-}
-
-body.dark-theme .cancel-btn {
-  background-color: #f57c00;
-}
-
-body.dark-theme .copy-btn {
+html.dark .copy-btn {
   background-color: #ccb34e;
-  color: white;
-  font-family: 'Noto Sans Mono', monospace;
+  color: var(--text-light);
 }
 
-body.dark-theme .copy-btn:hover {
+html.dark .copy-btn:hover {
   background-color: #EBB02D;
-}
-
-body.dark-theme #addTemplateForm input[type='text'],
-body.dark-theme #addTemplateForm textarea {
-  background-color: #333;
-  color: #fff;
-  border-color: #555;
-}
-
-body.dark-theme #addTemplateForm button[type='submit'] {
-  background-color: #38b000;
-  color: white;
-}
-
-body.dark-theme #addTemplateForm button[type='submit']:hover {
-  background-color: #388E3C;
 }
 
 /* Responsive behavior for smaller screens */
