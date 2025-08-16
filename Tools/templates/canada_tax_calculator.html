@@ -60,7 +60,6 @@
   <button id="calculateTaxBtn" class="ca-calculate-tax" onclick="calculateTax()">
     Calculate Tax
   </button>
-  <div id="results"></div>
 </div>
 
 <script>
@@ -235,7 +234,12 @@
   }
 
   function displayResults(result) {
-    const resultsDiv = document.getElementById('results');
+    let resultsDiv = document.getElementById('results');
+    if (!resultsDiv) {
+      resultsDiv = document.createElement('div');
+      resultsDiv.id = 'results';
+      document.querySelector('.ca-container').appendChild(resultsDiv);
+    }
     resultsDiv.innerHTML = `
           <h2>Calculation Results:</h2>
           <p>Order Total: $${result.orderTotal.toFixed(2)}</p>

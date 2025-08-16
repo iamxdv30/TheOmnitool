@@ -178,56 +178,56 @@ a.btn-manage-tools:hover {
 }
 
 /* Dark theme */
-body.dark-theme {
+html.dark {
   background-color: #1e1e1e;
   color: #e0e0e0;
 }
 
-body.dark-theme .dashboard-container {
+html.dark .dashboard-container {
   background-color: #2c2c2c;
   box-shadow: 0 0 10px 0 rgba(0, 128, 0, 0.5);
 }
 
-body.dark-theme .user-table th,
-body.dark-theme .user-table td {
+html.dark .user-table th,
+html.dark .user-table td {
   border-color: #444;
 }
 
-body.dark-theme .user-table th {
+html.dark .user-table th {
   background-color: #3c3c3c;
 }
 
-body.dark-theme .btn.btn-primary {
+html.dark .btn.btn-primary {
   background-color: #45a049;
 }
 
-body.dark-theme .btn.btn-secondary {
+html.dark .btn.btn-secondary {
   background-color: #0073a1;
 }
 
-body.dark-theme .btn.btn-danger {
+html.dark .btn.btn-danger {
   background-color: #d32f2f;
 }
 
-body.dark-theme .btn.btn-warning {
+html.dark .btn.btn-warning {
   background-color: #f57c00;
 }
 
-body.dark-theme .search-input,
-body.dark-theme .form-input,
-body.dark-theme .form-select {
+html.dark .search-input,
+html.dark .form-input,
+html.dark .form-select {
   background-color: #3c3c3c;
   color: #e0e0e0;
   border-color: #555;
 }
 
-body.dark-theme .alert-success {
+html.dark .alert-success {
   color: #c6e6d2;
   background-color: #1e4620;
   border-color: #2f6b31;
 }
 
-body.dark-theme .alert-danger {
+html.dark .alert-danger {
   color: #f8d7da;
   background-color: #5c1c24;
   border-color: #842029;
