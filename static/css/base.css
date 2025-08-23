@@ -70,6 +70,11 @@ html.dark {
   --input-bg: #4a4a4a;
   --dropdown-bg: #343a40;
   
+/* Tool-specific Colors */
+--tool-form-bg: #0e1722;
+
+
+
   /* Text Colors */
   --text-primary: #ffffff;
   --text-secondary: #e8e8e8;

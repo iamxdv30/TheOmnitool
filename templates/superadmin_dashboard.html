@@ -9,9 +9,7 @@
     <h1 class="dashboard-title">Super Admin Dashboard</h1>
 
     <!-- Display flash messages -->
-    {% for category, message in get_flashed_messages(with_categories=True) %}
-        <div class="alert alert-{{ category }}">{{ message }}</div>
-    {% endfor %}
+    {% include '_flash_messages.html' %}
     
     <!-- Add a button to show/hide the create user form -->
     <button id="showCreateUserForm" class="btn btn-manage-tools">Create New User/Admin</button>

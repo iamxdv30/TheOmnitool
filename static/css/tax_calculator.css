@@ -24,7 +24,7 @@
 }
 
 .tax-calculator form {
-    background-color: var(--container-bg);
+    background-color: var(--tool-form-bg);
     padding: 20px;
     border-radius: 8px;
     box-shadow: var(--shadow-light);
@@ -52,7 +52,7 @@
 /* Item and Discount Styles */
 .tax-calculator .item,
 .tax-calculator .discount {
-    background-color: var(--card-bg);
+    background-color: var(--tool-form-bg);
     padding: 15px;
     margin-top: 15px;
     border: 1px solid var(--border-color);
@@ -81,7 +81,7 @@
 .tax-calculator .shipping-section {
     margin-top: 20px;
     padding: 15px;
-    background-color: var(--container-bg);
+    background-color: var(--tool-form-bg);
     border-radius: 4px;
     border: 1px solid var(--border-color);
 }
@@ -89,7 +89,7 @@
 /* Result Container Styles */
 .tax-calculator .result-container {
     margin-top: 30px;
-    background-color: var(--container-bg);
+    background-color: var(--tool-form-bg);
     padding: 20px;
     border-radius: 8px;
     box-shadow: var(--shadow-light);

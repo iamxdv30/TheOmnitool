@@ -1,4 +1,6 @@
-{% extends "base.html" %} {% block content %} {% block style %}
+{% extends "base.html" %} 
+{% block content %} 
+{% block style %}
 <link
   rel="stylesheet"
   href="{{ url_for('static', filename='css/manage_tools.css') }}"
@@ -9,9 +11,7 @@
   <h1 class="manage-tools-title">Manage Tools</h1>
 
   <div id="flash-messages">
-    {% for category, message in get_flashed_messages(with_categories=True) %}
-    <div class="alert alert-{{ category }}">{{ message }}</div>
-    {% endfor %}
+    {% include '_flash_messages.html' %}
   </div>
 
   <section class="add-tool-section">

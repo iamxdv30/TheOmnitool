@@ -7,6 +7,19 @@
 {% block content %}
     <div class="login-container">
       <h1>Login</h1>
+      
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                {% if message %}
+                <div class="flash-message {{ category }}">
+                    {{ message }}
+                </div>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+      {% endwith %}
+      
       <form method="POST">
           <input type="text" name="username" placeholder="Username" required>
           <input type="password" name="password" placeholder="Password" required>
@@ -17,17 +30,5 @@
       <div style="text-align: center; margin-top: 15px;">
           <a href="{{ url_for('auth.forgot_password') }}">Forgot Password?</a>
       </div>
-      </div>
-    
-    {% if error %}
-        <div class="flash-message error">{{ error }}</div>
-    {% endif %}
-
-    {% if role == 'admin' %}
-        <p>Welcome, {{ username }}! You have full access.</p>
-    {% elif role == 'superadmin' %}
-        <p>Welcome, {{ username }}! You have all the privileges.</p>
-    {% elif role == 'user' %}
-        <p>Welcome, {{ username }}!</p>
-    {% endif %}
+    </div>
 {% endblock %}
