@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %} The Omnitool{% endblock %}</title>
+    <link rel="icon" href="{{ url_for('static', filename='images/omniTools_logo.png') }}" type="image/png">
 
     <!-- Link to the global CSS file (base.css) -->
     <link
@@ -24,6 +25,10 @@
   <body class="light-theme">
     <nav class="navbar">
       <div class="navbar-container">
+        <a href="{{ url_for('user.index') }}" class="navbar-brand">
+          <img src="{{ url_for('static', filename='images/omniTools_logoWhite.png') }}" alt="OmniTool Logo" class="navbar-logo light-logo">
+          <img src="{{ url_for('static', filename='images/omniTools_logo.png') }}" alt="OmniTool Logo" class="navbar-logo dark-logo">
+        </a>
         <button class="navbar-toggler" id="navbar-toggler">☰</button>
         <div class="navbar-collapse" id="navbar-collapse">
           <ul class="navbar-nav">
