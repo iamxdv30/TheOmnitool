@@ -9,6 +9,8 @@
     <h1>Step 2</h1>
     <h2>Complete Registration</h2>
 
+    {% include '_flash_messages.html' %}
+
     <form method="POST" action="{{ url_for('auth.register_step2') }}">
         <div>
             <label for="username">Username:</label>
@@ -35,13 +37,4 @@
         </div>
     </form>
 </div>
-
-<!-- Added error message display -->
-{% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            <div class="{{ category }}">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-{% endwith %}
 {% endblock %}

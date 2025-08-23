@@ -5,7 +5,7 @@
   margin-top: 20px;
   padding: 20px;
   box-sizing: border-box;
-  background-color: var(--container-bg);
+  background-color: var(--tool-form-bg);
   border-radius: 8px;
   box-shadow: var(--shadow-light);
   font-family: var(--font-family);
@@ -120,7 +120,7 @@
 
 #taxRates {
   margin-bottom: 20px;
-  background-color: var(--container-bg);
+  background-color: var(--tool-form-bg);
   color: var(--text-primary);
 }
 
@@ -129,7 +129,7 @@
 }
 
 .item {
-  background-color: var(--card-bg);
+  background-color: var(--tool-form-bg);
   padding: 10px;
   margin-bottom: 10px;
   border-radius: 4px;
@@ -145,7 +145,7 @@
 }
 
 #results {
-  background-color: var(--container-bg);
+  background-color: var(--tool-form-bg);
   padding: 15px;
   border-radius: 4px;
   margin-top: 20px;
@@ -159,5 +159,3 @@
 }
 
 /* End of Canada Tax Calculator CSS */
-
-/* Remove legacy dark mode CSS - now handled by CSS variables */

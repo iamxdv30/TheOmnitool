@@ -1,19 +1,19 @@
 /* Remove the dot before body, as it's not a class */
 body {
-  background-color: #f9f9f9;
+  background-color: var(--container-bg);
   font-family: 'Noto Sans Mono', monospace;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .unix-timestamp-converter {
-  background-color: #ffffff;
+  background-color: var(--card-bg);
   max-width: 800px;
   margin: 20px auto;
   padding: 20px;
   border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-light);
   font-family: 'Noto Sans Mono', monospace;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .unix-timestamp-converter__title {
@@ -49,27 +49,27 @@ body {
 
 .unix-timestamp-converter__input {
   padding: 8px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   width: 95%;
 }
 .unix-timestamp-converter__select {
   padding: 8px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   width: 100%;
 }
 
 .unix-timestamp-converter__hint {
   font-size: 12px;
-  color: #666;
+  color: var(--text-muted);
   margin-top: 5px;
 }
 
 .unix-timestamp-converter__submit-btn,
 .unix-timestamp-converter__current-time-btn {
   padding: 10px 20px;
-  background-color: #007bff;
+  background-color: var(--secondary-color);
   color: white;
   border: none;
   border-radius: 4px;
@@ -82,7 +82,7 @@ body {
 
 .unix-timestamp-converter__submit-btn:hover,
 .unix-timestamp-converter__current-time-btn:hover {
-  background-color: #0056b3;
+  background-color: var(--secondary-hover);
 }
 
 .unix-timestamp-converter__result {
@@ -121,31 +121,31 @@ body {
 /* Dark Mode */
 
 html.dark .unix-timestamp-converter {
-  background-color: #1e1e1e;
-  color: #e0e0e0;
+  background-color: var(--tool-form-bg);
+  color: var(--text-primary);
   font-family: 'Noto Sans Mono', monospace;
 }
 
 html.dark .unix-timestamp-converter__label,
 html.dark .unix-timestamp-converter__hint {
-  color: #ccc;
+  color: var(--text-muted);
 }
 
 html.dark .unix-timestamp-converter__input,
 html.dark .unix-timestamp-converter__select {
-  background-color: #555;
+  background-color: var(--input-bg);
   color: #fff;
   border-color: #777;
 }
 
 html.dark .unix-timestamp-converter__submit-btn,
 html.dark .unix-timestamp-converter__current-time-btn {
-  background-color: #38b000;
+  background-color: var(--secondary-color);
   color: #fff;
 }
 
 html.dark .unix-timestamp-converter__submit-btn:hover,
 html.dark .unix-timestamp-converter__current-time-btn:hover {
-  background-color: #2d8a00;
+  background-color: var(--secondary-hover);
 }
 /* End of Dark Mode */

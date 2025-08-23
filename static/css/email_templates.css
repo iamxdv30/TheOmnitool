@@ -3,7 +3,7 @@
   max-width: 1500px;
   padding: 20px;
   font-family: var(--font-family);
-  background-color: var(--container-bg);
+  background-color: var(--tool-form-bg);
   color: var(--text-primary);
   border-radius: 10px;
   box-shadow: var(--shadow-light);
@@ -163,7 +163,7 @@
 
 /* Dark mode styles - only specific overrides needed */
 html.dark .email-templates-container {
-  box-shadow: 0 0 10px 0 rgba(0, 128, 0, 0.5);
+  box-shadow: var(--shadow-heavy);
 }
 
 html.dark .update-btn {
