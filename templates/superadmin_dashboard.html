@@ -87,27 +87,35 @@
                 </tr>
                 <tr class="tool-access" style="display:none;">
                     <td colspan="4">
-                        <form action="{{ url_for('tool.grant_tool_access') }}" method="post" class="tool-form">
-                            <input type="hidden" name="user_id" value="{{ user.id }}">
-                            <select name="tool_name" class="form-select">
-                                {% for tool in tools %}
-                                    <option value="{{ tool.name }}" {% if tool.name in user_tools[user.id] %}disabled{% endif %}>
-                                        {{ tool.name }}{% if tool.name in user_tools[user.id] %} (Already granted){% endif %}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                            <button type="submit" class="btn btn-primary">Grant Access</button>
-                        </form>
-    
-                        <form action="{{ url_for('tool.revoke_tool_access') }}" method="post" class="tool-form">
-                            <input type="hidden" name="user_id" value="{{ user.id }}">
-                            <select name="tool_name" class="form-select">
-                                {% for tool_name in user_tools[user.id] %}
-                                    <option value="{{ tool_name }}">{{ tool_name }}</option>
-                                {% endfor %}
-                            </select>
-                            <button type="submit" class="btn btn-danger" {% if not user_tools[user.id] %}disabled{% endif %}>Revoke Access</button>
-                        </form>
+                        <div class="tool-access-container">
+                            <div class="tool-form-group">
+                                <h4>Grant Tool Access</h4>
+                                <form action="{{ url_for('tool.grant_tool_access') }}" method="post" class="tool-form">
+                                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                                    <select name="tool_name" class="form-select">
+                                        {% for tool in tools %}
+                                            <option value="{{ tool.name }}" {% if tool.name in user_tools[user.id] %}disabled{% endif %}>
+                                                {{ tool.name }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="submit" class="btn btn-primary">Grant Access</button>
+                                </form>
+                            </div>
+
+                            <div class="tool-form-group">
+                                <h4>Revoke Tool Access</h4>
+                                <form action="{{ url_for('tool.revoke_tool_access') }}" method="post" class="tool-form">
+                                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                                    <select name="tool_name" class="form-select">
+                                        {% for tool_name in user_tools[user.id] %}
+                                            <option value="{{ tool_name }}">{{ tool_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="submit" class="btn btn-danger" {% if not user_tools[user.id] %}disabled{% endif %}>Revoke Access</button>
+                                </form>
+                            </div>
+                        </div>
                     </td>
                 </tr>
                 <tr class="change-role" style="display:none;">
