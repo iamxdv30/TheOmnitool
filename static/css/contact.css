@@ -5,9 +5,9 @@
   max-width: 600px;
   padding: 20px;
   font-family: var(--font-family);
-  background-color: var(--container-bg);
+  background-color: var(--tool-form-bg);
   border-radius: 8px;
-  box-shadow: var(--shadow-medium);
+  box-shadow: var(--shadow-heavy);
   color: var(--text-primary);
 }
 
