@@ -7,6 +7,16 @@
 />
 {% endblock %}
 
+{% block scripts %}
+<!-- Common utility scripts -->
+<script src="{{ url_for('static', filename='js/utils/common.js') }}"></script>
+<script src="{{ url_for('static', filename='js/utils/ajax.js') }}"></script>
+<script src="{{ url_for('static', filename='js/utils/ui.js') }}"></script>
+
+<!-- Page-specific script -->
+<script src="{{ url_for('static', filename='js/pages/manage_tools.js') }}"></script>
+{% endblock %}
+
 <div class="manage-tools-container">
   <h1 class="manage-tools-title">Manage Tools</h1>
 
@@ -133,50 +143,5 @@
   </section>
 </div>
 
-<script>
-  function showUpdateForm(toolId, name, description, isDefault) {
-    document.getElementById('updateForm').style.display = 'block';
-    document.getElementById('update_tool_id').value = toolId;
-    document.getElementById('update_tool_name').value = name;
-    document.getElementById('update_description').value = description;
-    document.getElementById('update_is_default').checked = isDefault;
-  }
-
-  function deleteTool(toolId) {
-    if (confirm('Are you sure you want to delete this tool?')) {
-      const form = new FormData();
-      form.append('tool_id', toolId);
-
-      fetch("{{ url_for('admin.manage_tools') }}", {
-        method: 'DELETE',
-        body: form,
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.message) {
-            alert(data.message);
-            location.reload();
-          } else {
-            alert(data.error || 'An error occurred while deleting the tool');
-          }
-        })
-        .catch((error) => {
-          console.error('Error:', error);
-          alert('An error occurred while deleting the tool');
-        });
-    }
-  }
-
-  function hideFlashMessages() {
-    const flashMessages = document.querySelectorAll('.alert');
-    flashMessages.forEach((message) => {
-      setTimeout(() => {
-        message.style.display = 'none';
-      }, 5000); // Hide after 5 seconds
-    });
-  }
-
-  // Call the function when the page loads
-  window.addEventListener('load', hideFlashMessages);
-</script>
+<!-- Inline JavaScript has been moved to manage_tools.js -->
 {% endblock %}

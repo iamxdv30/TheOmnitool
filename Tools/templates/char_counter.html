@@ -1,9 +1,17 @@
-{% extends "base.html" %} {% block styles %}
-<link
-  rel="stylesheet"
-  href="{{ url_for('static', filename='css/char_counter.css') }}"
-/>
-{% endblock %} {% block title %}Character Counter{% endblock %} {% block content
+{% extends "base.html" %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/char_counter.css') }}" />
+{% endblock %}
+
+{% block scripts %}
+<!-- Load utility JS files -->
+<script src="{{ url_for('static', filename='js/utils/common.js') }}"></script>
+<!-- Load page-specific JS -->
+<script src="{{ url_for('static', filename='js/pages/char_counter.js') }}"></script>
+{% endblock %}
+
+{% block title %}Character Counter{% endblock %} {% block content
 %}
 
 <div class="char-container">

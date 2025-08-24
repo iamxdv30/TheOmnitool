@@ -4,6 +4,15 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/superadmin.css') }}">
 {% endblock %}
 
+{% block scripts %}
+    <!-- Load utility JS files -->
+    <script src="{{ url_for('static', filename='js/utils/common.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/modules/ajax.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/modules/ui.js') }}"></script>
+    <!-- Load page-specific JS -->
+    <script src="{{ url_for('static', filename='js/pages/superadmin_dashboard.js') }}"></script>
+{% endblock %}
+
 {% block content %}
 <div class="dashboard-container">
     <h1 class="dashboard-title">Super Admin Dashboard</h1>
@@ -133,46 +142,11 @@
         </tbody>
     </table>
     
-    <script>
-        // JavaScript for search functionality and form toggling
-        document.getElementById('showCreateUserForm').addEventListener('click', function() {
-            var form = document.getElementById('createUserForm');
-            form.style.display = form.style.display === 'none' ? 'block' : 'none';
-        });
-    
-        document.getElementById('userSearch').addEventListener('keyup', function() {
-            var filter = this.value.toLowerCase();
-            var rows = document.getElementById('userTableBody').getElementsByClassName('user-row');
-            
-            for (var i = 0; i < rows.length; i++) {
-                var username = rows[i].getElementsByTagName('td')[0].textContent.toLowerCase();
-                var email = rows[i].getElementsByTagName('td')[1].textContent.toLowerCase();
-                if (username.indexOf(filter) > -1 || email.indexOf(filter) > -1) {
-                    rows[i].style.display = '';
-                } else {
-                    rows[i].style.display = 'none';
-                }
-            }
-        });
-
-        // Add event listeners for showing/hiding forms
-        document.querySelectorAll('.showUpdateForm').forEach(button => {
-            button.addEventListener('click', function() {
-                this.closest('tr').nextElementSibling.style.display = this.closest('tr').nextElementSibling.style.display === 'none' ? 'table-row' : 'none';
-            });
-        });
-
-        document.querySelectorAll('.showToolAccess').forEach(button => {
-            button.addEventListener('click', function() {
-                this.closest('tr').nextElementSibling.nextElementSibling.style.display = this.closest('tr').nextElementSibling.nextElementSibling.style.display === 'none' ? 'table-row' : 'none';
-            });
-        });
-
-        document.querySelectorAll('.showChangeRole').forEach(button => {
-            button.addEventListener('click', function() {
-                this.closest('tr').nextElementSibling.nextElementSibling.nextElementSibling.style.display = this.closest('tr').nextElementSibling.nextElementSibling.nextElementSibling.style.display === 'none' ? 'table-row' : 'none';
-            });
-        });
-    </script>
+    <!-- All JavaScript has been moved to modular files:
+         - common.js: General utilities
+         - ajax.js: AJAX request handling
+         - ui.js: UI interaction handlers
+         - superadmin_dashboard.js: Page-specific functionality
+    -->
 </div>
 {% endblock %}
