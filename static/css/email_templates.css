@@ -38,8 +38,7 @@
 }
 
 #addTemplateForm button[type='submit'] {
-  align-self: flex-start; /* Move button to the bottom of text area */
-  margin-top: 10px;
+  align-self: flex-start; 
   padding: 10px 20px;
   border: none;
   border-radius: 3px;
@@ -57,12 +56,13 @@
 /* Grid layout for template list */
 #templateList {
   display: grid;
-  grid-template-columns: repeat(4, 1fr); /* 4 equal-width columns */
-  grid-template-rows: repeat(5, auto); /* Auto height rows, max of 5 rows */
-  gap: 20px; /* Space between grid items */
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(5, auto); 
+  gap: 20px; 
 }
 
 .template {
+  min-width: 0;
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
   padding: 15px;
@@ -79,7 +79,8 @@
 
 .template-content {
   white-space: pre-wrap;
-  word-wrap: break-word;
+  word-break: break-word; 
+  max-width: 100%; 
   margin-bottom: 10px;
   color: var(--text-primary);
 }
@@ -191,18 +192,66 @@ html.dark .copy-btn:hover {
   background-color: #EBB02D;
 }
 
+.search-container {
+  margin: 20px 0;
+}
+
+#searchInput {
+  width: 70%; /* Matches form field width */
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  font-family: var(--font-family);
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  box-sizing: border-box;
+}
+
+/* When a template is being edited */
+.template.editing .template-title[contenteditable="true"] {
+  background-color: var(--input-bg-focus);
+  outline: 2px solid var(--accent-color);
+}
+
+.editing-textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 10px;
+  margin-top: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  font-family: var(--font-family);
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+
+/* Hide/show buttons based on editing state */
+.template.editing .update-btn,
+.template.editing .copy-btn,
+.template.editing .delete-btn {
+  display: none;
+}
+
+.template.editing .save-btn,
+.template.editing .cancel-btn {
+  display: inline-block;
+}
+
 /* Responsive behavior for smaller screens */
 @media (max-width: 800px) {
   #templateList {
     grid-template-columns: repeat(
       2,
       1fr
-    ); /* Switch to 2 columns on smaller screens */
+    ); 
   }
 }
 
 @media (max-width: 500px) {
   #templateList {
-    grid-template-columns: 1fr; /* Switch to 1 column on very small screens */
+    grid-template-columns: 1fr; 
   }
 }

@@ -4,6 +4,16 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/register.css') }}">
 {% endblock %}
 
+{% block scripts %}
+<!-- Common utility scripts -->
+<script src="{{ url_for('static', filename='js/utils/common.js') }}"></script>
+<script src="{{ url_for('static', filename='js/utils/ajax.js') }}"></script>
+<script src="{{ url_for('static', filename='js/utils/ui.js') }}"></script>
+
+<!-- Page-specific script -->
+<script src="{{ url_for('static', filename='js/pages/register.js') }}"></script>
+{% endblock %}
+
 {% block content %}
 <div class="register-step2-container">
     <h1>Step 2</h1>

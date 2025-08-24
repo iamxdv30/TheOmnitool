@@ -131,7 +131,7 @@ def create_app():
     app.register_blueprint(auth)
     app.register_blueprint(user)
     app.register_blueprint(admin)
-    app.register_blueprint(tool)
+    app.register_blueprint(tool, url_prefix='/tools')
     app.register_blueprint(contact)
 
     @app.route("/environment")

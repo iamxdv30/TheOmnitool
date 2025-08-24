@@ -4,6 +4,16 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
 {% endblock %}
 
+{% block scripts %}
+<!-- Common utility scripts -->
+<script src="{{ url_for('static', filename='js/utils/common.js') }}"></script>
+<script src="{{ url_for('static', filename='js/utils/ajax.js') }}"></script>
+<script src="{{ url_for('static', filename='js/utils/ui.js') }}"></script>
+
+<!-- Page-specific script -->
+<script src="{{ url_for('static', filename='js/pages/profile.js') }}"></script>
+{% endblock %}
+
 {% block content %}
 <div class="profile-container">
     <h2 class="profile-heading">Profile Information</h2>

@@ -9,6 +9,7 @@
   border-radius: 8px;
   box-shadow: var(--shadow-light);
   font-family: var(--font-family);
+  color: var(--text-primary);
 }
 
 .ca-heading {
@@ -118,14 +119,32 @@
   transform: translateY(-1px);
 }
 
+.ca-tax-rates-container,
+.ca-items-container {
+  margin-bottom: 20px;
+  padding: 15px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background-color: var(--tool-form-bg);
+}
+
+.ca-tax-rates-container h4,
+.ca-items-container h4 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: var(--text-secondary);
+}
+
 #taxRates {
   margin-bottom: 20px;
   background-color: var(--tool-form-bg);
   color: var(--text-primary);
+  display: block;
 }
 
 #itemsContainer {
   margin-bottom: 20px;
+  display: block;
 }
 
 .item {
