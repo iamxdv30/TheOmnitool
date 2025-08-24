@@ -15,6 +15,8 @@
   --warning-hover: #f57c00;
   --info-color: #2196f3;
   --info-hover: #1976d2;
+  --flash-error-color: #f17269;
+  --flash-success-color: #D6EFD8;
   
   /* Background Colors */
   --page-bg: #f6fff8;
@@ -28,6 +30,8 @@
   --text-secondary: #333333;
   --text-muted: #6c757d;
   --text-light: #ffffff;
+  --text-flash-error: #d32f2f;
+  --text-flash-success: #1A5319;
   
   /* Border Colors */
   --border-color: #ddd;
