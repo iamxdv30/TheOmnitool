@@ -92,16 +92,21 @@
                 },
                 body: JSON.stringify({ email, name })
             })
-            .then(response => response.json())
-            .then(result => {
+            .then(response => {
+                // Check if the response is ok (status in the range 200-299)
                 if (response.ok) {
-                    alert('Please check your email for the verification link.');
-                    this.elements.verifyEmailBtn.disabled = true;
-                    this.elements.emailInput.readOnly = true;
-                    this.elements.nameInput.readOnly = true;
+                    return response.json().then(result => {
+                        alert('Please check your email for the verification link.');
+                        this.elements.verifyEmailBtn.disabled = true;
+                        this.elements.emailInput.readOnly = true;
+                        this.elements.nameInput.readOnly = true;
+                    });
                 } else {
-                    alert(result.message || 'Verification failed. Please try again.');
-                    this.elements.verifyEmailBtn.disabled = false;
+                    // If the response is not ok, parse the JSON to get the error message
+                    return response.json().then(result => {
+                        // Throw an error to be caught by the .catch block
+                        throw new Error(result.message || 'Verification failed. Please try again.');
+                    });
                 }
             })
             .catch(error => {
@@ -239,29 +244,27 @@
                         },
                         body: JSON.stringify(jsonData),
                     })
-                    .then(response => response.json())
-                    .then(result => {
+                    .then(response => {
                         if (response.ok) {
-                            alert('Message sent successfully!');
-                            this.resetForm();
-                            this.hideMessageElements();
-                            
-                            // Clear session after successful submission
-                            fetch('/clear-session', { method: 'POST' });
+                            return response.json().then(result => {
+                                alert('Message sent successfully!');
+                                this.resetForm();
+                                this.hideMessageElements();
+                                // Clear session after successful submission
+                                fetch('/clear-session', { method: 'POST' });
+                            });
                         } else {
-                            alert(result.message || 'Error sending message.');
-                        }
-                        
-                        // Reset button state
-                        if (this.elements.submitBtn) {
-                            this.elements.submitBtn.disabled = false;
+                            return response.json().then(result => {
+                                throw new Error(result.message || 'Error sending message.');
+                            });
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
-                        alert('Error sending message. Please try again later.');
+                        alert(error.message || 'Error sending message. Please try again later.');
                         this.hideMessageElements();
-                        
+                    })
+                    .finally(() => {
                         // Reset button state
                         if (this.elements.submitBtn) {
                             this.elements.submitBtn.disabled = false;
