@@ -55,14 +55,36 @@ def configure_session(app):
         SESSION_COOKIE_SAMESITE='Lax'  # Protect against CSRF
     )
 
+def get_version():
+    try:
+        with open('VERSION', 'r') as f:
+            for line in f:
+                if line.strip().startswith('Current Version:'):
+                    return line.split(':')[1].strip()
+            # Fallback to first line if format is unexpected
+            f.seek(0)
+            return f.readline().strip()
+    except Exception as e:
+        print(f"Error reading VERSION file: {e}")
+        return "1.0.0"  # Fallback version
+
 def create_app():
     # Determine if we're running locally
     is_local = os.environ.get('IS_LOCAL', 'true').lower() == 'true'
     environment = os.getenv('FLASK_ENV', 'development')
-
-    logging.info(f"Current environment: {environment}")
-
+    
+    # Initialize Flask app
     app = Flask(__name__, static_folder="static")
+    
+    # Store version in app config
+    app.config['VERSION'] = get_version()
+    
+    # Make version available to all templates
+    @app.context_processor
+    def inject_version():
+        return {'version': app.config['VERSION']}
+        
+    logging.info(f"Current environment: {environment}")
 
     # Configure session settings
     configure_session(app)
