@@ -112,7 +112,9 @@
     {% block footer %}
     <footer class="site-footer">
       <div class="footer-container">
-        <p>&copy; 2025 IamXDV. All rights reserved.</p>
+        <div class="version-info">
+          <p>&copy; 2025 IamXDV. All rights reserved. <span class="version">v{{ version }}</span></p>
+        </div>
         <nav class="footer-nav">
           <ul>
             <li><a href="{{ url_for('user.index') }}">Home</a></li>

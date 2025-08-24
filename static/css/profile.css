@@ -4,7 +4,7 @@
     margin: 0 auto;
     padding: 20px;
     font-family: var(--font-family);
-    background-color: var(--page-bg);
+    background-color: var(--container-bg);
     color: var(--text-primary);
 }
 
@@ -18,7 +18,7 @@
 .password-form {
     background-color: var(--container-bg);
     border-radius: 8px;
-    box-shadow: var(--shadow-light);
+    box-shadow: var(--shadow-heavy);
     padding: 20px;
     margin-bottom: 30px;
 }

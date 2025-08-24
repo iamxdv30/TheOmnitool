@@ -599,6 +599,17 @@ body {
   color: var(--footer-text);
 }
 
+.version {
+  display: inline-block;
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 4px;
+  font-family: monospace;
+  font-size: 0.9em;
+  letter-spacing: 0.5px;
+}
+
 .footer-nav ul {
   list-style-type: none;
   padding: 0;
