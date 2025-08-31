@@ -27,6 +27,19 @@
   width: 100%; /* Make the form take up the full width of the container */
 }
 
+.form-group {
+  margin-bottom: 1rem;
+  width: 100%;
+}
+
+.error-message {
+  color: var(--danger-color);
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+  display: none;
+  width: 100%;
+}
+
 .login-container form input {
   width: 95.5%; /* Ensures inputs take up the full form width */
   padding: 10px 12px;

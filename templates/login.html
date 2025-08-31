@@ -30,9 +30,15 @@
         {% endif %}
       {% endwith %}
       
-      <form method="POST">
-          <input type="text" name="username" placeholder="Username" required>
-          <input type="password" name="password" placeholder="Password" required>
+      <form method="POST" novalidate>
+          <div class="form-group">
+              <div id="username-error" class="error-message" style="display: none;"></div>
+              <input type="text" name="username" id="username" placeholder="Username" required>
+          </div>
+          <div class="form-group">
+              <div id="password-error" class="error-message" style="display: none;"></div>
+              <input type="password" name="password" id="password" placeholder="Password" required>
+          </div>
           <input type="hidden" name="role" value="user">
           <button type="submit">Login</button>
       </form>
