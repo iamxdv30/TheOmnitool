@@ -9,8 +9,9 @@
     <script src="{{ url_for('static', filename='js/utils/common.js') }}"></script>
     <script src="{{ url_for('static', filename='js/modules/ajax.js') }}"></script>
     <script src="{{ url_for('static', filename='js/modules/ui.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/utils/search.js') }}"></script>
     <!-- Load page-specific JS -->
-    <script src="{{ url_for('static', filename='js/pages/superadmin_dashboard.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/pages/superadmin_dashboard.js') }}"></script>
 {% endblock %}
 
 {% block content %}
@@ -53,6 +54,10 @@
         <input type="text" id="userSearch" class="search-input" placeholder="Search users...">
     </div>
     
+    <div class="search-results-info">
+        <div id="itemCounter" class="item-counter"></div>
+    </div>
+
     <!-- User table -->
     <table class="user-table">
         <thead>
@@ -66,16 +71,18 @@
         <tbody id="userTableBody">
             {% for user in users %}
             <tr class="user-row">
-                <td>{{ user.username }}</td>
-                <td>{{ user.email }}</td>
-                <td>{{ user.role }}</td>
-                <td>
-                    <button class="btn btn-secondary showUpdateForm">Update</button>
-                    <button class="btn btn-secondary showToolAccess" >Tool Access</button>
-                    <button class="btn btn-secondary showChangeRole">Change Role</button>
-                    <form action="{{ url_for('admin.delete_user', user_id=user.id) }}" method="post" class="delete-form">
-                        <button type="submit" class="btn btn-danger">Delete User</button>
-                    </form>
+                <td data-label="Username" class="user-username">{{ user.username }}</td>
+                <td data-label="Email" class="user-email">{{ user.email }}</td>
+                <td data-label="Role" class="user-role">{{ user.role }}</td>
+                <td data-label="Actions">
+                    <div class="action-buttons">
+                        <button class="btn btn-secondary showUpdateForm">Update</button>
+                        <button class="btn btn-secondary showToolAccess" >Tool Access</button>
+                        <button class="btn btn-secondary showChangeRole">Change Role</button>
+                        <form action="{{ url_for('admin.delete_user', user_id=user.id) }}" method="post" class="delete-form">
+                            <button type="submit" class="btn btn-danger">Delete User</button>
+                        </form>
+                    </div>
                 </td>
             </tr>
                 <tr class="update-form" style="display:none;">
@@ -141,6 +148,8 @@
             {% endfor %}
         </tbody>
     </table>
+
+    <div id="paginationContainer" class="pagination-container"></div>
     
     <!-- All JavaScript has been moved to modular files:
          - common.js: General utilities
