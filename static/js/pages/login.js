@@ -126,19 +126,23 @@
          * @param {string} message - Error message
          */
         showFieldError(field, message) {
-            // Clear any existing error
-            this.clearFieldError(field);
+            // Get the error element that's already in the HTML
+            const errorElement = document.getElementById(`${field.id}-error`);
             
-            // Add error class to input
-            field.classList.add('input-error');
+            if (errorElement) {
+                // Set error message and show it
+                errorElement.textContent = message;
+                errorElement.style.display = 'block';
+            }
             
-            // Create error message element
-            const errorElement = document.createElement('div');
-            errorElement.className = 'login-error-message';
-            errorElement.textContent = message;
+            // Add error class to field
+            field.classList.add('error');
             
-            // Insert error message after the input
-            field.parentNode.insertBefore(errorElement, field.nextSibling);
+            // Add ARIA attributes for accessibility
+            field.setAttribute('aria-invalid', 'true');
+            if (errorElement) {
+                field.setAttribute('aria-describedby', field.id + '-error');
+            }
         },
         
         /**
@@ -146,14 +150,16 @@
          * @param {HTMLElement} field - Form field
          */
         clearFieldError(field) {
-            // Remove error class from input
-            field.classList.remove('input-error');
+            const errorElement = document.getElementById(`${field.id}-error`);
             
-            // Remove any existing error message
-            const errorElement = field.parentNode.querySelector('.login-error-message');
             if (errorElement) {
-                errorElement.parentNode.removeChild(errorElement);
+                errorElement.style.display = 'none';
             }
+            
+            // Remove error class and ARIA attributes
+            field.classList.remove('error');
+            field.removeAttribute('aria-invalid');
+            field.removeAttribute('aria-describedby');
         }
     };
 })();
