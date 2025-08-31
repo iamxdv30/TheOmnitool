@@ -24,6 +24,7 @@ def superadmin_dashboard():
         return render_template("superadmin_dashboard.html", users=users, tools=tools, user_tools=user_tools, messages=messages)
     return redirect(url_for("auth.login"))
 
+
 @admin.route("/create_user", methods=["GET", "POST"])
 def create_user():
     if "logged_in" in session and session.get("role") in ["admin", "super_admin"]:
