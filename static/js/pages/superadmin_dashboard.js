@@ -1,4 +1,19 @@
+import { initializeSearch } from '../utils/search.js';
+
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize search for user table
+    initializeSearch(
+        'userSearch',       // ID of the search input element
+        'userTableBody',    // ID of the container with the items to search
+        '.user-row',        // Selector for the items to filter
+        ['td:nth-child(1)', 'td:nth-child(2)'], // CSS selectors for searchable content (username and email)
+        {
+            itemsPerPage: 10, // Number of items per page
+            paginationContainerId: 'paginationContainer', // ID of the pagination container
+            counterElementId: 'itemCounter' // ID of the item counter element
+        }
+    );
+
     // Event listener for showing/hiding the update form
     document.querySelectorAll('.showUpdateForm').forEach(button => {
         button.addEventListener('click', function() {
