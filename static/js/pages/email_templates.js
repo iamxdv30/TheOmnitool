@@ -1,8 +1,22 @@
+import { initializeSearch } from '../utils/search.js';
+
 document.addEventListener('DOMContentLoaded', () => {
     const addTemplateForm = document.getElementById('addTemplateForm');
     const templateList = document.getElementById('templateList');
-        const errorMessages = document.getElementById('errorMessages');
-    const searchInput = document.getElementById('searchInput');
+    const errorMessages = document.getElementById('errorMessages');
+    
+    // Initialize search functionality with item counting and pagination
+    initializeSearch(
+        'searchInput',           // search input ID
+        'templateList',          // container ID with items to search through
+        '.template',             // selector for each searchable item
+        ['.template-title', '.template-content'], // elements within each item to search
+        {
+            counterElementId: 'itemCounter',      // ID of element to show item count
+            itemsPerPage: 10,                     // Show 10 items per page
+            paginationContainerId: 'paginationContainer' // Container for pagination controls
+        }
+    );
 
     // Add a new template
     addTemplateForm.addEventListener('submit', async (event) => {
@@ -33,18 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Search functionality
-    searchInput.addEventListener('input', () => {
-        const searchTerm = searchInput.value.toLowerCase();
-        const templates = templateList.querySelectorAll('.template');
-
-        templates.forEach(template => {
-            const title = template.querySelector('.template-title').textContent.toLowerCase();
-            const content = template.querySelector('.template-content').textContent.toLowerCase();
-            const isVisible = title.includes(searchTerm) || content.includes(searchTerm);
-            template.style.display = isVisible ? '' : 'none';
-        });
-    });
+    // Search functionality is now handled by the reusable search utility
 
     // Delegate events for template actions
     templateList.addEventListener('click', async (event) => {

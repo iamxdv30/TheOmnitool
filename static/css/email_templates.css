@@ -53,6 +53,63 @@
   background-color: var(--accent-hover);
 }
 
+/* Search and pagination */
+.search-container {
+  margin: 20px 0;
+}
+
+.search-container input[type="text"] {
+  width: 100%;
+  max-width: 400px;
+  padding: 10px 15px;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  font-size: 16px;
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+}
+
+.search-results-info {
+  margin: 15px 0;
+  font-size: 0.9em;
+  color: var(--text-secondary);
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  margin: 30px 0;
+  gap: 5px;
+}
+
+.pagination-container button {
+  padding: 8px 12px;
+  margin: 0 2px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination-container button:hover:not(:disabled) {
+  background-color: var(--accent-color);
+  color: white;
+  border-color: var(--accent-color);
+}
+
+.pagination-container button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-container .page-info {
+  padding: 8px 12px;
+  margin: 0 10px;
+  color: var(--text-secondary);
+}
+
 /* Grid layout for template list */
 #templateList {
   display: grid;

@@ -9,8 +9,8 @@
 <script src="{{ url_for('static', filename='js/utils/common.js') }}"></script>
 <script src="{{ url_for('static', filename='js/modules/ajax.js') }}"></script>
 <script src="{{ url_for('static', filename='js/modules/ui.js') }}"></script>
-<!-- Load page-specific JS -->
-<script src="{{ url_for('static', filename='js/pages/email_templates.js') }}"></script>
+<!-- Load page-specific JS as a module to support ES6 imports -->
+<script type="module" src="{{ url_for('static', filename='js/pages/email_templates.js') }}"></script>
 {% endblock %}
 
 {% block content %}
@@ -32,6 +32,10 @@
 
   <h2>Your Templates</h2>
 
+  <div class="search-results-info">
+    <div id="itemCounter" class="item-counter"></div>
+  </div>
+  
   <div id="templateList">
     {% for template in templates %}
     <div class="template" data-id="{{ template.id }}">
@@ -47,6 +51,8 @@
     </div>
     {% endfor %}
   </div>
+  
+  <div id="paginationContainer" class="pagination-container"></div>
 </div>
   
 {% endblock %}
