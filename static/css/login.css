@@ -1,24 +1,28 @@
+/* Base styles */
 .login-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   font-family: var(--font-family);
-  margin: 100px auto; /* Centers container vertically */
+  margin: 6rem auto 3rem;
   background-color: var(--container-bg);
   border: 1px solid var(--border-color);
-  padding: 20px;
-  max-width: 400px; /* Sets a maximum width for the container */
-  width: 100%; /* Ensures it scales well with the screen */
+  padding: 1.5rem;
+  max-width: 400px;
+  width: calc(100% - 2rem);
   border-radius: 10px;
   box-shadow: var(--shadow-heavy);
   color: var(--text-primary);
+  box-sizing: border-box;
 }
 
 .login-container h1 {
-  font-size: 2rem;
-  margin-bottom: 1rem;
+  font-size: 1.75rem;
+  margin: 0 0 1.5rem 0;
   color: var(--text-primary);
+  text-align: center;
+  line-height: 1.2;
 }
 
 .login-container form {
@@ -41,16 +45,20 @@
 }
 
 .login-container form input {
-  width: 95.5%; /* Ensures inputs take up the full form width */
-  padding: 10px 12px;
+  width: 100%;
+  padding: 12px 14px;
   margin-bottom: 1rem;
   border: 2px solid var(--border-color);
   border-radius: 6px;
   background-color: var(--input-bg);
   color: var(--text-primary);
   font-family: var(--font-family);
-  font-size: 14px;
+  font-size: 1rem;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
 }
 
 .login-container form input:focus {
@@ -72,7 +80,31 @@
   background-color: var(--secondary-hover);
 }
 
+/* Responsive adjustments */
+@media screen and (max-width: 480px) {
+  .login-container {
+    margin: 5rem auto 2rem;
+    padding: 1.25rem;
+    width: calc(100% - 1.5rem);
+  }
+  
+  .login-container h1 {
+    font-size: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+  
+  .login-container form input {
+    padding: 10px 12px;
+    font-size: 0.9375rem;
+  }
+  
+  .login-container form button {
+    padding: 0.6rem;
+    font-size: 1rem;
+  }
+}
+
 /* Dark mode - only specific overrides needed */
 html.dark .login-container {
-  box-shadow: 0 0 10px 0 rgba(0, 128, 0, 0.5); /* Keep the green shadow for dark theme */
+  box-shadow: 0 0 10px 0 rgba(0, 128, 0, 0.5);
 }
