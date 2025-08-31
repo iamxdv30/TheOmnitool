@@ -13,7 +13,7 @@
     
     const CharCounter = {
         elements: {},
-        maxCharacters: 3532, // Maximum characters allowed
+        maxCharacters: char_limit, // Maximum characters allowed
         
         init() {
             this.cacheElements();
@@ -26,7 +26,8 @@
             this.elements = {
                 textarea: document.querySelector('.char-textarea'),
                 form: document.querySelector('.char-form'),
-                submitButton: document.querySelector('.count-button')
+                submitButton: document.querySelector('.count-button'),
+                charLimitInput: document.querySelector('input[name="char_limit"]')
             };
         },
         
@@ -48,17 +49,25 @@
             if (this.elements.textarea) {
                 // Update count on input
                 this.elements.textarea.addEventListener('input', this.updateCount.bind(this));
-                
-                // Validate on form submission
-                if (this.elements.form) {
-                    this.elements.form.addEventListener('submit', this.validateSubmit.bind(this));
+
+                if (this.elements.charLimitInput) {
+                    this.elements.charLimitInput.addEventListener('input', this.onCharLimitChange.bind(this));
                 }
+                
             }
         },
         
         /**
          * Update character count in real-time
          */
+        onCharLimitChange(event) {
+            const newLimit = parseInt(event.target.value, 10) || 0;
+            if (newLimit >= 0) {
+                this.maxCharacters = newLimit;
+                this.updateCount();
+            }
+        },
+
         updateCount() {
             if (!this.elements.textarea || !this.elements.countDisplay) return;
             
@@ -67,11 +76,10 @@
             const remaining = this.maxCharacters - count;
             
             // Update display
+            const remainingText = remaining < 0 ? `Exceeded: ${Math.abs(remaining)}` : `Remaining: ${remaining}`;
             this.elements.countDisplay.innerHTML = `
                 <span class="count-current">Characters: ${count}</span>
-                <span class="count-remaining ${remaining < 0 ? 'count-exceeded' : ''}">
-                    ${remaining >= 0 ? `Remaining: ${remaining}` : `Exceeded by: ${Math.abs(remaining)}`}
-                </span>
+                <span class="count-remaining ${remaining < 0 ? 'count-exceeded' : ''}">${remainingText}</span>
             `;
             
             // Visual feedback on textarea
@@ -82,22 +90,5 @@
             }
         },
         
-        /**
-         * Validate form submission
-         * @param {Event} event - Submit event
-         */
-        validateSubmit(event) {
-            if (!this.elements.textarea) return;
-            
-            const count = this.elements.textarea.value.length;
-            
-            // Allow submission even if exceeded, the server will handle the error
-            // This just provides a warning
-            if (count > this.maxCharacters) {
-                if (!confirm(`You've exceeded the maximum character limit by ${count - this.maxCharacters} characters. Submit anyway?`)) {
-                    event.preventDefault();
-                }
-            }
-        }
     };
 })();
