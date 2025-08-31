@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ['.template-title', '.template-content'], // elements within each item to search
         {
             counterElementId: 'itemCounter',      // ID of element to show item count
-            itemsPerPage: 10,                     // Show 10 items per page
+            itemsPerPage: 8,                      // Show 8 items per page
             paginationContainerId: 'paginationContainer' // Container for pagination controls
         }
     );
