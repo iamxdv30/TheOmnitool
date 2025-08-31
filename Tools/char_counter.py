@@ -1,7 +1,9 @@
-def count_characters(input_string: str) -> dict:
+def count_characters(input_string: str, char_limit: int = 3532) -> dict:
+    """
+    Counts characters in a string and checks if it exceeds a specified limit.
+    """
     total_characters = len(input_string)
-    character_limit = 3532
-    excess_characters = total_characters - character_limit
+    excess_characters = total_characters - char_limit
 
     result = {
         "total_characters": total_characters,

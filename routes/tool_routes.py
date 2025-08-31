@@ -81,25 +81,31 @@ def convert():
 @tool.route("/char_counter", methods=["GET", "POST"])
 @tool_access_required("Character Counter")
 def char_counter():
+    # This block handles the form submission
     if request.method == "POST":
         input_string = request.form.get("text", "")
-        total_characters = len(input_string)
-        character_limit = 3520
-        excess_characters = total_characters - character_limit
-        excess_message = (
-            f"Character limit exceeded by {excess_characters} characters."
-            if excess_characters > 0
-            else "Within character limit."
+        char_limit_str = request.form.get("char_limit")
+        
+        # --- Robustly get and validate the character limit ---
+        try:
+            # Use user's limit if provided and valid, otherwise use default
+            char_limit = int(char_limit_str) if char_limit_str else 3532
+        except (ValueError, TypeError):
+            # If input is not a valid number, fall back to default
+            char_limit = 3532
+
+        result_data = count_characters(input_string, char_limit)
+
+        return render_template(
+            "char_counter.html",
+            input_text=input_string,
+            total_characters=result_data["total_characters"],
+            excess_message=result_data["excess_message"],
+            char_limit=char_limit 
         )
-        return make_response(
-            render_template(
-                "char_counter.html",
-                input_text=input_string,
-                total_characters=total_characters,
-                excess_message=excess_message,
-            )
-        )
-    return make_response(render_template("char_counter.html"))
+
+    # This handles the initial page load (GET request)
+    return render_template("char_counter.html", char_limit=3532)
 
 
 @tool.route("/tax_calculator", methods=["GET", "POST"])
