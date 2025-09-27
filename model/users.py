@@ -34,8 +34,35 @@ class User(db.Model):
 
     __mapper_args__ = {"polymorphic_identity": "user", "polymorphic_on": role}
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, name=None, username=None, email=None, role='user', 
+                 oauth_provider=None, oauth_id=None, email_verified=False, 
+                 requires_password_setup=False, fname=None, lname=None, 
+                 address=None, city=None, state=None, zip=None, **kwargs):
+        super().__init__()
+        if name is not None:
+            # Parse name into fname and lname if provided
+            name_parts = name.strip().split()
+            if len(name_parts) == 1:
+                self.fname = name_parts[0]
+                self.lname = "User"
+            elif len(name_parts) >= 2:
+                self.fname = name_parts[0]
+                self.lname = " ".join(name_parts[1:])
+        elif fname is not None and lname is not None:
+            self.fname = fname
+            self.lname = lname
+        
+        if username is not None:
+            self.username = username
+        if email is not None:
+            self.email = email
+        if role is not None:
+            self.role = role
+        # Set address fields with defaults if not provided (required by DB schema)
+        self.address = address if address is not None else ""
+        self.city = city if city is not None else ""
+        self.state = state if state is not None else ""
+        self.zip = zip if zip is not None else ""
         self.password_hasher = BcryptPasswordHasher()
         
     def set_password(self, password):
