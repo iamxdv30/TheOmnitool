@@ -1,165 +1,328 @@
 /**
- * login.js - Login page functionality
- * Handles form validation and submission for login
+ * login.js - Enhanced Login functionality
+ * Handles form validation, captcha integration, and OAuth (future)
  */
 
 (function() {
     'use strict';
     
-    // Module initialization
-    document.addEventListener('DOMContentLoaded', function() {
-        LoginPage.init();
-    });
-    
-    const LoginPage = {
+    window.LoginPage = {
         elements: {},
+        isSubmitting: false,
         
         init() {
             this.cacheElements();
             this.bindEvents();
-            this.setupFlashMessages();
+            this.initializeCaptcha();
+            this.setupPasswordToggle();
+            this.handleRememberMe();
         },
         
         cacheElements() {
-            this.elements = {
-                // Login form elements
-                loginForm: document.querySelector('.login-container form'),
-                usernameInput: document.querySelector('input[name="username"]'),
-                passwordInput: document.querySelector('input[name="password"]'),
-                submitButton: document.querySelector('.login-container button[type="submit"]'),
-                
-                // Flash messages
-                flashMessages: document.querySelectorAll('.flash-message')
-            };
+            // Form elements
+            this.elements.form = document.getElementById('loginForm');
+            this.elements.usernameInput = document.getElementById('username');
+            this.elements.passwordInput = document.getElementById('password');
+            this.elements.rememberMeInput = document.getElementById('remember_me');
+            this.elements.submitBtn = document.getElementById('submitBtn');
+            this.elements.btnText = this.elements.submitBtn?.querySelector('.btn-text');
+            this.elements.btnLoading = this.elements.submitBtn?.querySelector('.btn-loading');
+            
+            // Password toggle
+            this.elements.passwordToggle = document.getElementById('passwordToggle');
+            
+            // Error elements
+            this.elements.usernameError = document.getElementById('usernameError');
+            this.elements.passwordError = document.getElementById('passwordError');
+            this.elements.captchaError = document.getElementById('captchaError');
+            
+            // OAuth elements (for future use)
+            this.elements.googleLoginBtn = document.getElementById('googleLoginBtn');
+            
+            // Verification elements
+            this.elements.resendForm = document.querySelector('.resend-form');
         },
         
         bindEvents() {
-            // Login form submission
-            if (this.elements.loginForm) {
-                this.elements.loginForm.addEventListener('submit', this.handleLoginFormSubmit.bind(this));
+            // Form submission
+            if (this.elements.form) {
+                this.elements.form.addEventListener('submit', this.handleFormSubmit.bind(this));
             }
             
-            // Input validation
+            // Real-time validation
             if (this.elements.usernameInput) {
-                this.elements.usernameInput.addEventListener('blur', this.validateUsername.bind(this));
+                this.elements.usernameInput.addEventListener('blur', () => this.validateUsername());
+                this.elements.usernameInput.addEventListener('input', () => this.clearFieldError('username'));
             }
             
             if (this.elements.passwordInput) {
-                this.elements.passwordInput.addEventListener('blur', this.validatePassword.bind(this));
+                this.elements.passwordInput.addEventListener('blur', () => this.validatePassword());
+                this.elements.passwordInput.addEventListener('input', () => this.clearFieldError('password'));
+            }
+            
+            // Captcha events
+            document.addEventListener('captchaSuccess', () => this.clearFieldError('captcha'));
+            document.addEventListener('captchaExpired', () => this.showFieldError('captcha', 'Captcha expired. Please verify again.'));
+            document.addEventListener('captchaError', () => this.showFieldError('captcha', 'Captcha error. Please try again.'));
+            
+            // OAuth login (for future implementation)
+            if (this.elements.googleLoginBtn) {
+                this.elements.googleLoginBtn.addEventListener('click', this.handleGoogleLogin.bind(this));
+            }
+            
+            // Resend verification form
+            if (this.elements.resendForm) {
+                this.elements.resendForm.addEventListener('submit', this.handleResendVerification.bind(this));
+            }
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (event) => {
+                // Enter key to submit form
+                if (event.key === 'Enter' && this.isFormFocused()) {
+                    event.preventDefault();
+                    this.handleFormSubmit(event);
+                }
+            });
+        },
+        
+        async initializeCaptcha() {
+            if (typeof window.CaptchaModule !== 'undefined' && window.RECAPTCHA_SITE_KEY) {
+                try {
+                    await window.CaptchaModule.init();
+                    await window.CaptchaModule.render('recaptcha-container');
+                } catch (error) {
+                    console.error('Failed to initialize captcha:', error);
+                    this.showFieldError('captcha', 'Captcha failed to load. Please refresh the page.');
+                }
             }
         },
         
-        /**
-         * Set up auto-hiding flash messages
-         */
-        setupFlashMessages() {
-            if (this.elements.flashMessages.length > 0) {
-                this.elements.flashMessages.forEach(message => {
-                    // Auto-hide flash messages after 5 seconds
-                    setTimeout(() => {
-                        message.style.opacity = '0';
-                        setTimeout(() => {
-                            message.style.display = 'none';
-                        }, 500); // Wait for fade out animation
-                    }, 5000);
+        setupPasswordToggle() {
+            if (this.elements.passwordToggle) {
+                this.elements.passwordToggle.addEventListener('click', () => {
+                    const passwordField = this.elements.passwordInput;
+                    const isPassword = passwordField.type === 'password';
+                    
+                    passwordField.type = isPassword ? 'text' : 'password';
+                    this.elements.passwordToggle.textContent = isPassword ? '🙈' : '👁️';
+                    this.elements.passwordToggle.setAttribute('aria-label', 
+                        isPassword ? 'Hide password' : 'Show password');
                 });
             }
         },
         
-        /**
-         * Handle login form submission
-         * @param {Event} event - Submit event
-         */
-        handleLoginFormSubmit(event) {
-            // Validate form fields
-            const isUsernameValid = this.validateUsername();
-            const isPasswordValid = this.validatePassword();
-            
-            if (!isUsernameValid || !isPasswordValid) {
-                event.preventDefault();
-                return false;
+        handleRememberMe() {
+            // Load remembered username if available
+            if (this.elements.usernameInput && localStorage.getItem('rememberedUsername')) {
+                this.elements.usernameInput.value = localStorage.getItem('rememberedUsername');
+                if (this.elements.rememberMeInput) {
+                    this.elements.rememberMeInput.checked = true;
+                }
             }
-            
-            // Form is valid, let it submit normally
-            return true;
         },
         
-        /**
-         * Validate username field
-         * @returns {boolean} True if valid, false otherwise
-         */
+        async handleFormSubmit(event) {
+            event.preventDefault();
+            
+            if (this.isSubmitting) {
+                return;
+            }
+            
+            // Validate all fields
+            const isValid = this.validateForm();
+            
+            if (!isValid) {
+                return;
+            }
+            
+            // Validate captcha
+            if (typeof window.CaptchaModule !== 'undefined') {
+                if (!window.CaptchaModule.validateForm(this.elements.form, 'recaptcha-container')) {
+                    this.showFieldError('captcha', 'Please complete the captcha verification');
+                    return;
+                }
+            }
+            
+            this.setSubmittingState(true);
+            
+            try {
+                // Handle remember me
+                if (this.elements.rememberMeInput?.checked) {
+                    localStorage.setItem('rememberedUsername', this.elements.usernameInput.value);
+                } else {
+                    localStorage.removeItem('rememberedUsername');
+                }
+                
+                // Submit the form
+                this.elements.form.submit();
+            } catch (error) {
+                console.error('Form submission error:', error);
+                this.setSubmittingState(false);
+                this.showGeneralError('An error occurred. Please try again.');
+            }
+        },
+        
+        validateForm() {
+            let isValid = true;
+            
+            if (!this.validateUsername()) isValid = false;
+            if (!this.validatePassword()) isValid = false;
+            
+            return isValid;
+        },
+        
         validateUsername() {
             const username = this.elements.usernameInput.value.trim();
             
             if (!username) {
-                this.showFieldError(this.elements.usernameInput, 'Username is required');
+                this.showFieldError('username', 'Username is required');
                 return false;
             }
             
-            // Additional validation rules can be added here
+            if (username.length < 1 || username.length > 50) {
+                this.showFieldError('username', 'Please enter a valid username');
+                return false;
+            }
             
-            this.clearFieldError(this.elements.usernameInput);
+            this.clearFieldError('username');
             return true;
         },
         
-        /**
-         * Validate password field
-         * @returns {boolean} True if valid, false otherwise
-         */
         validatePassword() {
             const password = this.elements.passwordInput.value;
             
             if (!password) {
-                this.showFieldError(this.elements.passwordInput, 'Password is required');
+                this.showFieldError('password', 'Password is required');
                 return false;
             }
             
-            // Additional validation rules can be added here
+            if (password.length < 1) {
+                this.showFieldError('password', 'Please enter your password');
+                return false;
+            }
             
-            this.clearFieldError(this.elements.passwordInput);
+            this.clearFieldError('password');
             return true;
         },
         
-        /**
-         * Show error message for a field
-         * @param {HTMLElement} field - Form field
-         * @param {string} message - Error message
-         */
-        showFieldError(field, message) {
-            // Get the error element that's already in the HTML
-            const errorElement = document.getElementById(`${field.id}-error`);
+        async handleGoogleLogin() {
+            try {
+                // This will be implemented when OAuth is added
+                console.log('Google login clicked - OAuth not yet implemented');
+                this.showGeneralError('Google login will be available in a future update.');
+            } catch (error) {
+                console.error('Google login error:', error);
+                this.showGeneralError('Google login failed. Please try again.');
+            }
+        },
+        
+        async handleResendVerification(event) {
+            event.preventDefault();
+            
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            
+            try {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Sending...';
+                
+                // Submit the resend form
+                event.target.submit();
+            } catch (error) {
+                console.error('Resend verification error:', error);
+                this.showGeneralError('Failed to send verification email. Please try again.');
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        },
+        
+        isFormFocused() {
+            const activeElement = document.activeElement;
+            return this.elements.form?.contains(activeElement) || 
+                   activeElement === this.elements.usernameInput || 
+                   activeElement === this.elements.passwordInput;
+        },
+        
+        showFieldError(fieldName, message) {
+            const errorElement = this.elements[fieldName + 'Error'];
+            const inputElement = this.elements[fieldName + 'Input'];
             
             if (errorElement) {
-                // Set error message and show it
                 errorElement.textContent = message;
                 errorElement.style.display = 'block';
             }
             
-            // Add error class to field
-            field.classList.add('error');
-            
-            // Add ARIA attributes for accessibility
-            field.setAttribute('aria-invalid', 'true');
-            if (errorElement) {
-                field.setAttribute('aria-describedby', field.id + '-error');
+            if (inputElement) {
+                inputElement.classList.add('error');
             }
         },
         
-        /**
-         * Clear error message for a field
-         * @param {HTMLElement} field - Form field
-         */
-        clearFieldError(field) {
-            const errorElement = document.getElementById(`${field.id}-error`);
+        clearFieldError(fieldName) {
+            const errorElement = this.elements[fieldName + 'Error'];
+            const inputElement = this.elements[fieldName + 'Input'];
             
             if (errorElement) {
+                errorElement.textContent = '';
                 errorElement.style.display = 'none';
             }
             
-            // Remove error class and ARIA attributes
-            field.classList.remove('error');
-            field.removeAttribute('aria-invalid');
-            field.removeAttribute('aria-describedby');
+            if (inputElement) {
+                inputElement.classList.remove('error');
+            }
+        },
+        
+        showGeneralError(message) {
+            // Show error using existing flash message system
+            if (typeof OmniUtils !== 'undefined' && OmniUtils.showFlashMessage) {
+                OmniUtils.showFlashMessage(message, 'error');
+            } else {
+                alert(message); // Fallback
+            }
+        },
+        
+        setSubmittingState(isSubmitting) {
+            this.isSubmitting = isSubmitting;
+            
+            if (this.elements.submitBtn) {
+                this.elements.submitBtn.disabled = isSubmitting;
+            }
+            
+            if (this.elements.btnText && this.elements.btnLoading) {
+                if (isSubmitting) {
+                    this.elements.btnText.style.display = 'none';
+                    this.elements.btnLoading.style.display = 'inline-flex';
+                } else {
+                    this.elements.btnText.style.display = 'inline';
+                    this.elements.btnLoading.style.display = 'none';
+                }
+            }
+            
+            // Disable form inputs during submission
+            if (this.elements.usernameInput) {
+                this.elements.usernameInput.disabled = isSubmitting;
+            }
+            if (this.elements.passwordInput) {
+                this.elements.passwordInput.disabled = isSubmitting;
+            }
+        },
+        
+        // Utility methods for future OAuth integration
+        async initializeGoogleAuth() {
+            // Placeholder for Google OAuth initialization
+            // Will be implemented when OAuth feature is added
+            return Promise.resolve();
+        },
+        
+        handleOAuthSuccess(response) {
+            // Placeholder for OAuth success handling
+            console.log('OAuth success:', response);
+        },
+        
+        handleOAuthError(error) {
+            // Placeholder for OAuth error handling
+            console.error('OAuth error:', error);
+            this.showGeneralError('Authentication failed. Please try again.');
         }
     };
+
 })();
