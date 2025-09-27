@@ -5,6 +5,7 @@ setup_route_for_admin.md
 __pycache__/
 instance/
 *.db
-.env*
+#.env*
 .windsurf
 logs
+.env.backup
