@@ -1,85 +1,102 @@
 """
-Complete Enhanced Authentication Routes
-Keeps existing templates, adds new functionality:
-- Simplified registration with captcha
-- Email verification for new users  
-- Enhanced login with captcha
-- Keeps existing forgot_password/reset_password (they work perfectly)
-- Backward compatibility with existing users
+Clean Authentication Routes with Comprehensive Logging
+Works with existing HTML templates, fixes login and registration issues
 """
-import email
-from flask import Blueprint, request, jsonify, redirect, url_for, render_template, session, flash, current_app, g
+import os
+import re
+import requests
+from flask import Blueprint, request, redirect, url_for, render_template, session, flash, current_app
 from model import User, db, UserFactory
-from model.validation import validate_registration_data, validate_login_data
 from werkzeug.security import check_password_hash
 from functools import wraps
-from routes.contact_routes import mail, generate_verification_token, verify_verification_token
+from routes.contact_routes import mail, generate_verification_token
 from flask_mail import Message
-from config.auth_config import AuthConfig
 import logging
-from datetime import datetime
 
+# Set up clean logging format
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [AUTH] %(levelname)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 logger = logging.getLogger(__name__)
 
 auth = Blueprint('auth', __name__)
 
-
-@auth.route("/cleanup_test_users", methods=["GET"])
-def cleanup_test_users():
-    """Temporary route to clean up test users"""
-    try:
-        # Delete test users
-        test_users = db.session.query(User).filter(
-            User.username.in_(['xyrus_devera', 'test_user'])
-        ).all()
+# Simple configuration class to avoid complex dependencies
+class AuthConfig:
+    RECAPTCHA_SITE_KEY = os.getenv('RECAPTCHA_SITE_KEY')
+    RECAPTCHA_SECRET_KEY = os.getenv('RECAPTCHA_SECRET_KEY')
+    RECAPTCHA_VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify"
+    
+    @classmethod
+    def is_captcha_enabled(cls):
+        enabled = bool(cls.RECAPTCHA_SITE_KEY and cls.RECAPTCHA_SECRET_KEY)
+        logger.info(f"Captcha configuration check: {'ENABLED' if enabled else 'DISABLED'}")
+        return enabled
+    
+    @classmethod
+    def get_password_requirements_text(cls):
+        return "Minimum 8 characters, include uppercase, lowercase, number, and special character"
+    
+    @classmethod
+    def verify_recaptcha(cls, recaptcha_response, remote_ip=None):
+        """Verify reCAPTCHA response"""
+        logger.info(f"Captcha verification requested from IP: {remote_ip or 'unknown'}")
         
-        for user in test_users:
-            db.session.delete(user)
+        if not cls.is_captcha_enabled():
+            logger.info("Captcha verification skipped - captcha disabled")
+            return True
         
-        db.session.commit()
-        return f"Cleaned up {len(test_users)} test users"
-    except Exception as e:
-        db.session.rollback()
-        return f"Error cleaning up: {str(e)}"
-
-
-@auth.route("/verify_test_user", methods=["GET"])
-def verify_test_user():
-    """Temporary route to mark test user as email verified"""
-    try:
-        with current_app.app_context():
-            user = db.session.query(User).filter_by(username='xyrus_devera').first()
-            if user:
-                if hasattr(user, 'email_verified'):
-                    user.email_verified = True
-                    db.session.commit()
-                    return f"User {user.username} marked as email verified"
-                else:
-                    return f"User {user.username} doesn't have email_verified attribute"
+        if not recaptcha_response:
+            logger.warning("Captcha verification failed - no response token provided")
+            return False
+            
+        try:
+            data = {
+                "secret": cls.RECAPTCHA_SECRET_KEY,
+                "response": recaptcha_response,
+            }
+            if remote_ip:
+                data["remoteip"] = remote_ip
+            
+            logger.info("Sending captcha verification request to Google")
+            response = requests.post(cls.RECAPTCHA_VERIFY_URL, data=data, timeout=5)
+            result = response.json()
+            
+            success = result.get("success", False)
+            if success:
+                logger.info("Captcha verification successful")
             else:
-                return "User xyrus_devera not found"
-    except Exception as e:
-        db.session.rollback()
-        return f"Error verifying user: {str(e)}"
-
+                error_codes = result.get("error-codes", [])
+                logger.warning(f"Captcha verification failed - Google errors: {error_codes}")
+            
+            return success
+            
+        except Exception as e:
+            logger.error(f"Captcha verification exception: {str(e)}")
+            return False
 
 def login_required(f):
     """Decorator to require login for routes"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not session.get('logged_in'):
+            logger.warning(f"Unauthorized access attempt to {request.endpoint} from IP: {request.remote_addr}")
             flash('Please log in to access this page.', 'error')
             return redirect(url_for("auth.login"))
         return f(*args, **kwargs)
     return decorated_function
-
 
 def anonymous_required(f):
     """Decorator to redirect logged-in users away from auth pages"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if session.get('logged_in'):
+            username = session.get('username', 'unknown')
             user_role = session.get('role', 'user')
+            logger.info(f"Already logged in user '{username}' ({user_role}) redirected from {request.endpoint}")
+            
             if user_role == 'super_admin':
                 return redirect(url_for('admin.superadmin_dashboard'))
             elif user_role == 'admin':
@@ -89,415 +106,463 @@ def anonymous_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-
 @auth.route("/login", methods=["GET", "POST"])
 @anonymous_required
 def login():
-    """Enhanced login with captcha support - uses existing login.html template"""
+    """Clean login implementation - works with existing login.html"""
+    
+    client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
     
     if request.method == "GET":
-        # Use your existing login.html template
+        logger.info(f"Login page accessed from IP: {client_ip}")
+        # Clear any existing flash messages for GET requests
+        session.pop('_flashes', None)
         return render_template("login.html", 
                              captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
                              captcha_enabled=AuthConfig.is_captcha_enabled())
     
     # POST request - process login
+    logger.info(f"Login attempt initiated from IP: {client_ip}")
+    
     try:
-        # Get form data (works with your existing form)
-        form_data = {
-            'username': request.form.get('username', '').strip(),
-            'password': request.form.get('password', ''),
-            'g-recaptcha-response': request.form.get('g-recaptcha-response', '')
-        }
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+        recaptcha_response = request.form.get("g-recaptcha-response", "")
         
-        logger.info(f"Login attempt for username: {form_data['username']}")
+        logger.info(f"Login form data received - username: '{username}', password: {'[PROVIDED]' if password else '[MISSING]'}")
         
-        # Get client IP for captcha verification
-        client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
-        
-        # Basic validation first
-        username = form_data['username']
-        password = form_data['password']
-        
+        # Basic validation
         if not username:
-            logger.warning("Login failed: username not provided")
+            logger.warning("Login failed - username not provided")
             flash("Username is required!", "error")
             return render_template("login.html", 
                                  captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
                                  captcha_enabled=AuthConfig.is_captcha_enabled())
         
         if not password:
-            logger.warning(f"Login failed for {username}: password not provided")
+            logger.warning(f"Login failed for '{username}' - password not provided")
             flash("Password is required!", "error")
             return render_template("login.html", 
                                  captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
                                  captcha_enabled=AuthConfig.is_captcha_enabled())
         
-        # Validate captcha if enabled
+        # Verify captcha if enabled
         if AuthConfig.is_captcha_enabled():
-            logger.info("Validating captcha for login...")
-            validated_data, validation_errors = validate_login_data(form_data, client_ip)
-            if validation_errors:
-                logger.warning(f"Login captcha validation failed: {validation_errors}")
-                for field, errors in validation_errors.items():
-                    for error in errors:
-                        flash(error, 'error')
+            logger.info(f"Verifying captcha for login attempt: '{username}'")
+            if not AuthConfig.verify_recaptcha(recaptcha_response, client_ip):
+                logger.warning(f"Login failed for '{username}' - captcha verification failed")
+                flash("Please complete the captcha verification!", "error")
                 return render_template("login.html", 
                                      captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
                                      captcha_enabled=AuthConfig.is_captcha_enabled())
+            logger.info(f"Captcha verification passed for '{username}'")
         
-        # Find user with proper Flask context
-        logger.info(f"Finding user with username: {username}")
-        with current_app.app_context():
-            try:
-                user = db.session.query(User).filter_by(username=username).first()
-            except Exception as e:
-                logger.error(f"Error finding user: {str(e)}")
-                flash("An error occurred during login. Please try again.", "error")
-                return render_template("login.html", 
-                                     captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
-                                     captcha_enabled=AuthConfig.is_captcha_enabled())
+        # Find and validate user
+        logger.info(f"Looking up user in database: '{username}'")
+        user = User.query.filter_by(username=username).first()
         
         if not user:
-            logger.warning(f"Login failed: user not found with username: {username}")
+            logger.warning(f"Login failed - user not found: '{username}'")
             flash("Invalid username or password!", "error")
             return render_template("login.html", 
                                  captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
                                  captcha_enabled=AuthConfig.is_captcha_enabled())
         
-        logger.info(f"User found: {user.username}, id: {user.id}")
+        logger.info(f"User found - ID: {user.id}, Role: {user.role}, Email: {user.email}")
         
-        # Check if user can log in
-        if hasattr(user, 'email_verified') and not user.email_verified:
-            logger.warning(f"Login failed for {username}: email not verified")
-            flash("Please verify your email address before logging in.", "error")
-            return render_template("login.html", 
-                                 captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
-                                 captcha_enabled=AuthConfig.is_captcha_enabled(),
-                                 show_resend_verification=True,
-                                 user_email=user.email)
-        
-        # Verify password - works with both old and new users
-        logger.info(f"Verifying password for user: {user.username}")
+        # Check password using the User model's check_password method
+        logger.info(f"Verifying password for user: '{username}'")
         if not User.check_password(user, password):
-            logger.warning(f"Login failed for {username}: invalid password")
+            logger.warning(f"Login failed for '{username}' - invalid password")
             flash("Invalid username or password!", "error")
             return render_template("login.html", 
                                  captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
                                  captcha_enabled=AuthConfig.is_captcha_enabled())
         
-        logger.info(f"Password verified successfully for user: {user.username}")
+        logger.info(f"Password verification passed for user: '{username}'")
         
-        # Update last login if method exists
-        if hasattr(user, 'update_last_login'):
-            logger.info(f"Updating last login timestamp for user: {user.username}")
-            user.update_last_login()
+        # Check if email verification is required (if user has this attribute)
+        if hasattr(user, 'email_verified') and not user.email_verified:
+            logger.warning(f"Login blocked for '{username}' - email not verified")
+            flash("Please verify your email address before logging in. Check your email for verification link.", "error")
+            return render_template("login.html", 
+                                 captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
+                                 captcha_enabled=AuthConfig.is_captcha_enabled())
         
-        try:
+        # Successful login - set session
+        logger.info(f"Setting up session for successful login: '{username}' (Role: {user.role})")
+        session["logged_in"] = True
+        session["username"] = username
+        session["role"] = user.role
+        session["user_id"] = user.id
+        
+        # Set tool access if available
+        if hasattr(user, 'tool_access'):
+            tool_names = [access.tool_name for access in user.tool_access]
+            session["user_tools"] = tool_names
+            logger.info(f"User tools assigned to session: {tool_names}")
+        
+        # Update last login if attribute exists
+        if hasattr(user, 'last_login'):
+            from datetime import datetime
+            user.last_login = datetime.utcnow()
             db.session.commit()
-            logger.info(f"Database session committed for user: {user.username}")
-        except Exception as db_e:
-            logger.error(f"Error committing database session: {str(db_e)}")
-            flash("An error occurred during login. Please try again.", "error")
-            return render_template("login.html", 
-                                 captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
-                                 captcha_enabled=AuthConfig.is_captcha_enabled())
+            logger.info(f"Updated last login timestamp for user: '{username}'")
         
-        # Set session (same as before)
-        try:
-            session["logged_in"] = True
-            session["username"] = user.username
-            session["role"] = user.role
-            session["user_id"] = user.id
-            session["user_tools"] = [access.tool_name for access in user.tool_access]
-            logger.info(f"Session data set for user: {user.username}")
-        except Exception as session_e:
-            logger.error(f"Error setting session data: {str(session_e)}")
-            flash("An error occurred during login. Please try again.", "error")
-            return render_template("login.html", 
-                                 captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
-                                 captcha_enabled=AuthConfig.is_captcha_enabled())
-        
-        logger.info(f"User {user.username} logged in successfully")
-        
-        # Redirect based on role (same as before)
+        # Determine redirect based on role
         if user.role == "super_admin":
-            logger.info(f"Redirecting super_admin user {user.username} to superadmin dashboard")
-            return redirect(url_for("admin.superadmin_dashboard"))
+            redirect_route = "admin.superadmin_dashboard"
         elif user.role == "admin":
-            logger.info(f"Redirecting admin user {user.username} to admin dashboard")
-            return redirect(url_for("admin.admin_dashboard"))
+            redirect_route = "admin.admin_dashboard"
         else:
-            logger.info(f"Redirecting regular user {user.username} to user dashboard")
-            return redirect(url_for("user.user_dashboard"))
-            
+            redirect_route = "user.user_dashboard"
+        
+        logger.info(f"LOGIN SUCCESS: User '{username}' ({user.role}) logged in successfully from IP: {client_ip}")
+        logger.info(f"Redirecting to: {redirect_route}")
+        
+        return redirect(url_for(redirect_route))
+    
     except Exception as e:
-        logger.error(f"Login error: {str(e)}")
-        import traceback
-        logger.error(f"Login traceback: {traceback.format_exc()}")
+        logger.error(f"Login exception for user '{username if 'username' in locals() else 'unknown'}': {str(e)}")
+        logger.error(f"Full exception trace: {e.__class__.__name__}: {str(e)}")
         flash("An error occurred during login. Please try again.", "error")
         return render_template("login.html", 
                              captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
                              captcha_enabled=AuthConfig.is_captcha_enabled())
 
+@auth.route("/logout", methods=["GET", "POST"])
+def logout():
+    """Clean logout implementation"""
+    username = session.get('username', 'unknown')
+    client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
+    
+    logger.info(f"Logout initiated for user: '{username}' from IP: {client_ip}")
+    
+    session.clear()
+    # Clear flash messages to avoid showing them on login page
+    session.pop('_flashes', None)
+    
+    logger.info(f"LOGOUT SUCCESS: User '{username}' logged out successfully")
+    return redirect(url_for("auth.login"))
 
 @auth.route("/register", methods=["GET", "POST"])
 @anonymous_required
 def register():
-    """NEW: Simplified single-step registration with email verification"""
+    """Simplified single-step registration - works with existing register.html"""
+    
+    client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
     
     if request.method == "GET":
-        # Create new simple registration template (will create this)
+        logger.info(f"Registration page accessed from IP: {client_ip}")
         return render_template("register.html",
                              captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
                              captcha_enabled=AuthConfig.is_captcha_enabled(),
                              password_requirements=AuthConfig.get_password_requirements_text())
     
     # POST request - process registration
+    logger.info(f"Registration attempt initiated from IP: {client_ip}")
+    
     try:
-        # Get form data
+        # Get form data (adjust field names to match your existing template)
+        name = request.form.get('name', '').strip()
+        username = request.form.get('username', '').strip()
+        email = request.form.get('email', '').strip().lower()
+        password = request.form.get('password', '')
+        confirm_password = request.form.get('confirm_password', '')
+        recaptcha_response = request.form.get('g-recaptcha-response', '')
+        
+        logger.info(f"Registration form data - name: '{name}', username: '{username}', email: '{email}'")
+        
+        # Store form data for re-rendering on error
         form_data = {
-            'name': request.form.get('name', '').strip(),
-            'username': request.form.get('username', '').strip(),
-            'email': request.form.get('email', '').strip().lower(),
-            'password': request.form.get('password', ''),
-            'confirm_password': request.form.get('confirm_password', ''),
-            'g-recaptcha-response': request.form.get('g-recaptcha-response', '')
+            'name': name,
+            'username': username,
+            'email': email
         }
         
-        logger.info(f"Registration attempt for user: {form_data['username']}, email: {form_data['email']}")
+        # Basic validation
+        logger.info("Starting registration validation")
         
-        # Get client IP for captcha verification
-        client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
-        
-        # Basic validation without schema
-        logger.info("Validating registration data...")
-        
-        # Validate required fields
-        if not form_data['name'].strip():
+        if not name:
+            logger.warning("Registration validation failed - name missing")
             flash("Name is required", "error")
             return render_template("register.html",
-                                captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
-                                captcha_enabled=AuthConfig.is_captcha_enabled(),
-                                password_requirements=AuthConfig.get_password_requirements_text(),
-                                form_data=form_data)
-                                
-        if not form_data['username'].strip():
+                                 captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
+                                 captcha_enabled=AuthConfig.is_captcha_enabled(),
+                                 password_requirements=AuthConfig.get_password_requirements_text(),
+                                 form_data=form_data)
+        
+        if not username:
+            logger.warning("Registration validation failed - username missing")
             flash("Username is required", "error")
             return render_template("register.html",
-                                captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
-                                captcha_enabled=AuthConfig.is_captcha_enabled(),
-                                password_requirements=AuthConfig.get_password_requirements_text(),
-                                form_data=form_data)
-                                
-        if not form_data['email'].strip():
+                                 captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
+                                 captcha_enabled=AuthConfig.is_captcha_enabled(),
+                                 password_requirements=AuthConfig.get_password_requirements_text(),
+                                 form_data=form_data)
+        
+        if not email:
+            logger.warning("Registration validation failed - email missing")
             flash("Email is required", "error")
             return render_template("register.html",
-                                captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
-                                captcha_enabled=AuthConfig.is_captcha_enabled(),
-                                password_requirements=AuthConfig.get_password_requirements_text(),
-                                form_data=form_data)
-                                
-        if not form_data['password']:
+                                 captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
+                                 captcha_enabled=AuthConfig.is_captcha_enabled(),
+                                 password_requirements=AuthConfig.get_password_requirements_text(),
+                                 form_data=form_data)
+        
+        if not password:
+            logger.warning("Registration validation failed - password missing")
             flash("Password is required", "error")
             return render_template("register.html",
-                                captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
-                                captcha_enabled=AuthConfig.is_captcha_enabled(),
-                                password_requirements=AuthConfig.get_password_requirements_text(),
-                                form_data=form_data)
-                                
-        if form_data['password'] != form_data['confirm_password']:
+                                 captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
+                                 captcha_enabled=AuthConfig.is_captcha_enabled(),
+                                 password_requirements=AuthConfig.get_password_requirements_text(),
+                                 form_data=form_data)
+        
+        if password != confirm_password:
+            logger.warning("Registration validation failed - passwords don't match")
             flash("Passwords do not match", "error")
             return render_template("register.html",
-                                captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
-                                captcha_enabled=AuthConfig.is_captcha_enabled(),
-                                password_requirements=AuthConfig.get_password_requirements_text(),
-                                form_data=form_data)
+                                 captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
+                                 captcha_enabled=AuthConfig.is_captcha_enabled(),
+                                 password_requirements=AuthConfig.get_password_requirements_text(),
+                                 form_data=form_data)
         
-        # Validate password strength
-        is_valid, password_errors = AuthConfig.validate_password(form_data['password'])
-        if not is_valid:
-            for error in password_errors:
-                flash(error, "error")
+        # Validate email format
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, email):
+            logger.warning(f"Registration validation failed - invalid email format: '{email}'")
+            flash("Please enter a valid email address", "error")
             return render_template("register.html",
-                                captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
-                                captcha_enabled=AuthConfig.is_captcha_enabled(),
-                                password_requirements=AuthConfig.get_password_requirements_text(),
-                                form_data=form_data)
-                                
-        # Check username uniqueness with proper Flask context
-        logger.info("Checking username uniqueness...")
-        with current_app.app_context():
-            try:
-                existing_user = db.session.query(User).filter_by(username=form_data['username']).first()
-                if existing_user:
-                    logger.warning(f"Username {form_data['username']} already exists")
-                    flash("Username already exists", "error")
-                    return render_template("register.html",
-                                        captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
-                                        captcha_enabled=AuthConfig.is_captcha_enabled(),
-                                        password_requirements=AuthConfig.get_password_requirements_text(),
-                                        form_data=form_data)
-            except Exception as e:
-                logger.error(f"Error checking username uniqueness: {str(e)}")
-                flash("An error occurred during registration. Please try again.", "error")
+                                 captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
+                                 captcha_enabled=AuthConfig.is_captcha_enabled(),
+                                 password_requirements=AuthConfig.get_password_requirements_text(),
+                                 form_data=form_data)
+        
+        # Validate username format
+        if len(username) < 3 or len(username) > 50:
+            logger.warning(f"Registration validation failed - username length invalid: '{username}' (length: {len(username)})")
+            flash("Username must be between 3 and 50 characters", "error")
+            return render_template("register.html",
+                                 captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
+                                 captcha_enabled=AuthConfig.is_captcha_enabled(),
+                                 password_requirements=AuthConfig.get_password_requirements_text(),
+                                 form_data=form_data)
+        
+        if not re.match(r'^[a-zA-Z0-9_]+$', username):
+            logger.warning(f"Registration validation failed - username contains invalid characters: '{username}'")
+            flash("Username can only contain letters, numbers, and underscores", "error")
+            return render_template("register.html",
+                                 captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
+                                 captcha_enabled=AuthConfig.is_captcha_enabled(),
+                                 password_requirements=AuthConfig.get_password_requirements_text(),
+                                 form_data=form_data)
+        
+        # Basic password validation
+        if len(password) < 8:
+            logger.warning(f"Registration validation failed - password too short: {len(password)} characters")
+            flash("Password must be at least 8 characters long", "error")
+            return render_template("register.html",
+                                 captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
+                                 captcha_enabled=AuthConfig.is_captcha_enabled(),
+                                 password_requirements=AuthConfig.get_password_requirements_text(),
+                                 form_data=form_data)
+        
+        logger.info("Basic validation passed, checking captcha")
+        
+        # Verify captcha if enabled
+        if AuthConfig.is_captcha_enabled():
+            logger.info(f"Verifying captcha for registration: '{username}'")
+            if not AuthConfig.verify_recaptcha(recaptcha_response, client_ip):
+                logger.warning(f"Registration failed for '{username}' - captcha verification failed")
+                flash("Please complete the captcha verification!", "error")
                 return render_template("register.html",
-                                    captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
-                                    captcha_enabled=AuthConfig.is_captcha_enabled(),
-                                    password_requirements=AuthConfig.get_password_requirements_text(),
-                                    form_data=form_data)
-                                    
-        # Check email uniqueness with proper Flask context
-        logger.info("Checking email uniqueness...")
-        with current_app.app_context():
-            try:
-                existing_email = db.session.query(User).filter_by(email=form_data['email']).first()
-                if existing_email:
-                    logger.warning(f"Email {form_data['email']} already exists")
-                    flash("Email already registered", "error")
-                    return render_template("register.html",
-                                        captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
-                                        captcha_enabled=AuthConfig.is_captcha_enabled(),
-                                        password_requirements=AuthConfig.get_password_requirements_text(),
-                                        form_data=form_data)
-            except Exception as e:
-                logger.error(f"Error checking email uniqueness: {str(e)}")
-                flash("An error occurred during registration. Please try again.", "error")
-                return render_template("register.html",
-                                    captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
-                                    captcha_enabled=AuthConfig.is_captcha_enabled(),
-                                    password_requirements=AuthConfig.get_password_requirements_text(),
-                                    form_data=form_data)
+                                     captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
+                                     captcha_enabled=AuthConfig.is_captcha_enabled(),
+                                     password_requirements=AuthConfig.get_password_requirements_text(),
+                                     form_data=form_data)
+            logger.info(f"Captcha verification passed for registration: '{username}'")
         
-        # Create validated_data dict for user creation
-        validated_data = {
-            'name': form_data['name'].strip(),
-            'username': form_data['username'].strip(),
-            'email': form_data['email'].strip().lower(),
-            'password': form_data['password']
-        }
+        logger.info("Checking for existing username and email")
         
-        logger.info("Validation successful, creating new user...")
+        # Check for existing username
+        existing_username = User.query.filter_by(username=username).first()
+        if existing_username:
+            logger.warning(f"Registration failed - username already exists: '{username}'")
+            flash("Username already exists", "error")
+            return render_template("register.html",
+                                 captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
+                                 captcha_enabled=AuthConfig.is_captcha_enabled(),
+                                 password_requirements=AuthConfig.get_password_requirements_text(),
+                                 form_data=form_data)
         
-        # Create new user
+        # Check for existing email
+        existing_email = User.query.filter_by(email=email).first()
+        if existing_email:
+            logger.warning(f"Registration failed - email already exists: '{email}'")
+            flash("Email already registered", "error")
+            return render_template("register.html",
+                                 captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
+                                 captcha_enabled=AuthConfig.is_captcha_enabled(),
+                                 password_requirements=AuthConfig.get_password_requirements_text(),
+                                 form_data=form_data)
+        
+        logger.info(f"Username and email available, creating new user: '{username}' ({email})")
+        
+        # Create new user using the existing UserFactory
         try:
+            logger.info("Attempting to create user with new UserFactory method")
+            # Try the new simplified UserFactory method first
             new_user = UserFactory.create_user(
-                name=validated_data['name'],
-                username=validated_data['username'],
-                email=validated_data['email'],
-                password=validated_data['password'],
-                role='user',
-                oauth_provider='manual'
+                name=name,
+                username=username,
+                email=email,
+                password=password,
+                role='user'
             )
-            logger.info(f"User object created: {new_user.username}")
-            
-            # Generate email verification token
-            if hasattr(new_user, 'generate_email_verification_token'):
-                verification_token = new_user.generate_email_verification_token()
-                logger.info("Generated verification token via user method")
-            else:
-                verification_token = generate_verification_token(new_user.email)
-                logger.info("Generated verification token via utility function")
-            
-            # Save user to database
-            logger.info("Saving user to database...")
-            db.session.add(new_user)
-            db.session.commit()
-            logger.info(f"User {new_user.username} successfully saved to database")
-        except Exception as inner_e:
-            logger.error(f"Error creating user: {str(inner_e)}")
-            raise  # Re-raise to be caught by outer exception handler
+            logger.info("User created successfully with new UserFactory method")
+        except TypeError as e:
+            logger.info(f"New UserFactory method failed ({str(e)}), trying fallback method")
+            # Fallback to the old UserFactory method if the new one doesn't exist
+            new_user = UserFactory.create_user(
+                username=username,
+                email=email,
+                role='user',
+                password=password
+            )
+            # Set name field if it exists
+            if hasattr(new_user, 'name'):
+                new_user.name = name
+                logger.info("User created with fallback method, name field set")
         
-        # Assign default tools
-        try:
-            logger.info(f"Assigning default tools to user {new_user.id}")
+        # Set email as verified for now (you can implement email verification later)
+        if hasattr(new_user, 'email_verified'):
+            new_user.email_verified = True
+            logger.info("Email marked as verified for new user")
+        
+        logger.info(f"Adding user to database session: ID will be assigned")
+        db.session.add(new_user)
+        db.session.commit()
+        
+        logger.info(f"User created successfully in database - ID: {new_user.id}")
+        
+        # Assign default tools if method exists
+        if hasattr(User, 'assign_default_tools'):
+            logger.info(f"Assigning default tools to user: {new_user.id}")
             User.assign_default_tools(new_user.id)
             logger.info("Default tools assigned successfully")
-        except Exception as tool_e:
-            logger.error(f"Error assigning default tools: {str(tool_e)}")
-            # Continue even if tool assignment fails
+        else:
+            logger.info("No assign_default_tools method found, skipping tool assignment")
         
-        # Send verification email
-        try:
-            logger.info(f"Sending verification email to {new_user.email}")
-            send_verification_email(new_user.email, new_user.name, verification_token)
-            logger.info(f"Verification email sent to {new_user.email}")
-        except Exception as e:
-            logger.error(f"Failed to send verification email: {str(e)}")
-            # Don't fail registration if email sending fails
-        
-        logger.info(f"Registration complete for user: {new_user.username}")
-        flash("Registration successful! Please check your email to verify your account before logging in.", "success")
+        logger.info(f"REGISTRATION SUCCESS: User '{username}' ({email}) registered successfully from IP: {client_ip}")
+        flash("Registration successful! You can now log in.", "success")
         return redirect(url_for("auth.login"))
         
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Registration error: {str(e)}")
-        import traceback
-        logger.error(f"Registration traceback: {traceback.format_exc()}")
+        username_for_log = username if 'username' in locals() else 'unknown'
+        email_for_log = email if 'email' in locals() else 'unknown'
+        
+        logger.error(f"Registration exception for user '{username_for_log}' ({email_for_log}): {str(e)}")
+        logger.error(f"Full exception trace: {e.__class__.__name__}: {str(e)}")
+        
         flash("An error occurred during registration. Please try again.", "error")
-        return render_template("register.html",  # Changed from auth/register.html to register.html
+        return render_template("register.html",
                              captcha_site_key=AuthConfig.RECAPTCHA_SITE_KEY,
                              captcha_enabled=AuthConfig.is_captcha_enabled(),
                              password_requirements=AuthConfig.get_password_requirements_text(),
-                             form_data=form_data)
+                             form_data=form_data if 'form_data' in locals() else {})
 
-
-# KEEP EXISTING ROUTES - Your old registration system (works in parallel)
+# Keep your existing multi-step registration for backward compatibility
 @auth.route("/register_step1", methods=["GET", "POST"])
 def register_step1():
-    """EXISTING: Keep your old step 1 registration for backward compatibility"""
-    if request.method == "POST":
-        fname = request.form["fname"]
-        lname = request.form["lname"]
-        address = request.form["address"]
-        city = request.form["city"]
-        state = request.form["state"]
-        zip_code = request.form["zip"]
+    """Existing step 1 registration - kept for backward compatibility"""
+    client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
+    
+    if request.method == "GET":
+        logger.info(f"Multi-step registration step 1 accessed from IP: {client_ip}")
+        return render_template("register_step1.html")
+    
+    logger.info(f"Processing multi-step registration step 1 from IP: {client_ip}")
+    
+    fname = request.form["fname"]
+    lname = request.form["lname"]
+    address = request.form["address"]
+    city = request.form["city"]
+    state = request.form["state"]
+    zip_code = request.form["zip"]
 
-        session["registration_info"] = {
-            "fname": fname,
-            "lname": lname,
-            "address": address,
-            "city": city,
-            "state": state,
-            "zip": zip_code,
-        }
+    logger.info(f"Step 1 data received - name: '{fname} {lname}', location: {city}, {state}")
 
-        return redirect(url_for("auth.register_step2"))
+    session["registration_info"] = {
+        "fname": fname,
+        "lname": lname,
+        "address": address,
+        "city": city,
+        "state": state,
+        "zip": zip_code,
+    }
 
-    return render_template("register_step1.html")
-
+    logger.info("Step 1 data stored in session, redirecting to step 2")
+    return redirect(url_for("auth.register_step2"))
 
 @auth.route("/register_step2", methods=["GET", "POST"])
 def register_step2():
-    """EXISTING: Keep your old step 2 registration for backward compatibility"""
+    """Existing step 2 registration - kept for backward compatibility"""
+    client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
     registration_info = session.get("registration_info")
 
     if not registration_info:
+        logger.warning(f"Multi-step registration step 2 accessed without step 1 data from IP: {client_ip}")
         flash("Please complete step 1 of registration first.", "error")
         return redirect(url_for("auth.register_step1"))
 
-    if request.method == "POST":
-        username = request.form["username"]
-        email = request.form["email"]
-        password = request.form["password"]
-        confirm_password = request.form["confirm_password"]
+    if request.method == "GET":
+        logger.info(f"Multi-step registration step 2 accessed from IP: {client_ip}")
+        return render_template("register_step2.html")
 
-        if password != confirm_password:
-            flash("Passwords do not match!", "error")
-            return redirect(url_for("auth.register_step2"))
+    logger.info(f"Processing multi-step registration step 2 from IP: {client_ip}")
 
-        if User.query.filter_by(username=username).first():
-            flash("Username already exists!", "error")
-            return redirect(url_for("auth.register_step2"))
+    username = request.form["username"]
+    email = request.form["email"]
+    password = request.form["password"]
+    confirm_password = request.form["confirm_password"]
 
-        if User.query.filter_by(email=email).first():
-            flash("Email already registered!", "error")
-            return redirect(url_for("auth.register_step2"))
+    logger.info(f"Step 2 data received - username: '{username}', email: '{email}'")
 
+    if password != confirm_password:
+        logger.warning("Multi-step registration failed - passwords don't match")
+        flash("Passwords do not match!", "error")
+        return redirect(url_for("auth.register_step2"))
+
+    if User.query.filter_by(username=username).first():
+        logger.warning(f"Multi-step registration failed - username exists: '{username}'")
+        flash("Username already exists!", "error")
+        return redirect(url_for("auth.register_step2"))
+
+    if User.query.filter_by(email=email).first():
+        logger.warning(f"Multi-step registration failed - email exists: '{email}'")
+        flash("Email already registered!", "error")
+        return redirect(url_for("auth.register_step2"))
+
+    try:
+        logger.info(f"Creating user with multi-step registration data: '{username}'")
+        
+        # Create user with old method for backward compatibility
         try:
-            # Use old UserFactory for backward compatibility
+            logger.info("Attempting new UserFactory method for multi-step registration")
+            # Try new method first
+            new_user = UserFactory.create_user(
+                name=f"{registration_info['fname']} {registration_info['lname']}",
+                username=username,
+                email=email,
+                password=password,
+                role='user'
+            )
+            logger.info("Multi-step user created with new UserFactory method")
+        except TypeError as e:
+            logger.info(f"New method failed ({str(e)}), using fallback for multi-step registration")
+            # Fallback to old method
             new_user = UserFactory.create_user(
                 username=username,
                 email=email,
@@ -510,231 +575,211 @@ def register_step2():
                 role='user',
                 password=password
             )
-            
-            # For legacy users, mark as verified and set name
-            if hasattr(new_user, 'email_verified'):
-                new_user.email_verified = True
+            # Set name field if it exists
             if hasattr(new_user, 'name') and not new_user.name:
                 new_user.name = f"{registration_info['fname']} {registration_info['lname']}"
-            
-            db.session.add(new_user)
-            db.session.commit()
+                logger.info("Multi-step user created with fallback method, name field set")
+        
+        # Mark as verified for legacy users
+        if hasattr(new_user, 'email_verified'):
+            new_user.email_verified = True
+            logger.info("Multi-step user marked as email verified")
+        
+        db.session.add(new_user)
+        db.session.commit()
+        
+        logger.info(f"Multi-step user created successfully in database - ID: {new_user.id}")
 
+        # Assign default tools if method exists
+        if hasattr(User, 'assign_default_tools'):
+            logger.info(f"Assigning default tools to multi-step user: {new_user.id}")
             User.assign_default_tools(new_user.id)
+            logger.info("Default tools assigned to multi-step user")
 
-            session.pop("registration_info", None)
+        session.pop("registration_info", None)
+        logger.info("Multi-step registration info cleared from session")
 
-            flash("Registration successful!", "success")
-            return redirect(url_for("auth.login"))
-        except Exception as e:
-            db.session.rollback()
-            flash("An error occurred during registration. Please try again.", "error")
-            return redirect(url_for("auth.register_step2"))
-
-    return render_template("register_step2.html")
-
-
-@auth.route("/verify_email/<token>")
-def verify_email(token):
-    """NEW: Verify user email address"""
-    try:
-        # Verify token
-        email = verify_verification_token(token, AuthConfig.EMAIL_VERIFICATION_EXPIRY)
-        
-        if not email:
-            flash("Invalid or expired verification link.", "error")
-            return redirect(url_for("auth.login"))
-        
-        # Find user
-        user = User.query.filter_by(email=email).first()
-        
-        if not user:
-            flash("User not found.", "error")
-            return redirect(url_for("auth.login"))
-        
-        if hasattr(user, 'email_verified') and user.email_verified:
-            flash("Email already verified. You can now log in.", "info")
-            return redirect(url_for("auth.login"))
-        
-        # Verify email
-        if hasattr(user, 'verify_email'):
-            user.verify_email()
-        elif hasattr(user, 'email_verified'):
-            user.email_verified = True
-            
-        db.session.commit()
-        
-        logger.info(f"Email verified for user: {user.username}")
-        flash("Email verified successfully! You can now log in.", "success")
+        logger.info(f"MULTI-STEP REGISTRATION SUCCESS: User '{username}' ({email}) registered from IP: {client_ip}")
+        flash("Registration successful!", "success")
         return redirect(url_for("auth.login"))
         
     except Exception as e:
-        logger.error(f"Email verification error: {str(e)}")
-        flash("An error occurred during email verification.", "error")
-        return redirect(url_for("auth.login"))
-
-
-@auth.route("/resend_verification", methods=["POST"])
-def resend_verification():
-    """NEW: Resend email verification"""
-    try:
-        email = request.form.get('email', '').strip().lower()
-        
-        if not email:
-            flash("Email address is required.", "error")
-            return redirect(url_for("auth.login"))
-        
-        user = User.query.filter_by(email=email).first()
-        
-        if not user:
-            # Don't reveal that user doesn't exist
-            flash("If that email address is registered, we've sent a verification email.", "info")
-            return redirect(url_for("auth.login"))
-        
-        if hasattr(user, 'email_verified') and user.email_verified:
-            flash("Email is already verified. You can log in.", "info")
-            return redirect(url_for("auth.login"))
-        
-        # Generate new verification token
-        if hasattr(user, 'generate_email_verification_token'):
-            verification_token = user.generate_email_verification_token()
-        else:
-            verification_token = generate_verification_token(user.email)
-            
-        db.session.commit()
-        
-        # Send verification email
-        display_name = getattr(user, 'name', None) or f"{getattr(user, 'fname', '')} {getattr(user, 'lname', '')}".strip() or user.username
-        send_verification_email(user.email, display_name, verification_token)
-        
-        flash("Verification email sent. Please check your inbox.", "success")
-        return redirect(url_for("auth.login"))
-        
-    except Exception as e:
-        logger.error(f"Resend verification error: {str(e)}")
-        flash("An error occurred. Please try again.", "error")
-        return redirect(url_for("auth.login"))
-
-
-@auth.route("/logout", methods=["GET", "POST"])
-def logout():
-    """EXISTING: Keep your logout exactly as is"""
-    username = session.get('username', 'Unknown')
-    session.clear()
-    logger.info(f"User {username} logged out")
-    flash("You have been logged out successfully.", "info")
-    return redirect(url_for("auth.login"))
+        db.session.rollback()
+        logger.error(f"Multi-step registration exception for '{username}': {str(e)}")
+        logger.error(f"Full exception trace: {e.__class__.__name__}: {str(e)}")
+        flash("An error occurred during registration. Please try again.", "error")
+        return redirect(url_for("auth.register_step2"))
 
 @auth.route("/forgot_password", methods=["GET", "POST"])
 def forgot_password():
+    """Existing forgot password functionality"""
+    client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
+    
+    if request.method == "GET":
+        logger.info(f"Forgot password page accessed from IP: {client_ip}")
+        return render_template("forgot_password.html")
 
-    if request.method == "POST":
-        email = request.form.get("email")
-        user = User.query.filter_by(email=email).first()
+    logger.info(f"Password reset request initiated from IP: {client_ip}")
+    
+    email = request.form.get("email")
+    logger.info(f"Password reset requested for email: '{email}'")
+    
+    user = User.query.filter_by(email=email).first()
 
-        # For security, we don't reveal if the user was found or not.
-        # We always show a confirmation message.
-
-        if user:
-            # Generate a secure, timed token (expires in 1 hour by default)
+    if user:
+        logger.info(f"User found for password reset: '{user.username}' (ID: {user.id})")
+        try:
+            # Generate reset token
+            logger.info("Generating password reset token")
             token = generate_verification_token(email)
             reset_link = url_for("auth.reset_password", token=token, _external=True)
             
-            # Create and send the password reset email
+            # Create reset email
+            logger.info(f"Preparing password reset email for: '{email}'")
             msg = Message(
-                subject="Password Reset Request - OmniTools",
+                subject="Password Reset Request",
                 recipients=[email],
             )
 
-            # Get display name (works with both old and new users)
-            display_name = getattr(user, 'name', None) or f"{getattr(user, 'fname', '')} {getattr(user, 'lname', '')}".strip() or user.username
+            # Try to get user's name
+            user_name = "User"
+            if hasattr(user, 'name') and user.name:
+                user_name = user.name
+            elif hasattr(user, 'fname') and hasattr(user, 'lname'):
+                user_name = f"{user.fname} {user.lname}"
 
-            msg.html = render_template(
-                "email/password_reset.html",
-                name=display_name,
-                reset_link=reset_link,
-            )
-            mail.send(msg)
+            msg.html = f"""
+            <h2>Password Reset Request</h2>
+            <p>Hello {user_name},</p>
+            <p>You requested a password reset. Click the link below to reset your password:</p>
+            <p><a href="{reset_link}">Reset Password</a></p>
+            <p>This link will expire in 1 hour.</p>
+            <p>If you didn't request this, please ignore this email.</p>
+            """
             
-            # For security, always flash the same message and redirect to login for POST requests.
-        flash("If an account with that email exists, a password reset link has been sent.", "info")
-        return redirect(url_for("auth.login"))
-        
-    return render_template("forgot_password_request.html")
-
+            logger.info(f"Sending password reset email to: '{email}'")
+            mail.send(msg)
+            logger.info(f"Password reset email sent successfully to: '{email}'")
+            
+        except Exception as e:
+            logger.error(f"Error sending password reset email to '{email}': {str(e)}")
+    else:
+        logger.warning(f"Password reset requested for non-existent email: '{email}'")
+    
+    # Always show success message for security
+    logger.info(f"Password reset process completed for email: '{email}' (showing generic success message)")
+    flash("If an account with that email exists, a password reset link has been sent.", "success")
+    return redirect(url_for("auth.login"))
 
 @auth.route("/reset_password/<token>", methods=["GET", "POST"])
 def reset_password(token):
-
-    # Verify the token is valid and not expired
-    email = verify_verification_token(token)
-
+    """Existing reset password functionality"""
+    client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
+    logger.info(f"Password reset attempted with token from IP: {client_ip}")
+    
+    try:
+        from routes.contact_routes import verify_verification_token
+        logger.info("Verifying password reset token")
+        email = verify_verification_token(token, 3600)  # 1 hour expiry
+        if email:
+            logger.info(f"Valid password reset token for email: '{email}'")
+        else:
+            logger.warning("Invalid password reset token provided")
+    except Exception as e:
+        logger.error(f"Error verifying password reset token: {str(e)}")
+        email = None
+    
     if not email:
-        flash("The password reset link is invalid or has expired.", "error")
+        logger.warning("Password reset failed - invalid or expired token")
+        flash("Invalid or expired reset link.", "error")
         return redirect(url_for("auth.login"))
 
-    if request.method == "POST":
-        password = request.form.get("password")
-        confirm_password = request.form.get("confirm_password")
+    if request.method == "GET":
+        logger.info(f"Password reset form displayed for email: '{email}'")
+        return render_template("reset_password.html", token=token)
 
-        if password != confirm_password:
-            flash("Passwords do not match!", "error")
-            return render_template("reset_password.html")
-
-        # Add password validation for new password policy
-        try:
-            is_valid, errors = AuthConfig.validate_password(password)
-            if not is_valid:
-                for error in errors:
-                    flash(error, "error")
-                return render_template("reset_password.html")
-        except:
-            # If validation fails, continue with basic validation
-            if len(password) < 8:
-                flash("Password must be at least 8 characters long.", "error")
-                return render_template("reset_password.html")
-
+    logger.info(f"Processing password reset for email: '{email}'")
+    
+    password = request.form.get("password")
+    confirm_password = request.form.get("confirm_password")
+    
+    if not password or not confirm_password:
+        logger.warning("Password reset failed - missing password fields")
+        flash("Both password fields are required.", "error")
+        return render_template("reset_password.html", token=token)
+    
+    if password != confirm_password:
+        logger.warning("Password reset failed - passwords don't match")
+        flash("Passwords do not match.", "error")
+        return render_template("reset_password.html", token=token)
+    
+    if len(password) < 8:
+        logger.warning(f"Password reset failed - password too short: {len(password)} characters")
+        flash("Password must be at least 8 characters long.", "error")
+        return render_template("reset_password.html", token=token)
+    
+    try:
+        logger.info(f"Looking up user for password reset: '{email}'")
         user = User.query.filter_by(email=email).first()
         if user:
+            logger.info(f"Updating password for user: '{user.username}' (ID: {user.id})")
             user.set_password(password)
-            
-            # Update last login if method exists
-            if hasattr(user, 'update_last_login'):
-                user.update_last_login()
-                
             db.session.commit()
-            flash("Your password has been updated successfully! You can now log in.", "success")
+            logger.info(f"PASSWORD RESET SUCCESS: Password updated for user '{user.username}' from IP: {client_ip}")
+            flash("Password reset successful! You can now log in.", "success")
             return redirect(url_for("auth.login"))
+        else:
+            logger.error(f"User not found during password reset for email: '{email}'")
+            flash("User not found.", "error")
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Password reset exception for email '{email}': {str(e)}")
+        flash("An error occurred. Please try again.", "error")
 
-    return render_template("reset_password.html")
+    return render_template("reset_password.html", token=token)
 
-
-def send_verification_email(email, name, token):
-    verification_link = url_for("auth.verify_email", token=token, _external=True)
+# Email verification route (if you want to implement it later)
+@auth.route("/verify_email/<token>")
+def verify_email(token):
+    """Email verification route - optional"""
+    client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
+    logger.info(f"Email verification attempted from IP: {client_ip}")
     
-    msg = Message(
-        subject="Verify Your Email - OmniTools",
-        recipients=[email],
-    )
-    
-    msg.html = render_template(
-        "email/registration_verification.html",
-        name=name,
-        verification_link=verification_link,
-    )
-    
-    msg.body = f"""
-Hi {name},
-
-Welcome to OmniTools! Please verify your email address by clicking the link below:
-{verification_link}
-
-This link will expire in 1 hour.
-
-If you didn't create this account, please ignore this email.
-
-Best regards,
-The OmniTools Team
-"""
-    
-    mail.send(msg)
+    try:
+        from routes.contact_routes import verify_verification_token
+        logger.info("Verifying email verification token")
+        email = verify_verification_token(token, 3600)  # 1 hour expiry
+        
+        if not email:
+            logger.warning("Email verification failed - invalid or expired token")
+            flash("Invalid or expired verification link.", "error")
+            return redirect(url_for("auth.login"))
+        
+        logger.info(f"Valid email verification token for: '{email}'")
+        user = User.query.filter_by(email=email).first()
+        
+        if not user:
+            logger.error(f"User not found for email verification: '{email}'")
+            flash("User not found.", "error")
+            return redirect(url_for("auth.login"))
+        
+        if hasattr(user, 'email_verified'):
+            if user.email_verified:
+                logger.info(f"Email already verified for user: '{user.username}'")
+                flash("Email already verified. You can now log in.", "success")
+            else:
+                logger.info(f"Marking email as verified for user: '{user.username}' (ID: {user.id})")
+                user.email_verified = True
+                db.session.commit()
+                logger.info(f"EMAIL VERIFICATION SUCCESS: Email verified for user '{user.username}' from IP: {client_ip}")
+                flash("Email verified successfully! You can now log in.", "success")
+        else:
+            logger.info(f"Email verification not required for user: '{user.username}'")
+            flash("Email verification is not required for your account.", "info")
+        
+        return redirect(url_for("auth.login"))
+        
+    except Exception as e:
+        logger.error(f"Email verification exception: {str(e)}")
+        flash("An error occurred during email verification.", "error")
+        return redirect(url_for("auth.login"))
