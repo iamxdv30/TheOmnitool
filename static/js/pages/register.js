@@ -1,356 +1,402 @@
 /**
- * register.js - Registration functionality
- * Handles form validation and submission for registration steps
+ * register.js - Enhanced Registration functionality
+ * Handles form validation, password strength, and captcha integration
  */
 
 (function() {
     'use strict';
     
-    // Module initialization
-    document.addEventListener('DOMContentLoaded', function() {
-        RegisterPage.init();
-    });
-    
-    const RegisterPage = {
+    window.RegisterPage = {
         elements: {},
+        isSubmitting: false,
         
         init() {
             this.cacheElements();
             this.bindEvents();
-            this.setupFlashMessages();
+            this.initializeCaptcha();
+            this.setupPasswordToggle();
+            this.setupPasswordStrength();
         },
         
         cacheElements() {
-            // Step 1 form elements
-            this.elements.step1Form = document.querySelector('.register-step1-form');
-            this.elements.fnameInput = document.querySelector('input[name="fname"]');
-            this.elements.lnameInput = document.querySelector('input[name="lname"]');
-            this.elements.addressInput = document.querySelector('input[name="address"]');
-            this.elements.cityInput = document.querySelector('input[name="city"]');
-            this.elements.stateInput = document.querySelector('input[name="state"]');
-            this.elements.zipInput = document.querySelector('input[name="zip"]');
+            // Form elements
+            this.elements.form = document.getElementById('registrationForm');
+            this.elements.nameInput = document.getElementById('name');
+            this.elements.usernameInput = document.getElementById('username');
+            this.elements.emailInput = document.getElementById('email');
+            this.elements.passwordInput = document.getElementById('password');
+            this.elements.confirmPasswordInput = document.getElementById('confirm_password');
+            this.elements.submitBtn = document.getElementById('submitBtn');
+            this.elements.btnText = this.elements.submitBtn?.querySelector('.btn-text');
+            this.elements.btnLoading = this.elements.submitBtn?.querySelector('.btn-loading');
             
-            // Step 2 form elements
-            this.elements.step2Form = document.querySelector('.register-step2-container form');
-            this.elements.usernameInput = document.querySelector('#username');
-            this.elements.emailInput = document.querySelector('#email');
-            this.elements.passwordInput = document.querySelector('#password');
-            this.elements.confirmPasswordInput = document.querySelector('#confirm_password');
+            // Password toggle
+            this.elements.passwordToggle = document.getElementById('passwordToggle');
             
-            // Flash messages
-            this.elements.flashMessages = document.querySelectorAll('.flash-message');
+            // Password strength elements
+            this.elements.strengthFill = document.getElementById('strengthFill');
+            this.elements.strengthText = document.getElementById('strengthText');
+            
+            // Error elements
+            this.elements.nameError = document.getElementById('nameError');
+            this.elements.usernameError = document.getElementById('usernameError');
+            this.elements.emailError = document.getElementById('emailError');
+            this.elements.passwordError = document.getElementById('passwordError');
+            this.elements.confirmPasswordError = document.getElementById('confirmPasswordError');
+            this.elements.captchaError = document.getElementById('captchaError');
         },
         
         bindEvents() {
-            // Step 1 form submission
-            if (this.elements.step1Form) {
-                this.elements.step1Form.addEventListener('submit', this.handleStep1FormSubmit.bind(this));
-                
-                // Input validation events
-                if (this.elements.zipInput) {
-                    this.elements.zipInput.addEventListener('blur', this.validateZipCode.bind(this));
-                }
+            // Form submission
+            if (this.elements.form) {
+                this.elements.form.addEventListener('submit', this.handleFormSubmit.bind(this));
             }
             
-            // Step 2 form submission
-            if (this.elements.step2Form) {
-                this.elements.step2Form.addEventListener('submit', this.handleStep2FormSubmit.bind(this));
-                
-                // Input validation events
-                if (this.elements.emailInput) {
-                    this.elements.emailInput.addEventListener('blur', this.validateEmail.bind(this));
-                }
-                
-                if (this.elements.passwordInput) {
-                    this.elements.passwordInput.addEventListener('blur', this.validatePassword.bind(this));
-                }
-                
-                if (this.elements.confirmPasswordInput) {
-                    this.elements.confirmPasswordInput.addEventListener('blur', this.validateConfirmPassword.bind(this));
+            // Real-time validation
+            if (this.elements.nameInput) {
+                this.elements.nameInput.addEventListener('blur', () => this.validateName());
+                this.elements.nameInput.addEventListener('input', () => this.clearFieldError('name'));
+            }
+            
+            if (this.elements.usernameInput) {
+                this.elements.usernameInput.addEventListener('blur', () => this.validateUsername());
+                this.elements.usernameInput.addEventListener('input', () => this.clearFieldError('username'));
+            }
+            
+            if (this.elements.emailInput) {
+                this.elements.emailInput.addEventListener('blur', () => this.validateEmail());
+                this.elements.emailInput.addEventListener('input', () => this.clearFieldError('email'));
+            }
+            
+            if (this.elements.passwordInput) {
+                this.elements.passwordInput.addEventListener('input', () => {
+                    this.updatePasswordStrength();
+                    this.clearFieldError('password');
+                    if (this.elements.confirmPasswordInput.value) {
+                        this.validatePasswordConfirmation();
+                    }
+                });
+                this.elements.passwordInput.addEventListener('blur', () => this.validatePassword());
+            }
+            
+            if (this.elements.confirmPasswordInput) {
+                this.elements.confirmPasswordInput.addEventListener('blur', () => this.validatePasswordConfirmation());
+                this.elements.confirmPasswordInput.addEventListener('input', () => this.clearFieldError('confirmPassword'));
+            }
+            
+            // Captcha events
+            document.addEventListener('captchaSuccess', () => this.clearFieldError('captcha'));
+            document.addEventListener('captchaExpired', () => this.showFieldError('captcha', 'Captcha expired. Please verify again.'));
+            document.addEventListener('captchaError', () => this.showFieldError('captcha', 'Captcha error. Please try again.'));
+        },
+        
+        async initializeCaptcha() {
+            if (typeof window.CaptchaModule !== 'undefined' && window.RECAPTCHA_SITE_KEY) {
+                try {
+                    await window.CaptchaModule.init();
+                    await window.CaptchaModule.render('recaptcha-container');
+                } catch (error) {
+                    console.error('Failed to initialize captcha:', error);
+                    this.showFieldError('captcha', 'Captcha failed to load. Please refresh the page.');
                 }
             }
         },
         
-        /**
-         * Set up auto-hiding flash messages
-         */
-        setupFlashMessages() {
-            if (this.elements.flashMessages.length > 0) {
-                this.elements.flashMessages.forEach(message => {
-                    // Auto-hide flash messages after 5 seconds
-                    setTimeout(() => {
-                        message.style.opacity = '0';
-                        setTimeout(() => {
-                            message.style.display = 'none';
-                        }, 500); // Wait for fade out animation
-                    }, 5000);
+        setupPasswordToggle() {
+            if (this.elements.passwordToggle) {
+                this.elements.passwordToggle.addEventListener('click', () => {
+                    const passwordField = this.elements.passwordInput;
+                    const isPassword = passwordField.type === 'password';
+                    
+                    passwordField.type = isPassword ? 'text' : 'password';
+                    this.elements.passwordToggle.textContent = isPassword ? '🙈' : '👁️';
+                    this.elements.passwordToggle.setAttribute('aria-label', 
+                        isPassword ? 'Hide password' : 'Show password');
                 });
             }
         },
         
-        /**
-         * Handle step 1 form submission
-         * @param {Event} event - Submit event
-         */
-        handleStep1FormSubmit(event) {
-            // Validate form fields
-            const isValid = this.validateStep1Form();
-            
-            if (!isValid) {
-                event.preventDefault();
-                return false;
-            }
-            
-            // Form is valid, let it submit normally
-            return true;
-        },
-        
-        /**
-         * Handle step 2 form submission
-         * @param {Event} event - Submit event
-         */
-        handleStep2FormSubmit(event) {
-            // Validate form fields
-            const isValid = this.validateStep2Form();
-            
-            if (!isValid) {
-                event.preventDefault();
-                return false;
-            }
-            
-            // Form is valid, let it submit normally
-            return true;
-        },
-        
-        /**
-         * Validate step 1 form fields
-         * @returns {boolean} True if valid, false otherwise
-         */
-        validateStep1Form() {
-            let isValid = true;
-            
-            // First name validation
-            if (this.elements.fnameInput && !this.elements.fnameInput.value.trim()) {
-                this.showFieldError(this.elements.fnameInput, 'First name is required');
-                isValid = false;
-            } else if (this.elements.fnameInput) {
-                this.clearFieldError(this.elements.fnameInput);
-            }
-            
-            // Last name validation
-            if (this.elements.lnameInput && !this.elements.lnameInput.value.trim()) {
-                this.showFieldError(this.elements.lnameInput, 'Last name is required');
-                isValid = false;
-            } else if (this.elements.lnameInput) {
-                this.clearFieldError(this.elements.lnameInput);
-            }
-            
-            // Address validation
-            if (this.elements.addressInput && !this.elements.addressInput.value.trim()) {
-                this.showFieldError(this.elements.addressInput, 'Address is required');
-                isValid = false;
-            } else if (this.elements.addressInput) {
-                this.clearFieldError(this.elements.addressInput);
-            }
-            
-            // City validation
-            if (this.elements.cityInput && !this.elements.cityInput.value.trim()) {
-                this.showFieldError(this.elements.cityInput, 'City is required');
-                isValid = false;
-            } else if (this.elements.cityInput) {
-                this.clearFieldError(this.elements.cityInput);
-            }
-            
-            // State validation
-            if (this.elements.stateInput && !this.elements.stateInput.value.trim()) {
-                this.showFieldError(this.elements.stateInput, 'State is required');
-                isValid = false;
-            } else if (this.elements.stateInput) {
-                this.clearFieldError(this.elements.stateInput);
-            }
-            
-            // Zip code validation
-            if (this.elements.zipInput) {
-                if (!this.validateZipCode()) {
-                    isValid = false;
-                }
-            }
-            
-            return isValid;
-        },
-        
-        /**
-         * Validate step 2 form fields
-         * @returns {boolean} True if valid, false otherwise
-         */
-        validateStep2Form() {
-            let isValid = true;
-            
-            // Username validation
-            if (this.elements.usernameInput && !this.elements.usernameInput.value.trim()) {
-                this.showFieldError(this.elements.usernameInput, 'Username is required');
-                isValid = false;
-            } else if (this.elements.usernameInput) {
-                this.clearFieldError(this.elements.usernameInput);
-            }
-            
-            // Email validation
-            if (this.elements.emailInput) {
-                if (!this.validateEmail()) {
-                    isValid = false;
-                }
-            }
-            
-            // Password validation
+        setupPasswordStrength() {
             if (this.elements.passwordInput) {
-                if (!this.validatePassword()) {
-                    isValid = false;
+                this.updatePasswordStrength();
+            }
+        },
+        
+        updatePasswordStrength() {
+            const password = this.elements.passwordInput.value;
+            const strength = this.calculatePasswordStrength(password);
+            
+            // Update strength bar
+            if (this.elements.strengthFill && this.elements.strengthText) {
+                this.elements.strengthFill.style.width = `${strength.score * 20}%`;
+                this.elements.strengthFill.className = `strength-fill strength-${strength.level}`;
+                this.elements.strengthText.textContent = strength.text;
+            }
+        },
+        
+        calculatePasswordStrength(password) {
+            if (!password) {
+                return { score: 0, level: 'none', text: 'Password strength' };
+            }
+            
+            let score = 0;
+            const checks = {
+                length: password.length >= 8,
+                lowercase: /[a-z]/.test(password),
+                uppercase: /[A-Z]/.test(password),
+                numbers: /\d/.test(password),
+                special: /[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(password)
+            };
+            
+            // Score calculation
+            if (checks.length) score += 1;
+            if (checks.lowercase) score += 1;
+            if (checks.uppercase) score += 1;
+            if (checks.numbers) score += 1;
+            if (checks.special) score += 1;
+            
+            // Length bonus
+            if (password.length >= 12) score += 0.5;
+            if (password.length >= 16) score += 0.5;
+            
+            // Determine strength level
+            let level, text;
+            if (score < 2) {
+                level = 'weak';
+                text = 'Weak password';
+            } else if (score < 3) {
+                level = 'fair';
+                text = 'Fair password';
+            } else if (score < 4) {
+                level = 'good';
+                text = 'Good password';
+            } else if (score < 5) {
+                level = 'strong';
+                text = 'Strong password';
+            } else {
+                level = 'excellent';
+                text = 'Excellent password';
+            }
+            
+            return { score: Math.min(score, 5), level, text };
+        },
+        
+        async handleFormSubmit(event) {
+            event.preventDefault();
+            
+            if (this.isSubmitting) {
+                return;
+            }
+            
+            // Validate all fields
+            const isValid = this.validateForm();
+            
+            if (!isValid) {
+                return;
+            }
+            
+            // Validate captcha
+            if (typeof window.CaptchaModule !== 'undefined') {
+                if (!window.CaptchaModule.validateForm(this.elements.form, 'recaptcha-container')) {
+                    this.showFieldError('captcha', 'Please complete the captcha verification');
+                    return;
                 }
             }
             
-            // Confirm password validation
-            if (this.elements.confirmPasswordInput) {
-                if (!this.validateConfirmPassword()) {
-                    isValid = false;
-                }
+            this.setSubmittingState(true);
+            
+            try {
+                // Submit the form
+                this.elements.form.submit();
+            } catch (error) {
+                console.error('Form submission error:', error);
+                this.setSubmittingState(false);
+                OmniUtils.showFlashMessage('An error occurred. Please try again.', 'error');
             }
+        },
+        
+        validateForm() {
+            let isValid = true;
+            
+            if (!this.validateName()) isValid = false;
+            if (!this.validateUsername()) isValid = false;
+            if (!this.validateEmail()) isValid = false;
+            if (!this.validatePassword()) isValid = false;
+            if (!this.validatePasswordConfirmation()) isValid = false;
             
             return isValid;
         },
         
-        /**
-         * Validate zip code format
-         * @returns {boolean} True if valid, false otherwise
-         */
-        validateZipCode() {
-            if (!this.elements.zipInput) return true;
+        validateName() {
+            const name = this.elements.nameInput.value.trim();
             
-            const zipValue = this.elements.zipInput.value.trim();
-            
-            if (!zipValue) {
-                this.showFieldError(this.elements.zipInput, 'ZIP code is required');
+            if (!name) {
+                this.showFieldError('name', 'Name is required');
                 return false;
             }
             
-            // Basic zip code validation (can be customized for different countries)
-            const zipRegex = /^\d{5}(-\d{4})?$/;
-            
-            if (!zipRegex.test(zipValue)) {
-                this.showFieldError(this.elements.zipInput, 'Invalid ZIP code format');
+            if (name.length < 2) {
+                this.showFieldError('name', 'Name must be at least 2 characters');
                 return false;
             }
             
-            this.clearFieldError(this.elements.zipInput);
+            if (name.length > 100) {
+                this.showFieldError('name', 'Name must be less than 100 characters');
+                return false;
+            }
+            
+            if (!/^[a-zA-Z\s\'-]+$/.test(name)) {
+                this.showFieldError('name', 'Name can only contain letters, spaces, hyphens, and apostrophes');
+                return false;
+            }
+            
+            this.clearFieldError('name');
             return true;
         },
         
-        /**
-         * Validate email format
-         * @returns {boolean} True if valid, false otherwise
-         */
+        validateUsername() {
+            const username = this.elements.usernameInput.value.trim();
+            
+            if (!username) {
+                this.showFieldError('username', 'Username is required');
+                return false;
+            }
+            
+            if (username.length < 3) {
+                this.showFieldError('username', 'Username must be at least 3 characters');
+                return false;
+            }
+            
+            if (username.length > 50) {
+                this.showFieldError('username', 'Username must be less than 50 characters');
+                return false;
+            }
+            
+            if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+                this.showFieldError('username', 'Username can only contain letters, numbers, and underscores');
+                return false;
+            }
+            
+            this.clearFieldError('username');
+            return true;
+        },
+        
         validateEmail() {
-            if (!this.elements.emailInput) return true;
+            const email = this.elements.emailInput.value.trim();
             
-            const emailValue = this.elements.emailInput.value.trim();
-            
-            if (!emailValue) {
-                this.showFieldError(this.elements.emailInput, 'Email is required');
+            if (!email) {
+                this.showFieldError('email', 'Email is required');
                 return false;
             }
             
-            // Basic email validation
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            
-            if (!emailRegex.test(emailValue)) {
-                this.showFieldError(this.elements.emailInput, 'Invalid email format');
+            if (!emailRegex.test(email)) {
+                this.showFieldError('email', 'Please enter a valid email address');
                 return false;
             }
             
-            this.clearFieldError(this.elements.emailInput);
+            if (email.length > 255) {
+                this.showFieldError('email', 'Email address is too long');
+                return false;
+            }
+            
+            this.clearFieldError('email');
             return true;
         },
         
-        /**
-         * Validate password strength
-         * @returns {boolean} True if valid, false otherwise
-         */
         validatePassword() {
-            if (!this.elements.passwordInput) return true;
+            const password = this.elements.passwordInput.value;
             
-            const passwordValue = this.elements.passwordInput.value;
-            
-            if (!passwordValue) {
-                this.showFieldError(this.elements.passwordInput, 'Password is required');
+            if (!password) {
+                this.showFieldError('password', 'Password is required');
                 return false;
             }
             
-            if (passwordValue.length < 8) {
-                this.showFieldError(this.elements.passwordInput, 'Password must be at least 8 characters');
+            // Check minimum length
+            if (password.length < 8) {
+                this.showFieldError('password', 'Password must be at least 8 characters long');
                 return false;
             }
             
-            this.clearFieldError(this.elements.passwordInput);
+            // Check requirements
+            const requirements = [];
+            if (!/[A-Z]/.test(password)) requirements.push('uppercase letter');
+            if (!/[a-z]/.test(password)) requirements.push('lowercase letter');
+            if (!/\d/.test(password)) requirements.push('number');
+            if (!/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(password)) requirements.push('special character');
+            
+            if (requirements.length > 0) {
+                this.showFieldError('password', `Password must contain at least 1 ${requirements.join(', 1 ')}`);
+                return false;
+            }
+            
+            this.clearFieldError('password');
             return true;
         },
         
-        /**
-         * Validate confirm password matches password
-         * @returns {boolean} True if valid, false otherwise
-         */
-        validateConfirmPassword() {
-            if (!this.elements.confirmPasswordInput || !this.elements.passwordInput) return true;
+        validatePasswordConfirmation() {
+            const password = this.elements.passwordInput.value;
+            const confirmPassword = this.elements.confirmPasswordInput.value;
             
-            const confirmValue = this.elements.confirmPasswordInput.value;
-            const passwordValue = this.elements.passwordInput.value;
-            
-            if (!confirmValue) {
-                this.showFieldError(this.elements.confirmPasswordInput, 'Confirm password is required');
+            if (!confirmPassword) {
+                this.showFieldError('confirmPassword', 'Password confirmation is required');
                 return false;
             }
             
-            if (confirmValue !== passwordValue) {
-                this.showFieldError(this.elements.confirmPasswordInput, 'Passwords do not match');
+            if (password !== confirmPassword) {
+                this.showFieldError('confirmPassword', 'Passwords do not match');
                 return false;
             }
             
-            this.clearFieldError(this.elements.confirmPasswordInput);
+            this.clearFieldError('confirmPassword');
             return true;
         },
         
-        /**
-         * Show error message for a field
-         * @param {HTMLElement} field - Form field
-         * @param {string} message - Error message
-         */
-        showFieldError(field, message) {
-            // Clear any existing error
-            this.clearFieldError(field);
+        showFieldError(fieldName, message) {
+            const errorElement = this.elements[fieldName + 'Error'];
+            const inputElement = this.elements[fieldName + 'Input'];
             
-            // Add error class to input
-            field.classList.add('register-input-error');
-            
-            // Create error message element
-            const errorElement = document.createElement('div');
-            errorElement.className = 'register-error-message';
-            errorElement.textContent = message;
-            
-            // Insert error message after the input
-            field.parentNode.insertBefore(errorElement, field.nextSibling);
-        },
-        
-        /**
-         * Clear error message for a field
-         * @param {HTMLElement} field - Form field
-         */
-        clearFieldError(field) {
-            // Remove error class from input
-            field.classList.remove('register-input-error');
-            
-            // Remove any existing error message
-            const errorElement = field.parentNode.querySelector('.register-error-message');
             if (errorElement) {
-                errorElement.parentNode.removeChild(errorElement);
+                errorElement.textContent = message;
+                errorElement.style.display = 'block';
+            }
+            
+            if (inputElement) {
+                inputElement.classList.add('error');
+            }
+        },
+        
+        clearFieldError(fieldName) {
+            const errorElement = this.elements[fieldName + 'Error'];
+            const inputElement = this.elements[fieldName + 'Input'];
+            
+            if (errorElement) {
+                errorElement.textContent = '';
+                errorElement.style.display = 'none';
+            }
+            
+            if (inputElement) {
+                inputElement.classList.remove('error');
+            }
+        },
+        
+        setSubmittingState(isSubmitting) {
+            this.isSubmitting = isSubmitting;
+            
+            if (this.elements.submitBtn) {
+                this.elements.submitBtn.disabled = isSubmitting;
+            }
+            
+            if (this.elements.btnText && this.elements.btnLoading) {
+                if (isSubmitting) {
+                    this.elements.btnText.style.display = 'none';
+                    this.elements.btnLoading.style.display = 'inline-flex';
+                } else {
+                    this.elements.btnText.style.display = 'inline';
+                    this.elements.btnLoading.style.display = 'none';
+                }
             }
         }
     };
+
 })();
