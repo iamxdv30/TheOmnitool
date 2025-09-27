@@ -80,9 +80,9 @@ class User(db.Model):
     __mapper_args__ = {"polymorphic_identity": "user", "polymorphic_on": role}
 
     def __init__(self, name=None, username=None, email=None, role='user', 
-                 oauth_provider=None, oauth_id=None, email_verified=False, 
-                 requires_password_setup=False, **kwargs):
-        super().__init__()
+                oauth_provider=None, oauth_id=None, email_verified=False, 
+                requires_password_setup=False, **kwargs):
+        super().__init__(**kwargs)  # Pass kwargs to parent
         if name is not None:
             self.name = name
         if username is not None:
@@ -95,8 +95,8 @@ class User(db.Model):
             self.oauth_provider = oauth_provider
         if oauth_id is not None:
             self.oauth_id = oauth_id
-        if email_verified is not None:
-            self.email_verified = email_verified
+        # CRITICAL FIX: Always ensure email_verified is set
+        self.email_verified = email_verified if email_verified is not None else False
         if requires_password_setup is not None:
             self.requires_password_setup = requires_password_setup
         self.password_hasher = BcryptPasswordHasher()
@@ -220,11 +220,14 @@ class Admin(User):
         "polymorphic_identity": "admin",
     }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.role = "admin"
-        if "admin_level" not in kwargs:
-            self.admin_level = 1
+    def __init__(self, name=None, username=None, email=None, role='admin', 
+                 oauth_provider=None, oauth_id=None, email_verified=False, 
+                 requires_password_setup=False, admin_level=1, **kwargs):
+        super().__init__(name=name, username=username, email=email, role=role,
+                         oauth_provider=oauth_provider, oauth_id=oauth_id, 
+                         email_verified=email_verified, 
+                         requires_password_setup=requires_password_setup, **kwargs)
+        self.admin_level = admin_level
 
     def view_user_activity(self, user_id):
         return UsageLog.query.filter_by(user_id=user_id).all()
@@ -273,40 +276,50 @@ class SuperAdmin(Admin):
         "polymorphic_identity": "super_admin",
     }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.role = "super_admin"
-        self.admin_level = 2
+    def __init__(self, name=None, username=None, email=None, role='super_admin', 
+                 oauth_provider=None, oauth_id=None, email_verified=False, 
+                 requires_password_setup=False, admin_level=2, **kwargs):
+        super().__init__(name=name, username=username, email=email, role=role,
+                         oauth_provider=oauth_provider, oauth_id=oauth_id, 
+                         email_verified=email_verified, 
+                         requires_password_setup=requires_password_setup, 
+                         admin_level=admin_level, **kwargs)
 
     def change_user_role(self, user_id, new_role):
         user = User.query.get(user_id)
         if user:
             if new_role == "admin" and not isinstance(user, Admin):
                 new_admin = Admin(
+                    name=user.name,
                     username=user.username,
                     email=user.email,
-                    fname=user.fname,
-                    lname=user.lname,
-                    address=user.address,
-                    city=user.city,
-                    state=user.state,
-                    zip=user.zip
+                    oauth_provider=user.oauth_provider,
+                    oauth_id=user.oauth_id,
+                    email_verified=user.email_verified,
+                    requires_password_setup=user.requires_password_setup
                 )
                 new_admin.password = user.password  # Copy hashed password
+                new_admin.created_at = user.created_at
+                new_admin.updated_at = user.updated_at
+                new_admin.last_login = user.last_login
+                new_admin.is_active = user.is_active
                 db.session.delete(user)
                 db.session.add(new_admin)
             elif new_role == "user" and isinstance(user, (Admin, SuperAdmin)):
                 new_user = User(
+                    name=user.name,
                     username=user.username,
                     email=user.email,
-                    fname=user.fname,
-                    lname=user.lname,
-                    address=user.address,
-                    city=user.city,
-                    state=user.state,
-                    zip=user.zip
+                    oauth_provider=user.oauth_provider,
+                    oauth_id=user.oauth_id,
+                    email_verified=user.email_verified,
+                    requires_password_setup=user.requires_password_setup
                 )
                 new_user.password = user.password  # Copy hashed password
+                new_user.created_at = user.created_at
+                new_user.updated_at = user.updated_at
+                new_user.last_login = user.last_login
+                new_user.is_active = user.is_active
                 db.session.delete(user)
                 db.session.add(new_user)
             db.session.commit()
@@ -440,13 +453,13 @@ class Tool(db.Model):
 # Design Pattern: Factory Pattern
 # The UserFactory class implements the Factory Pattern, providing a centralized way to create different types of users.
 class UserFactory:
-    """Factory for creating users with simplified registration"""
+    """Factory for creating users with proper email verification setup"""
     
     @staticmethod
     def create_user(name, username, email, password=None, role='user', 
                     oauth_provider=None, oauth_id=None, email_verified=False):
         """
-        Create a new user with simplified fields
+        Create a new user with all required fields including email_verified
         
         Args:
             name: Full name of the user
@@ -456,21 +469,36 @@ class UserFactory:
             role: User role (default: 'user')
             oauth_provider: OAuth provider name (optional)
             oauth_id: OAuth provider user ID (optional)
-            email_verified: Whether email is pre-verified (for OAuth)
+            email_verified: Whether email is pre-verified (default: False)
         """
-        user = User(
-            name=name,
-            username=username,
-            email=email,
-            role=role,
-            oauth_provider=oauth_provider,
-            oauth_id=oauth_id,
-            email_verified=email_verified,
-            requires_password_setup=(oauth_provider is not None and password is None)
-        )
         
+        logging.info(f"Creating user: {username} with email_verified={email_verified}")
+        
+        # Create user instance
+        user = User()
+        
+        # Set basic fields
+        user.name = name
+        user.username = username
+        user.email = email
+        user.role = role
+        
+        # Set authentication fields
+        user.email_verified = email_verified  # CRITICAL: Explicitly set this
+        user.oauth_provider = oauth_provider
+        user.oauth_id = oauth_id
+        user.requires_password_setup = (oauth_provider is not None and password is None)
+        
+        # Set timestamps
+        user.created_at = datetime.utcnow()
+        user.updated_at = datetime.utcnow()
+        user.is_active = True
+        
+        # Set password if provided
         if password:
             user.set_password(password)
+        
+        logging.info(f"User created with email_verified={getattr(user, 'email_verified', 'MISSING_ATTR')}")
         
         return user
     
@@ -496,3 +524,7 @@ class UserFactory:
             email_verified=True  # OAuth emails are pre-verified
         )
 
+# For backward compatibility with existing code
+def create_user(*args, **kwargs):
+    """Backward compatibility function"""
+    return UserFactory.create_user(*args, **kwargs)
