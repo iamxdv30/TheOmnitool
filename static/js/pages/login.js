@@ -104,7 +104,7 @@
                     const isPassword = passwordField.type === 'password';
                     
                     passwordField.type = isPassword ? 'text' : 'password';
-                    this.elements.passwordToggle.textContent = isPassword ? '🙈' : '👁️';
+                    this.elements.passwordToggle.innerHTML = isPassword ? '&#128584;' : '&#128065;';
                     this.elements.passwordToggle.setAttribute('aria-label', 
                         isPassword ? 'Hide password' : 'Show password');
                 });
@@ -122,44 +122,36 @@
         },
         
         async handleFormSubmit(event) {
-            event.preventDefault();
+            // Simple validation - don't prevent default unless validation fails
+            const username = this.elements.usernameInput?.value?.trim();
+            const password = this.elements.passwordInput?.value;
             
-            if (this.isSubmitting) {
-                return;
+            if (!username) {
+                event.preventDefault();
+                alert('Username is required');
+                return false;
             }
             
-            // Validate all fields
-            const isValid = this.validateForm();
-            
-            if (!isValid) {
-                return;
+            if (!password) {
+                event.preventDefault();
+                alert('Password is required');
+                return false;
             }
             
-            // Validate captcha
-            if (typeof window.CaptchaModule !== 'undefined') {
-                if (!window.CaptchaModule.validateForm(this.elements.form, 'recaptcha-container')) {
-                    this.showFieldError('captcha', 'Please complete the captcha verification');
-                    return;
-                }
-            }
-            
-            this.setSubmittingState(true);
-            
+            // Handle remember me
             try {
-                // Handle remember me
                 if (this.elements.rememberMeInput?.checked) {
-                    localStorage.setItem('rememberedUsername', this.elements.usernameInput.value);
+                    localStorage.setItem('rememberedUsername', username);
                 } else {
                     localStorage.removeItem('rememberedUsername');
                 }
-                
-                // Submit the form
-                this.elements.form.submit();
             } catch (error) {
-                console.error('Form submission error:', error);
-                this.setSubmittingState(false);
-                this.showGeneralError('An error occurred. Please try again.');
+                console.error('Remember me error:', error);
             }
+            
+            // Let the form submit naturally
+            console.log('Form submitting with username:', username);
+            return true;
         },
         
         validateForm() {
@@ -326,3 +318,11 @@
     };
 
 })();
+
+// Initialize LoginPage when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.LoginPage) {
+        window.LoginPage.init();
+        console.log('LoginPage initialized successfully');
+    }
+});
