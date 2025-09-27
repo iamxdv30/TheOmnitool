@@ -20,25 +20,25 @@
 
 .verification-instructions p {
     margin-bottom: 12px;
-    color: #333;
+    color: var(--auth-primary-color);
     line-height: 1.5;
 }
 
 .email-highlight {
-    background-color: #f8f9fa;
-    border: 2px solid #e9ecef;
+    background-color: var(--auth-light-gray);
+    border: 2px solid var(--auth-border-color);
     border-radius: 6px;
     padding: 10px 15px;
     font-family: 'Courier New', monospace;
-    color: #495057;
+    color: var(--auth-primary-color);
     font-size: 16px;
     margin: 15px 0;
 }
 
 /* Important notes section */
 .verification-notes {
-    background-color: #fff3cd;
-    border: 1px solid #ffeaa7;
+    background-color: rgba(243, 156, 18, 0.1);
+    border: 1px solid rgba(243, 156, 18, 0.3);
     border-radius: 8px;
     padding: 20px;
     margin: 25px 0;
@@ -47,7 +47,7 @@
 
 .verification-notes h3 {
     margin: 0 0 15px 0;
-    color: #856404;
+    color: var(--auth-warning-color);
     font-size: 16px;
 }
 
@@ -57,7 +57,7 @@
 }
 
 .verification-notes li {
-    color: #856404;
+    color: var(--auth-primary-color);
     margin-bottom: 8px;
     font-size: 14px;
 }
@@ -73,7 +73,7 @@
 
 .action-divider {
     margin: 15px 0;
-    color: #666;
+    color: var(--auth-dark-gray);
     font-size: 14px;
 }
 
@@ -89,13 +89,13 @@
 }
 
 .btn-outline {
-    background: white;
-    color: #667eea;
-    border: 2px solid #667eea;
+    background: var(--container-bg, #ffffff);
+    color: var(--auth-secondary-color);
+    border: 2px solid var(--auth-secondary-color);
 }
 
 .btn-outline:hover {
-    background: #667eea;
+    background: var(--auth-secondary-color);
     color: white;
     transform: translateY(-1px);
 }
@@ -104,16 +104,16 @@
 .verification-help {
     margin-top: 30px;
     padding-top: 20px;
-    border-top: 1px solid #e9ecef;
+    border-top: 1px solid var(--auth-border-color);
 }
 
 .help-text {
     font-size: 14px;
-    color: #666;
+    color: var(--auth-dark-gray);
 }
 
 .help-link {
-    color: #667eea;
+    color: var(--auth-secondary-color);
     text-decoration: none;
     font-weight: 500;
 }
