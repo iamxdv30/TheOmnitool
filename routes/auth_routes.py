@@ -1,6 +1,6 @@
 """
 Clean Authentication Routes with Comprehensive Logging
-Works with existing HTML templates, fixes login and registration issues
+Works with existing HTML templates and database schema
 """
 import os
 import re
@@ -76,6 +76,20 @@ class AuthConfig:
         except Exception as e:
             logger.error(f"Captcha verification exception: {str(e)}")
             return False
+
+def parse_full_name(full_name):
+    """Parse full name into first and last name"""
+    if not full_name or not full_name.strip():
+        return "User", "Name"
+    
+    name_parts = full_name.strip().split()
+    if len(name_parts) == 1:
+        return name_parts[0], "User"
+    elif len(name_parts) == 2:
+        return name_parts[0], name_parts[1]
+    else:
+        # For names with more than 2 parts, first word is fname, rest is lname
+        return name_parts[0], " ".join(name_parts[1:])
 
 def login_required(f):
     """Decorator to require login for routes"""
@@ -248,7 +262,7 @@ def logout():
 @auth.route("/register", methods=["GET", "POST"])
 @anonymous_required
 def register():
-    """Simplified single-step registration - works with existing register.html"""
+    """Simplified single-step registration - works with existing register.html and database schema"""
     
     client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
     
@@ -407,33 +421,27 @@ def register():
                                  password_requirements=AuthConfig.get_password_requirements_text(),
                                  form_data=form_data)
         
+        # Parse the full name into first and last name
+        fname, lname = parse_full_name(name)
+        logger.info(f"Parsed name '{name}' into fname: '{fname}', lname: '{lname}'")
+        
         logger.info(f"Username and email available, creating new user: '{username}' ({email})")
         
-        # Create new user using the existing UserFactory
-        try:
-            logger.info("Attempting to create user with new UserFactory method")
-            # Try the new simplified UserFactory method first
-            new_user = UserFactory.create_user(
-                name=name,
-                username=username,
-                email=email,
-                password=password,
-                role='user'
-            )
-            logger.info("User created successfully with new UserFactory method")
-        except TypeError as e:
-            logger.info(f"New UserFactory method failed ({str(e)}), trying fallback method")
-            # Fallback to the old UserFactory method if the new one doesn't exist
-            new_user = UserFactory.create_user(
-                username=username,
-                email=email,
-                role='user',
-                password=password
-            )
-            # Set name field if it exists
-            if hasattr(new_user, 'name'):
-                new_user.name = name
-                logger.info("User created with fallback method, name field set")
+        # Create new user using the existing UserFactory with correct schema parameters
+        logger.info("Creating user with existing database schema parameters")
+        new_user = UserFactory.create_user(
+            username=username,
+            email=email,
+            fname=fname,
+            lname=lname,
+            address="Not provided",  # Default value
+            city="Not provided",     # Default value  
+            state="Not provided",    # Default value
+            zip="00000",             # Default value
+            role='user',
+            password=password
+        )
+        logger.info("User created successfully with UserFactory")
         
         # Set email as verified for now (you can implement email verification later)
         if hasattr(new_user, 'email_verified'):
@@ -548,37 +556,20 @@ def register_step2():
     try:
         logger.info(f"Creating user with multi-step registration data: '{username}'")
         
-        # Create user with old method for backward compatibility
-        try:
-            logger.info("Attempting new UserFactory method for multi-step registration")
-            # Try new method first
-            new_user = UserFactory.create_user(
-                name=f"{registration_info['fname']} {registration_info['lname']}",
-                username=username,
-                email=email,
-                password=password,
-                role='user'
-            )
-            logger.info("Multi-step user created with new UserFactory method")
-        except TypeError as e:
-            logger.info(f"New method failed ({str(e)}), using fallback for multi-step registration")
-            # Fallback to old method
-            new_user = UserFactory.create_user(
-                username=username,
-                email=email,
-                fname=registration_info['fname'],
-                lname=registration_info['lname'],
-                address=registration_info['address'],
-                city=registration_info['city'],
-                state=registration_info['state'],
-                zip=registration_info['zip'],
-                role='user',
-                password=password
-            )
-            # Set name field if it exists
-            if hasattr(new_user, 'name') and not new_user.name:
-                new_user.name = f"{registration_info['fname']} {registration_info['lname']}"
-                logger.info("Multi-step user created with fallback method, name field set")
+        # Create user with the existing UserFactory method
+        new_user = UserFactory.create_user(
+            username=username,
+            email=email,
+            fname=registration_info['fname'],
+            lname=registration_info['lname'],
+            address=registration_info['address'],
+            city=registration_info['city'],
+            state=registration_info['state'],
+            zip=registration_info['zip'],
+            role='user',
+            password=password
+        )
+        logger.info("Multi-step user created successfully")
         
         # Mark as verified for legacy users
         if hasattr(new_user, 'email_verified'):
