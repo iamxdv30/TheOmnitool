@@ -44,16 +44,29 @@ class User(db.Model):
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    fname = db.Column(db.String(50), nullable=False)
-    lname = db.Column(db.String(50), nullable=False)
-    address = db.Column(db.String(200), nullable=False)
-    city = db.Column(db.String(50), nullable=False)
-    state = db.Column(db.String(50), nullable=False)
-    zip = db.Column(db.String(10), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
     username = db.Column(db.String(50), unique=True, nullable=False)
-    email = db.Column(db.String(100), unique=True, nullable=False)
-    password = db.Column("password", db.String(128), nullable=False)
-    role = db.Column(db.String(20), nullable=False)
+    email = db.Column(db.String(255), unique=True, nullable=False)
+    password = db.Column("password", db.String(128), nullable=True)
+    role = db.Column(db.String(20), nullable=False, default='user')
+    
+    # ENHANCED AUTH
+    email_verified = db.Column(db.Boolean, default=False, nullable=False)
+    email_verification_token = db.Column(db.String(255), nullable=True)
+    email_verification_sent_at = db.Column(db.DateTime, nullable=True)
+    
+    # OAuth integration fields
+    oauth_provider = db.Column(db.String(50), nullable=True)  # 'google', 'manual', etc.
+    oauth_id = db.Column(db.String(255), nullable=True)  # Provider's user ID
+    requires_password_setup = db.Column(db.Boolean, default=False)  # For OAuth users
+    
+    # Account management
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_login = db.Column(db.DateTime, nullable=True)
+    is_active = db.Column(db.Boolean, default=True)
+
+    # Relationships
     usage_logs = db.relationship(
         "UsageLog", back_populates="user", cascade="all, delete-orphan"
     )
@@ -69,17 +82,87 @@ class User(db.Model):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.password_hasher = BcryptPasswordHasher()
-        
 
     def set_password(self, password):
+        """Set password with proper hashing"""
+        if not password:
+            raise ValueError("Password cannot be empty")
+        
+        # Validate password against policy
+        is_valid, errors = AuthConfig.validate_password(password)
+        if not is_valid:
+            raise ValueError(f"Password validation failed: {'; '.join(errors)}")
+        
         logging.debug(f"Setting password for user {self.username}")
-        self.password = generate_password_hash(password, method="pbkdf2:sha256")
-        logging.debug(f"Password hash: {self.password}")
-
+        self.password = self.password_hasher.hash_password(password)
+        logging.debug(f"Password hash set")
     
     def has_tool_access(self, tool_name):
         return ToolAccess.query.filter_by(user_id=self.id, tool_name=tool_name).first() is not None
     
+
+    @classmethod
+    def check_password(cls, user, password):
+        """Check password using bcrypt"""
+        if not user.password:
+            return False
+        
+        hasher = BcryptPasswordHasher()
+        return hasher.check_password(password, user.password)
+
+    def generate_email_verification_token(self):
+        """Generate email verification token"""
+        from routes.contact_routes import generate_verification_token
+        self.email_verification_token = generate_verification_token(self.email)
+        self.email_verification_sent_at = datetime.utcnow()
+        return self.email_verification_token
+
+    def verify_email(self):
+        """Mark email as verified"""
+        self.email_verified = True
+        self.email_verification_token = None
+        self.email_verification_sent_at = None
+
+    def can_login(self):
+        """Check if user can log in (email verified and has password)"""
+        if self.oauth_provider and not self.password:
+            return self.email_verified and not self.requires_password_setup
+        return self.email_verified and self.password
+
+    def update_last_login(self):
+        """Update last login timestamp"""
+        self.last_login = datetime.utcnow()
+
+    @property
+    def display_name(self):
+        """Get display name for the user"""
+        return self.name
+
+    # Keep existing methods
+    def has_tool_access(self, tool_name):
+        return ToolAccess.query.filter_by(user_id=self.id, tool_name=tool_name).first() is not None
+    
+    @classmethod
+    def user_has_tool_access(cls, user_id, tool_name):
+        return ToolAccess.query.filter_by(user_id=user_id, tool_name=tool_name).first() is not None
+    
+    @classmethod
+    def assign_default_tools(cls, user_id):
+        user = cls.query.get(user_id)
+        if not user:
+            raise ValueError(f"No user found with id {user_id}")
+        
+        default_tools = Tool.query.filter_by(is_default=True).all()
+        for tool in default_tools:
+            if not ToolAccess.query.filter_by(user_id=user.id, tool_name=tool.name).first():
+                tool_access = ToolAccess(user_id=user.id, tool_name=tool.name)
+                db.session.add(tool_access)
+        db.session.commit()
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__}(username={self.username}, email={self.email})>"
+
+
     @classmethod
     def user_has_tool_access(cls, user_id, tool_name):
         return ToolAccess.query.filter_by(user_id=user_id, tool_name=tool_name).first() is not None
@@ -99,8 +182,7 @@ class User(db.Model):
 
     @classmethod
     def check_password(cls, user, password):
-        # UPDATED: Use cls to refer to the class instead of self
-        return check_password_hash(user.password, password)
+        return cls.password_hasher.check_password(password, user.password)
 
     def __repr__(self):
         return (
@@ -340,17 +422,59 @@ class Tool(db.Model):
 # Design Pattern: Factory Pattern
 # The UserFactory class implements the Factory Pattern, providing a centralized way to create different types of users.
 class UserFactory:
+    """Factory for creating users with simplified registration"""
+    
     @staticmethod
-    def create_user(**kwargs):
-        role = kwargs.pop('role', 'user')
-        if role == "user":
-            user = User(**kwargs)
-        elif role == "admin":
-            user = Admin(**kwargs)
-        elif role == "super_admin":
-            user = SuperAdmin(**kwargs)
-        else:
-            raise ValueError("Invalid user role")
-        user.set_password(kwargs.pop('password'))
+    def create_user(name, username, email, password=None, role='user', 
+                    oauth_provider=None, oauth_id=None, email_verified=False):
+        """
+        Create a new user with simplified fields
+        
+        Args:
+            name: Full name of the user
+            username: Unique username
+            email: Email address
+            password: Password (optional for OAuth users)
+            role: User role (default: 'user')
+            oauth_provider: OAuth provider name (optional)
+            oauth_id: OAuth provider user ID (optional)
+            email_verified: Whether email is pre-verified (for OAuth)
+        """
+        user = User(
+            name=name,
+            username=username,
+            email=email,
+            role=role,
+            oauth_provider=oauth_provider,
+            oauth_id=oauth_id,
+            email_verified=email_verified,
+            requires_password_setup=(oauth_provider is not None and password is None)
+        )
+        
+        if password:
+            user.set_password(password)
+        
         return user
+    
+    @staticmethod
+    def create_oauth_user(name, email, oauth_provider, oauth_id):
+        """Create a user from OAuth registration"""
+        # Generate a username from email if not provided
+        username = email.split('@')[0]
+        
+        # Ensure username uniqueness
+        base_username = username
+        counter = 1
+        while User.query.filter_by(username=username).first():
+            username = f"{base_username}{counter}"
+            counter += 1
+        
+        return UserFactory.create_user(
+            name=name,
+            username=username,
+            email=email,
+            oauth_provider=oauth_provider,
+            oauth_id=oauth_id,
+            email_verified=True  # OAuth emails are pre-verified
+        )
 
