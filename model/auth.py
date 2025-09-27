@@ -7,6 +7,14 @@ class UserFactory:
     @staticmethod
     def create_user(**kwargs):
         role = kwargs.pop('role', 'user')
+        password = kwargs.pop('password', None)
+        
+        # Provide default values for required address fields if not provided
+        kwargs.setdefault('address', '')
+        kwargs.setdefault('city', '')
+        kwargs.setdefault('state', '')
+        kwargs.setdefault('zip', '')
+        
         if role == "user":
             user = User(**kwargs)
         elif role == "admin":
@@ -15,5 +23,7 @@ class UserFactory:
             user = SuperAdmin(**kwargs)
         else:
             raise ValueError("Invalid user role")
-        user.set_password(kwargs.pop('password'))
+        
+        if password:
+            user.set_password(password)
         return user

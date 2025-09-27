@@ -79,8 +79,26 @@ class User(db.Model):
 
     __mapper_args__ = {"polymorphic_identity": "user", "polymorphic_on": role}
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, name=None, username=None, email=None, role='user', 
+                 oauth_provider=None, oauth_id=None, email_verified=False, 
+                 requires_password_setup=False, **kwargs):
+        super().__init__()
+        if name is not None:
+            self.name = name
+        if username is not None:
+            self.username = username
+        if email is not None:
+            self.email = email
+        if role is not None:
+            self.role = role
+        if oauth_provider is not None:
+            self.oauth_provider = oauth_provider
+        if oauth_id is not None:
+            self.oauth_id = oauth_id
+        if email_verified is not None:
+            self.email_verified = email_verified
+        if requires_password_setup is not None:
+            self.requires_password_setup = requires_password_setup
         self.password_hasher = BcryptPasswordHasher()
 
     def set_password(self, password):
