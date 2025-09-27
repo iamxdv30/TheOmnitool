@@ -85,4 +85,9 @@ class AuthConfig:
     def is_captcha_enabled(cls) -> bool:
         """ Check if captcha is enabled """
         return bool(cls.RECAPTCHA_SITE_KEY and cls.RECAPTCHA_SECRET_KEY)
+    
+    @classmethod
+    def get_password_requirements_text(cls) -> str:
+        """ Alias for get_password_requirements for backward compatibility """
+        return cls.get_password_requirements()
 

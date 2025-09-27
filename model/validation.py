@@ -49,16 +49,15 @@ def verify_recaptcha(recaptcha_response: str, remote_ip: str = None) -> bool:
         logger.error(f"Captcha Verification Failed: {str(e)}")
         return False
 
-class PasswordField(fields.String):
-    """Custom password field with built-in validation"""
-    
-    def _validate(self, value, attr, data, **kwargs):
-        if value is None:
-            return
 
-        is_valid, errors = AuthConfig.validate_password(value)
-        if not is_valid:
-            raise ValidationError(errors)
+def validate_password_strength(value):
+    """Validate password strength against policy"""
+    if value is None or value == "":
+        return
+
+    is_valid, errors = AuthConfig.validate_password(value)
+    if not is_valid:
+        raise ValidationError(errors)
 
 class RegistrationSchema(Schema):
     """ Schema for user registration validation """
@@ -96,8 +95,9 @@ class RegistrationSchema(Schema):
         }
     )
     
-    password = PasswordField(
+    password = fields.String(
         required=True,
+        validate=validate_password_strength,
         error_messages={'required': 'Password is required'}
     )
     
@@ -107,22 +107,10 @@ class RegistrationSchema(Schema):
     )
     
     captcha_response = fields.String(
-        required=True,
+        required=False,  # Made optional and will be checked conditionally
         data_key='g-recaptcha-response',
         error_messages={'required': 'Please complete the captcha'}
     )
-
-    @validates('username')
-    def validate_username_unique(self, value):
-        """Check if username already exists"""
-        if User.query.filter_by(username=value).first():
-            raise ValidationError("Username already exists")
-    
-    @validates('email')
-    def validate_email_unique(self, value):
-        """Check if email already exists"""
-        if User.query.filter_by(email=value).first():
-            raise ValidationError("Email already registered")
     
     @validates_schema
     def validate_passwords_match(self, data, **kwargs):
@@ -140,6 +128,40 @@ class RegistrationSchema(Schema):
             raise ValidationError({'captcha_response': ['Captcha verification failed. Please try again.']})
         
         return True
+class LoginSchema(Schema):
+    """Schema for user login validation"""
+    
+    username = fields.String(
+        required=True,
+        error_messages={'required': 'Username is required'}
+    )
+    
+    password = fields.String(
+        required=True,
+        error_messages={'required': 'Password is required'}
+    )
+    
+    captcha_response = fields.String(
+        required=False,
+        data_key='g-recaptcha-response',
+        error_messages={'required': 'Please complete the captcha'}
+    )
+    
+    def validate_captcha(self, data, remote_ip=None):
+        """Validate captcha response"""
+        if not AuthConfig.is_captcha_enabled():
+            return True
+            
+        captcha_response = data.get('captcha_response')
+        if not captcha_response:
+            raise ValidationError({'captcha_response': ['Please complete the captcha']})
+        
+        if not verify_recaptcha(captcha_response, remote_ip):
+            raise ValidationError({'captcha_response': ['Captcha verification failed. Please try again.']})
+        
+        return True
+
+
 class EmailVerificationSchema(Schema):
     """Schema for email verification request"""
     
@@ -155,8 +177,9 @@ class EmailVerificationSchema(Schema):
 class PasswordResetSchema(Schema):
     """Schema for password reset"""
     
-    password = PasswordField(
+    password = fields.String(
         required=True,
+        validate=validate_password_strength,
         error_messages={'required': 'Password is required'}
     )
     
@@ -178,7 +201,16 @@ def validate_registration_data(data, remote_ip=None):
     schema = RegistrationSchema()
     try:
         validated_data = schema.load(data)
-        schema.validate_captcha(validated_data, remote_ip)
+        
+        # Handle captcha validation separately if captcha is enabled
+        if AuthConfig.is_captcha_enabled():
+            captcha_response = data.get('g-recaptcha-response', '')
+            if not captcha_response:
+                raise ValidationError({'captcha_response': ['Please complete the captcha']})
+            
+            if not verify_recaptcha(captcha_response, remote_ip):
+                raise ValidationError({'captcha_response': ['Captcha verification failed. Please try again.']})
+        
         return validated_data, None
     except ValidationError as e:
         return None, e.messages
@@ -189,7 +221,16 @@ def validate_login_data(data, remote_ip=None):
     schema = LoginSchema()
     try:
         validated_data = schema.load(data)
-        schema.validate_captcha(validated_data, remote_ip)
+        
+        # Handle captcha validation separately if captcha is enabled
+        if AuthConfig.is_captcha_enabled():
+            captcha_response = data.get('g-recaptcha-response', '')
+            if not captcha_response:
+                raise ValidationError({'captcha_response': ['Please complete the captcha']})
+            
+            if not verify_recaptcha(captcha_response, remote_ip):
+                raise ValidationError({'captcha_response': ['Captcha verification failed. Please try again.']})
+        
         return validated_data, None
     except ValidationError as e:
         return None, e.messages
