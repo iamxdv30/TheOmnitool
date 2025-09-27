@@ -1,5 +1,5 @@
 """
-Clean Authentication Routes with Comprehensive Logging
+Clean Authentication Routes with Email Verification
 Works with existing HTML templates and database schema
 """
 import os
@@ -9,7 +9,7 @@ from flask import Blueprint, request, redirect, url_for, render_template, sessio
 from model import User, db, UserFactory
 from werkzeug.security import check_password_hash
 from functools import wraps
-from routes.contact_routes import mail, generate_verification_token
+from routes.contact_routes import mail, generate_verification_token, verify_verification_token
 from flask_mail import Message
 import logging
 
@@ -90,6 +90,53 @@ def parse_full_name(full_name):
     else:
         # For names with more than 2 parts, first word is fname, rest is lname
         return name_parts[0], " ".join(name_parts[1:])
+
+def send_verification_email(user_email, user_name):
+    """Send email verification email to new user"""
+    try:
+        logger.info(f"Preparing verification email for: {user_email}")
+        
+        # Generate verification token
+        token = generate_verification_token(user_email)
+        verification_link = url_for("auth.verify_email", token=token, _external=True)
+        
+        logger.info(f"Generated verification link: {verification_link}")
+        
+        # Create verification email
+        msg = Message(
+            subject="Verify Your Email - OmniTools Registration",
+            recipients=[user_email],
+        )
+        
+        # Use the existing registration verification template
+        msg.html = render_template(
+            "email/registration_verfication.html",
+            name=user_name,
+            verification_link=verification_link,
+        )
+        
+        # Fallback plain text
+        msg.body = f"""
+        Hi {user_name},
+        
+        Welcome to OmniTools! Please verify your email address by clicking this link:
+        {verification_link}
+        
+        This link will expire in 1 hour for security.
+        
+        If you didn't create an account, please ignore this email.
+        
+        © 2024 OmniTools. All rights reserved.
+        """
+        
+        # Send the email
+        mail.send(msg)
+        logger.info(f"Verification email sent successfully to: {user_email}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Failed to send verification email to {user_email}: {str(e)}")
+        return False
 
 def login_required(f):
     """Decorator to require login for routes"""
@@ -262,7 +309,7 @@ def logout():
 @auth.route("/register", methods=["GET", "POST"])
 @anonymous_required
 def register():
-    """Simplified single-step registration - works with existing register.html and database schema"""
+    """Simplified single-step registration with email verification"""
     
     client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
     
@@ -443,10 +490,10 @@ def register():
         )
         logger.info("User created successfully with UserFactory")
         
-        # Set email as verified for now (you can implement email verification later)
+        # CRITICAL FIX: Set email as NOT verified - user must verify via email
         if hasattr(new_user, 'email_verified'):
-            new_user.email_verified = True
-            logger.info("Email marked as verified for new user")
+            new_user.email_verified = False  # ✅ This is the key fix!
+            logger.info("Email marked as NOT verified - verification required")
         
         logger.info(f"Adding user to database session: ID will be assigned")
         db.session.add(new_user)
@@ -462,8 +509,18 @@ def register():
         else:
             logger.info("No assign_default_tools method found, skipping tool assignment")
         
-        logger.info(f"REGISTRATION SUCCESS: User '{username}' ({email}) registered successfully from IP: {client_ip}")
-        flash("Registration successful! You can now log in.", "success")
+        # Send verification email
+        logger.info(f"Sending verification email to: {email}")
+        email_sent = send_verification_email(email, fname)
+        
+        if email_sent:
+            logger.info(f"REGISTRATION SUCCESS: User '{username}' ({email}) registered successfully from IP: {client_ip}")
+            logger.info("Verification email sent successfully")
+            flash("Registration successful! Please check your email to verify your account before logging in.", "success")
+        else:
+            logger.error(f"Registration completed but failed to send verification email to: {email}")
+            flash("Registration successful, but we couldn't send the verification email. Please contact support.", "warning")
+        
         return redirect(url_for("auth.login"))
         
     except Exception as e:
@@ -571,10 +628,10 @@ def register_step2():
         )
         logger.info("Multi-step user created successfully")
         
-        # Mark as verified for legacy users
+        # For multi-step registration, mark as verified (legacy behavior)
         if hasattr(new_user, 'email_verified'):
             new_user.email_verified = True
-            logger.info("Multi-step user marked as email verified")
+            logger.info("Multi-step user marked as email verified (legacy)")
         
         db.session.add(new_user)
         db.session.commit()
@@ -600,6 +657,50 @@ def register_step2():
         logger.error(f"Full exception trace: {e.__class__.__name__}: {str(e)}")
         flash("An error occurred during registration. Please try again.", "error")
         return redirect(url_for("auth.register_step2"))
+
+@auth.route("/verify_email/<token>")
+def verify_email(token):
+    """Email verification route for new user registrations"""
+    client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
+    logger.info(f"Email verification attempted from IP: {client_ip}")
+    
+    try:
+        logger.info("Verifying email verification token")
+        email = verify_verification_token(token, 3600)  # 1 hour expiry
+        
+        if not email:
+            logger.warning("Email verification failed - invalid or expired token")
+            flash("Invalid or expired verification link. Please register again or contact support.", "error")
+            return redirect(url_for("auth.login"))
+        
+        logger.info(f"Valid email verification token for: '{email}'")
+        user = User.query.filter_by(email=email).first()
+        
+        if not user:
+            logger.error(f"User not found for email verification: '{email}'")
+            flash("User account not found. Please register again.", "error")
+            return redirect(url_for("auth.register"))
+        
+        if hasattr(user, 'email_verified'):
+            if user.email_verified:
+                logger.info(f"Email already verified for user: '{user.username}'")
+                flash("Email already verified. You can now log in.", "success")
+            else:
+                logger.info(f"Marking email as verified for user: '{user.username}' (ID: {user.id})")
+                user.email_verified = True
+                db.session.commit()
+                logger.info(f"EMAIL VERIFICATION SUCCESS: Email verified for user '{user.username}' from IP: {client_ip}")
+                flash("Email verified successfully! You can now log in with your username and password.", "success")
+        else:
+            logger.info(f"Email verification not required for user: '{user.username}'")
+            flash("Email verification completed successfully. You can now log in.", "success")
+        
+        return redirect(url_for("auth.login"))
+        
+    except Exception as e:
+        logger.error(f"Email verification exception: {str(e)}")
+        flash("An error occurred during email verification. Please try again or contact support.", "error")
+        return redirect(url_for("auth.login"))
 
 @auth.route("/forgot_password", methods=["GET", "POST"])
 def forgot_password():
@@ -669,7 +770,6 @@ def reset_password(token):
     logger.info(f"Password reset attempted with token from IP: {client_ip}")
     
     try:
-        from routes.contact_routes import verify_verification_token
         logger.info("Verifying password reset token")
         email = verify_verification_token(token, 3600)  # 1 hour expiry
         if email:
@@ -728,49 +828,3 @@ def reset_password(token):
         flash("An error occurred. Please try again.", "error")
 
     return render_template("reset_password.html", token=token)
-
-# Email verification route (if you want to implement it later)
-@auth.route("/verify_email/<token>")
-def verify_email(token):
-    """Email verification route - optional"""
-    client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
-    logger.info(f"Email verification attempted from IP: {client_ip}")
-    
-    try:
-        from routes.contact_routes import verify_verification_token
-        logger.info("Verifying email verification token")
-        email = verify_verification_token(token, 3600)  # 1 hour expiry
-        
-        if not email:
-            logger.warning("Email verification failed - invalid or expired token")
-            flash("Invalid or expired verification link.", "error")
-            return redirect(url_for("auth.login"))
-        
-        logger.info(f"Valid email verification token for: '{email}'")
-        user = User.query.filter_by(email=email).first()
-        
-        if not user:
-            logger.error(f"User not found for email verification: '{email}'")
-            flash("User not found.", "error")
-            return redirect(url_for("auth.login"))
-        
-        if hasattr(user, 'email_verified'):
-            if user.email_verified:
-                logger.info(f"Email already verified for user: '{user.username}'")
-                flash("Email already verified. You can now log in.", "success")
-            else:
-                logger.info(f"Marking email as verified for user: '{user.username}' (ID: {user.id})")
-                user.email_verified = True
-                db.session.commit()
-                logger.info(f"EMAIL VERIFICATION SUCCESS: Email verified for user '{user.username}' from IP: {client_ip}")
-                flash("Email verified successfully! You can now log in.", "success")
-        else:
-            logger.info(f"Email verification not required for user: '{user.username}'")
-            flash("Email verification is not required for your account.", "info")
-        
-        return redirect(url_for("auth.login"))
-        
-    except Exception as e:
-        logger.error(f"Email verification exception: {str(e)}")
-        flash("An error occurred during email verification.", "error")
-        return redirect(url_for("auth.login"))
