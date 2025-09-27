@@ -153,41 +153,4 @@
     </div>
 </div>
 
-<script>
-// Temporarily disable JavaScript form handling to fix login issue
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Login page loaded - JavaScript form handling temporarily disabled');
-    
-    // Simple form validation without preventing submission
-    const form = document.getElementById('loginForm');
-    const usernameInput = document.getElementById('username');
-    const passwordInput = document.getElementById('password');
-    
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            let isValid = true;
-            
-            // Basic validation
-            if (!usernameInput.value.trim()) {
-                alert('Username is required');
-                isValid = false;
-            }
-            
-            if (!passwordInput.value) {
-                alert('Password is required');
-                isValid = false;
-            }
-            
-            if (!isValid) {
-                e.preventDefault();
-                return false;
-            }
-            
-            // Allow form to submit normally
-            console.log('Form submitting with username:', usernameInput.value);
-            return true;
-        });
-    }
-});
-</script>
 {% endblock %}
