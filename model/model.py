@@ -7,6 +7,8 @@ from abc import ABC, abstractmethod
 from werkzeug.security import generate_password_hash, check_password_hash
 import logging
 
+from config.auth_config import AuthConfig
+
 logging.basicConfig(level=logging.DEBUG)
 
 db = SQLAlchemy()
