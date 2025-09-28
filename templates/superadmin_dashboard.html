@@ -4,14 +4,22 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/superadmin.css') }}">
 {% endblock %}
 
+{% block scripts %}
+    <!-- Load utility JS files -->
+    <script src="{{ url_for('static', filename='js/utils/common.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/modules/ajax.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/modules/ui.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/utils/search.js') }}"></script>
+    <!-- Load page-specific JS -->
+    <script type="module" src="{{ url_for('static', filename='js/pages/superadmin_dashboard.js') }}"></script>
+{% endblock %}
+
 {% block content %}
 <div class="dashboard-container">
     <h1 class="dashboard-title">Super Admin Dashboard</h1>
 
     <!-- Display flash messages -->
-    {% for category, message in get_flashed_messages(with_categories=True) %}
-        <div class="alert alert-{{ category }}">{{ message }}</div>
-    {% endfor %}
+    {% include '_flash_messages.html' %}
     
     <!-- Add a button to show/hide the create user form -->
     <button id="showCreateUserForm" class="btn btn-manage-tools">Create New User/Admin</button>
@@ -46,6 +54,10 @@
         <input type="text" id="userSearch" class="search-input" placeholder="Search users...">
     </div>
     
+    <div class="search-results-info">
+        <div id="itemCounter" class="item-counter"></div>
+    </div>
+
     <!-- User table -->
     <table class="user-table">
         <thead>
@@ -59,16 +71,18 @@
         <tbody id="userTableBody">
             {% for user in users %}
             <tr class="user-row">
-                <td>{{ user.username }}</td>
-                <td>{{ user.email }}</td>
-                <td>{{ user.role }}</td>
-                <td>
-                    <button class="btn btn-secondary showUpdateForm">Update</button>
-                    <button class="btn btn-secondary showToolAccess" >Tool Access</button>
-                    <button class="btn btn-secondary showChangeRole">Change Role</button>
-                    <form action="{{ url_for('admin.delete_user', user_id=user.id) }}" method="post" class="delete-form">
-                        <button type="submit" class="btn btn-danger">Delete User</button>
-                    </form>
+                <td data-label="Username" class="user-username">{{ user.username }}</td>
+                <td data-label="Email" class="user-email">{{ user.email }}</td>
+                <td data-label="Role" class="user-role">{{ user.role }}</td>
+                <td data-label="Actions">
+                    <div class="action-buttons">
+                        <button class="btn btn-secondary showUpdateForm">Update</button>
+                        <button class="btn btn-secondary showToolAccess" >Tool Access</button>
+                        <button class="btn btn-secondary showChangeRole">Change Role</button>
+                        <form action="{{ url_for('admin.delete_user', user_id=user.id) }}" method="post" class="delete-form">
+                            <button type="submit" class="btn btn-danger">Delete User</button>
+                        </form>
+                    </div>
                 </td>
             </tr>
                 <tr class="update-form" style="display:none;">
@@ -89,27 +103,35 @@
                 </tr>
                 <tr class="tool-access" style="display:none;">
                     <td colspan="4">
-                        <form action="{{ url_for('tool.grant_tool_access') }}" method="post" class="tool-form">
-                            <input type="hidden" name="user_id" value="{{ user.id }}">
-                            <select name="tool_name" class="form-select">
-                                {% for tool in tools %}
-                                    <option value="{{ tool.name }}" {% if tool.name in user_tools[user.id] %}disabled{% endif %}>
-                                        {{ tool.name }}{% if tool.name in user_tools[user.id] %} (Already granted){% endif %}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                            <button type="submit" class="btn btn-primary">Grant Access</button>
-                        </form>
-    
-                        <form action="{{ url_for('tool.revoke_tool_access') }}" method="post" class="tool-form">
-                            <input type="hidden" name="user_id" value="{{ user.id }}">
-                            <select name="tool_name" class="form-select">
-                                {% for tool_name in user_tools[user.id] %}
-                                    <option value="{{ tool_name }}">{{ tool_name }}</option>
-                                {% endfor %}
-                            </select>
-                            <button type="submit" class="btn btn-danger" {% if not user_tools[user.id] %}disabled{% endif %}>Revoke Access</button>
-                        </form>
+                        <div class="tool-access-container">
+                            <div class="tool-form-group">
+                                <h4>Grant Tool Access</h4>
+                                <form action="{{ url_for('tool.grant_tool_access') }}" method="post" class="tool-form">
+                                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                                    <select name="tool_name" class="form-select">
+                                        {% for tool in tools %}
+                                            <option value="{{ tool.name }}" {% if tool.name in user_tools[user.id] %}disabled{% endif %}>
+                                                {{ tool.name }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="submit" class="btn btn-primary">Grant Access</button>
+                                </form>
+                            </div>
+
+                            <div class="tool-form-group">
+                                <h4>Revoke Tool Access</h4>
+                                <form action="{{ url_for('tool.revoke_tool_access') }}" method="post" class="tool-form">
+                                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                                    <select name="tool_name" class="form-select">
+                                        {% for tool_name in user_tools[user.id] %}
+                                            <option value="{{ tool_name }}">{{ tool_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="submit" class="btn btn-danger" {% if not user_tools[user.id] %}disabled{% endif %}>Revoke Access</button>
+                                </form>
+                            </div>
+                        </div>
                     </td>
                 </tr>
                 <tr class="change-role" style="display:none;">
@@ -126,47 +148,14 @@
             {% endfor %}
         </tbody>
     </table>
+
+    <div id="paginationContainer" class="pagination-container"></div>
     
-    <script>
-        // JavaScript for search functionality and form toggling
-        document.getElementById('showCreateUserForm').addEventListener('click', function() {
-            var form = document.getElementById('createUserForm');
-            form.style.display = form.style.display === 'none' ? 'block' : 'none';
-        });
-    
-        document.getElementById('userSearch').addEventListener('keyup', function() {
-            var filter = this.value.toLowerCase();
-            var rows = document.getElementById('userTableBody').getElementsByClassName('user-row');
-            
-            for (var i = 0; i < rows.length; i++) {
-                var username = rows[i].getElementsByTagName('td')[0].textContent.toLowerCase();
-                var email = rows[i].getElementsByTagName('td')[1].textContent.toLowerCase();
-                if (username.indexOf(filter) > -1 || email.indexOf(filter) > -1) {
-                    rows[i].style.display = '';
-                } else {
-                    rows[i].style.display = 'none';
-                }
-            }
-        });
-
-        // Add event listeners for showing/hiding forms
-        document.querySelectorAll('.showUpdateForm').forEach(button => {
-            button.addEventListener('click', function() {
-                this.closest('tr').nextElementSibling.style.display = this.closest('tr').nextElementSibling.style.display === 'none' ? 'table-row' : 'none';
-            });
-        });
-
-        document.querySelectorAll('.showToolAccess').forEach(button => {
-            button.addEventListener('click', function() {
-                this.closest('tr').nextElementSibling.nextElementSibling.style.display = this.closest('tr').nextElementSibling.nextElementSibling.style.display === 'none' ? 'table-row' : 'none';
-            });
-        });
-
-        document.querySelectorAll('.showChangeRole').forEach(button => {
-            button.addEventListener('click', function() {
-                this.closest('tr').nextElementSibling.nextElementSibling.nextElementSibling.style.display = this.closest('tr').nextElementSibling.nextElementSibling.nextElementSibling.style.display === 'none' ? 'table-row' : 'none';
-            });
-        });
-    </script>
+    <!-- All JavaScript has been moved to modular files:
+         - common.js: General utilities
+         - ajax.js: AJAX request handling
+         - ui.js: UI interaction handlers
+         - superadmin_dashboard.js: Page-specific functionality
+    -->
 </div>
 {% endblock %}

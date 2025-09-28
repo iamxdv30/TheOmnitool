@@ -3,6 +3,15 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/contact.css') }}" />
 {% endblock %}
 
+{% block scripts %}
+<!-- Load utility JS files -->
+<script src="{{ url_for('static', filename='js/utils/common.js') }}"></script>
+<script src="{{ url_for('static', filename='js/utils/email.js') }}"></script>
+<script src="{{ url_for('static', filename='js/modules/ajax.js') }}"></script>
+<!-- Load page-specific JS -->
+<script src="{{ url_for('static', filename='js/pages/contact.js') }}"></script>
+{% endblock %}
+
 {% block content %}
 
 <div class="contact-container">
@@ -38,204 +47,10 @@
   </form>
 </div>
 
-<script>
-
-// Get DOM elements
-const verifyEmailBtn = document.getElementById('verifyEmailBtn');
-const messageContainer = document.getElementById('messageContainer');
-const submitButton = document.querySelector('.contact-btn');
-const emailInput = document.getElementById('email');
-const nameInput = document.getElementById('name');
-const contactForm = document.getElementById('contactForm');
-
-// Initially hide message area and submit button
-messageContainer.style.display = 'none';
-submitButton.style.display = 'none';
-
-
-// Check verification status when page loads
-document.addEventListener('DOMContentLoaded', async () => {
-    try {
-        const response = await fetch('/contact/check-verification-status');
-        const data = await response.json();
-        
-        if (data.verified) {
-            emailInput.value = data.email;
-            emailInput.readOnly = true;
-            showMessageElements();
-        }
-    } catch (error) {
-        console.error('Error checking verification status:', error);
-        // Hide elements if verification check fails
-        hideMessageElements();
-    }
-});
-
-// Handle visibility loss (tab/window hidden)
-document.addEventListener('visibilitychange', async () => {
-    if (document.visibilityState === 'visible') {
-        // Recheck verification status when tab becomes visible
-        try {
-            const response = await fetch('/contact/check-verification-status');
-            const data = await response.json();
-            
-            if (!data.verified) {
-                hideMessageElements();
-                resetForm();
-            }
-        } catch (error) {
-            console.error('Error checking verification status:', error);
-            hideMessageElements();
-            resetForm();
-        }
-    }
-});
-
-function showMessageElements() {
-    messageContainer.style.display = 'block';
-    submitButton.style.display = 'block';
-    verifyEmailBtn.disabled = true;
-    emailInput.readOnly = true;
-    nameInput.readOnly = true;
-}
-
-function hideMessageElements() {
-    messageContainer.style.display = 'none';
-    submitButton.style.display = 'none';
-    verifyEmailBtn.disabled = false;
-    emailInput.readOnly = false;
-    nameInput.readOnly = false;
-}
-
-function resetForm() {
-    contactForm.reset();
-    verifyEmailBtn.disabled = false;
-    emailInput.readOnly = false;
-    nameInput.readOnly = false;
-}
-
-// Email verification handler
-verifyEmailBtn.addEventListener('click', async function () {
-    const email = emailInput.value.trim();
-    const name = nameInput.value.trim();
-    
-    if (!name) {
-        alert('Please enter your name.');
-        return;
-    }
-
-    if (!validateEmail(email)) {
-        alert('Please enter a valid email address.');
-        return;
-    }
-
-    try {
-        const response = await fetch('/contact/verify-email', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email, name })
-        });
-
-        const result = await response.json();
-        
-        if (response.ok) {
-            alert('Please check your email for the verification link.');
-            verifyEmailBtn.disabled = true;
-            emailInput.readOnly = true;
-            nameInput.readOnly = true;
-        } else {
-            alert(result.message || 'Verification failed. Please try again.');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error verifying email. Please try again later.');
-    }
-});
-
-// Form submission handler
-contactForm.addEventListener('submit', async function (event) {
-    event.preventDefault();
-
-    try {
-        // Verify email status before submitting
-        const verificationCheck = await fetch('/contact/check-verification-status');
-        const verificationData = await verificationCheck.json();
-        
-        if (!verificationData.verified) {
-            alert('Please verify your email before submitting a message.');
-            hideMessageElements();
-            return;
-        }
-
-        const formData = new FormData(this);
-        const jsonData = Object.fromEntries(formData.entries());
-
-        const response = await fetch('/contact', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(jsonData),
-        });
-
-        const result = await response.json();
-
-        if (response.ok) {
-            alert('Message sent successfully!');
-            this.reset();
-            hideMessageElements();
-            
-            // Clear session after successful submission
-            await fetch('/clear-session', { method: 'POST' });
-        } else {
-            alert(result.message || 'Error sending message.');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error sending message. Please try again later.');
-        hideMessageElements();
-    }
-});
-
-// Email validation function
-function validateEmail(email) {
-    const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-    return re.test(String(email).toLowerCase());
-}
-
-// Form population on page load
-document.addEventListener('DOMContentLoaded', function() {
-  // Check for stored verification data
-  const verifiedName = sessionStorage.getItem('verified_user_name');
-  const verifiedEmail = sessionStorage.getItem('verified_user_email');
-  
-  // Get form input elements
-  const nameInput = document.getElementById('name');
-  const emailInput = document.getElementById('email');
-  
-  // If we have stored data and the form exists, populate it
-  if (verifiedName && nameInput) {
-      nameInput.value = verifiedName;
-      if (emailInput) {
-          emailInput.value = verifiedEmail;
-      }
-      
-      // Make fields readonly if email is verified
-      if (sessionStorage.getItem('verified_user_email')) {
-          nameInput.readOnly = true;
-          if (emailInput) {
-              emailInput.readOnly = true;
-          }
-      }
-  }
-  
-  // Clear session storage after populating form
-  sessionStorage.removeItem('verified_user_name');
-  sessionStorage.removeItem('verified_user_email');
-});
-
-</script>
+<!-- All JavaScript has been moved to modular files:
+     - common.js: General utilities
+     - email.js: Email validation and verification
+     - contact.js: Page-specific functionality
+-->
 
 {% endblock %}

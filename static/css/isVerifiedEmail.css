@@ -51,30 +51,30 @@
   }
   
   /* Dark theme styles */
-  body.dark-theme .verification-success-container {
+  html.dark .verification-success-container {
     background-color: #2c2c2c;
     color: #e0e0e0;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
   }
   
-  body.dark-theme .verification-title {
+  html.dark .verification-title {
     color: #fff;
   }
   
-  body.dark-theme .verification-message {
+  html.dark .verification-message {
     color: #e0e0e0;
   }
   
-  body.dark-theme .verification-icon {
+  html.dark .verification-icon {
     color: #38b000;
   }
   
-  body.dark-theme .return-button {
+  html.dark .return-button {
     background-color: #38b000;
     color: #fff;
   }
   
-  body.dark-theme .return-button:hover {
+  html.dark .return-button:hover {
     background-color: #008000;
   }
   

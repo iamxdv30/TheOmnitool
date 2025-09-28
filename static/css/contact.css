@@ -4,15 +4,16 @@
   margin: 20px auto;
   max-width: 600px;
   padding: 20px;
-  font-family: 'Noto Sans Mono', monospace;
-  background-color: #f9f9f9;
+  font-family: var(--font-family);
+  background-color: var(--tool-form-bg);
   border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-heavy);
+  color: var(--text-primary);
 }
 
 .contact-container h1 {
   text-align: center;
-  color: #333;
+  color: var(--text-secondary);
   margin-bottom: 20px;
 }
 
@@ -27,9 +28,11 @@
   width: 96%;
   padding: 10px;
   margin-bottom: 15px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
   font-family: inherit;
+  background-color: var(--input-bg);
+  color: var(--text-primary);
 }
 
 #contactForm textarea {
@@ -38,8 +41,8 @@
 }
 
 .contact-btn {
-  background-color: #0056b3;
-  color: white;
+  background-color: var(--accent-color);
+  color: var(--text-light);
   padding: 10px 20px;
   border: none;
   border-radius: 4px;
@@ -50,7 +53,7 @@
 }
 
 .contact-btn:hover {
-  background-color: #003d82;
+  background-color: var(--accent-hover);
 }
 
 #messageContainer, .contact-btn {
@@ -58,8 +61,8 @@
 }
 
 #verifyEmailBtn {
-  background-color: #0056b3;
-  color: white;
+  background-color: var(--accent-color);
+  color: var(--text-light);
   padding: 10px 20px;
   margin-bottom: 15px;
   border: none;
@@ -68,54 +71,32 @@
   font-family: inherit;
   font-size: 16px;
   transition: background-color 0.3s ease;
-  
-  
 }
 
 #verifyEmailBtn:hover {
-  background-color: #003d82;
+  background-color: var(--accent-hover);
 }
 
-
-/* Dark theme styles */
-body.dark-theme .contact-container {
-  background-color: #2c2c2c;
-  color: #e0e0e0;
-}
-
-body.dark-theme .contact-container h1 {
-  color: #fff;
-}
-
-body.dark-theme #contactForm input,
-body.dark-theme #contactForm textarea,
-body.dark-theme .query-type select {
-  background-color: #333;
-  color: #fff;
-  border-color: #555;
-}
-
-body.dark-theme .query-type {
-  background-color: #333;
-  color: #fff;
+/* Dark theme styles - only specific overrides needed */
+html.dark .query-type {
   font-weight: bold;
-  border-color: #555;
 }
 
-body.dark-theme .query-type label, 
-body.dark-theme .query-type select {
-  color: #fff;
+html.dark .query-type label, 
+html.dark .query-type select {
+  color: var(--text-primary);
   padding: 5px 10px;
   border-radius: 4px;
-
 }
 
-body.dark-theme .contact-btn {
-  background-color: #38b000;
+html.dark .contact-btn,
+html.dark #verifyEmailBtn {
+  background-color: var(--secondary-color);
 }
 
-body.dark-theme .contact-btn:hover {
-  background-color: #008000;
+html.dark .contact-btn:hover,
+html.dark #verifyEmailBtn:hover {
+  background-color: var(--secondary-hover);
 }
 
 /* Responsive design */
