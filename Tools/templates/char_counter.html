@@ -1,27 +1,38 @@
-{% extends "base.html" %} {% block styles %}
-<link
-  rel="stylesheet"
-  href="{{ url_for('static', filename='css/char_counter.css') }}"
-/>
-{% endblock %} {% block title %}Character Counter{% endblock %} {% block content
+{% extends "base.html" %}
+
+{% block head %}
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/char_counter.css') }}" />
+{% endblock %}
+
+{% block scripts %}
+<!-- Load utility JS files -->
+<script src="{{ url_for('static', filename='js/utils/common.js') }}"></script>
+<!-- Load page-specific JS -->
+<script>
+    const char_limit = {{ char_limit }};
+</script>
+<script src="{{ url_for('static', filename='js/pages/char_counter.js') }}"></script>
+{% endblock %}
+
+{% block title %}Character Counter{% endblock %} {% block content
 %}
 
 <div class="char-container">
   <h1>Character Counter</h1>
-  <p>Maximum of 3,532 characters</p>
+  
   <form class="char-form" method="POST" action="{{ url_for('tool.char_counter') }}">
+    <div class="char-limit-control">
+      <label for="char_limit_input">Character Limit:</label>
+      <input id="char_limit_input" type="number" name="char_limit" value="{{ char_limit }}">
+    </div>
     <textarea class="char-textarea" name="text" rows="20" cols="65">
 {{ input_text | default('') }}</textarea
     >
-    <br />
-    <button class="count-button" type="submit">Count Characters</button>
   </form>
-  {% if total_characters is defined %}
-  <div class="result-container">
-    <p>Total Characters: {{ total_characters }}</p>
-    <p>{{ excess_message }}</p>
-  </div>
-  {% endif %}
 </div>
 {% if errors %}
 <div class="errors">

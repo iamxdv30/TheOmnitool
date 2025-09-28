@@ -1,15 +1,123 @@
-/* Ensure the body and html take full height */
+/* CSS Variables for Global Theming */
+:root {
+  /* Colors */
+  --primary-color: #588157;
+  --primary-hover: #80af81;
+  --secondary-color: #38b000;
+  --secondary-hover: #008000;
+  --accent-color: #3498db;
+  --accent-hover: #2980b9;
+  --success-color: #2ecc71;
+  --success-hover: #27ae60;
+  --danger-color: #f44336;
+  --danger-hover: #d32f2f;
+  --warning-color: #ff9800;
+  --warning-hover: #f57c00;
+  --info-color: #2196f3;
+  --info-hover: #1976d2;
+  --flash-error-color: #f17269;
+  --flash-success-color: #D6EFD8;
+  
+  /* Background Colors */
+  --page-bg: #f6fff8;
+  --container-bg: #f8f9fa;
+  --card-bg: #ffffff;
+  --input-bg: #ffffff;
+  --dropdown-bg: #d6efd8;
+  
+  /* Text Colors */
+  --text-primary: #000000;
+  --text-secondary: #333333;
+  --text-muted: #6c757d;
+  --text-light: #ffffff;
+  --text-flash-error: #d32f2f;
+  --text-flash-success: #1A5319;
+  
+  /* Border Colors */
+  --border-color: #ddd;
+  --border-hover: #ccc;
+  
+  /* Navigation */
+  --navbar-bg: #588157;
+  --navbar-text: #000000;
+  --navbar-hover-bg: #80af81;
+  --navbar-hover-text: #ffffff;
+  
+  /* Footer */
+  --footer-bg: #588157;
+  --footer-text: #ffffff;
+  --footer-hover: #f4a261;
+  
+  /* Shadows */
+  --shadow-light: 0 0 10px rgba(0, 0, 0, 0.1);
+  --shadow-medium: 0 2px 4px rgba(0, 0, 0, 0.2);
+  --shadow-heavy: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+  
+  /* Font */
+  --font-family: 'Noto Sans Mono', monospace;
+}
+
+/* Dark Theme Variables */
+html.dark {
+  /* Colors - keep primary/secondary consistent but adjust for dark theme */
+  --primary-color: #343a40;
+  --primary-hover: #495057;
+  --secondary-color: #38b000;
+  --secondary-hover: #008000;
+  --accent-color: #ff9800;
+  --accent-hover: #f57c00;
+  
+  /* Background Colors */
+  --page-bg: #1a1a1a;
+  --container-bg: #2d2d2d;
+  --card-bg: #3a3a3a;
+  --input-bg: #4a4a4a;
+  --dropdown-bg: #343a40;
+  
+/* Tool-specific Colors */
+--tool-form-bg: #0e1722;
+
+
+
+  /* Text Colors */
+  --text-primary: #ffffff;
+  --text-secondary: #e8e8e8;
+  --text-muted: #b8b8b8;
+  --text-light: #ffffff;
+  
+  /* Border Colors */
+  --border-color: #666666;
+  --border-hover: #888888;
+  
+  /* Navigation */
+  --navbar-bg: #343a40;
+  --navbar-text: #ffffff;
+  --navbar-hover-bg: #495057;
+  --navbar-hover-text: #ffffff;
+  
+  /* Footer */
+  --footer-bg: #343a40;
+  --footer-text: #d3d3d3;
+  --footer-hover: #a9d9b7;
+}
+
+/* Ensure the body and html take full height and apply theme variables */
 html,
 body {
   height: 100%;
   margin: 0;
   display: flex;
   flex-direction: column;
+  font-family: var(--font-family);
+  background-color: var(--page-bg);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* The main content container should flex to take available space */
 .container {
   flex: 1; /* Makes the container take up remaining space between the header and footer */
+  background-color: var(--container-bg);
 }
 
 .main-content ul {
@@ -17,16 +125,44 @@ body {
   padding-left: 20px;
 }
 
-.light-theme {
-  font-family: 'Noto Sans Mono', monospace;
-  background-color: #f6fff8;
-}
-
 /* Navbar styles */
 .navbar {
-  background-color: #588157;
+  background-color: var(--navbar-bg);
+  color: var(--navbar-text);
   padding: 0.3rem 1rem; /* Reduce padding to reduce thickness */
   position: relative;
+}
+
+/* Logo styles */
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  margin-right: 1rem;
+}
+
+.navbar-logo {
+  height: 50px;
+  width: 50px;
+  object-fit: contain;
+  transition: filter 0.3s ease;
+}
+
+/* Theme-specific logo display */
+.navbar-logo.light-logo {
+  display: block;
+}
+
+.navbar-logo.dark-logo {
+  display: none;
+}
+
+html.dark .navbar-logo.light-logo {
+  display: none;
+}
+
+html.dark .navbar-logo.dark-logo {
+  display: block;
 }
 
 .navbar-container {
@@ -66,13 +202,13 @@ body {
 .nav-link {
   display: block;
   padding: 0.3rem 1rem; /* Reduce padding to reduce thickness */
-  color: #000;
+  color: var(--navbar-text);
   text-decoration: none;
 }
 
 .nav-link:hover {
-  background-color: #80af81;
-  color: #fff;
+  background-color: var(--navbar-hover-bg);
+  color: var(--navbar-hover-text);
 }
 
 .dropdown {
@@ -89,24 +225,25 @@ body {
   position: absolute;
   top: 100%;
   left: 0;
-  background-color: #d6efd8;
+  background-color: var(--dropdown-bg);
   list-style: none;
   padding: 0;
   margin: 0;
   min-width: 150px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
   z-index: 1000;
 }
 
 .dropdown-item {
   padding: 0.5rem 1rem;
-  color: #000;
+  color: var(--text-primary);
   text-decoration: none;
   display: block;
 }
 
 .dropdown-item:hover {
-  background-color: #80af81;
+  background-color: var(--navbar-hover-bg);
+  color: var(--navbar-hover-text);
 }
 
 .dropdown:hover > .dropdown-menu,
@@ -175,6 +312,22 @@ body {
   .nav-link {
     padding: 0.5rem 1rem;
   }
+  
+  /* Add vertical spacing between buttons in mobile view */
+  .navbar-right .btn {
+    margin: 0.5rem 0.5rem;
+    display: block;
+  }
+  
+  /* Responsive logo styles */
+  .navbar-logo {
+    height: 40px; /* Slightly smaller logo on mobile */
+    width: 40px;
+  }
+  
+  .navbar-container {
+    flex-wrap: wrap;
+  }
 }
 
 /* Profile Nav */
@@ -235,40 +388,7 @@ body {
   background-color: #3e8e41;
 }
 
-/* Dark theme styles */
-body.dark-theme {
-  background-color: #333;
-  color: #ffffff;
-}
-
-body.dark-theme .navbar {
-  background-color: #343a40;
-  color: #ffffff;
-  font-family: 'Noto Sans Mono', monospace;
-}
-
-body.dark-theme .nav-link,
-body.dark-theme .dropdown-item,
-body.dark-theme .btn {
-  color: #fff;
-}
-
-body.dark-theme .nav-link:hover,
-body.dark-theme .dropdown-item:hover,
-body.dark-theme .btn:hover {
-  background-color: #495057;
-}
-
-body.dark-theme .dropdown-menu {
-  background-color: #343a40;
-  border-color: #454d55;
-}
-
-body.dark-theme .base-toggle-btn {
-  background-color: #495057;
-  color: #fff;
-  border: none;
-}
+/* Legacy dark theme styles - removed in favor of CSS variables */
 
 /* Style for main content */
 .main-content {
@@ -341,7 +461,7 @@ body.dark-theme .base-toggle-btn {
   overflow: hidden;
 }
 
-.dark-theme .theme-toggle-track {
+html.dark .theme-toggle-track {
   background: #495057;
 }
 
@@ -362,7 +482,7 @@ body.dark-theme .base-toggle-btn {
   z-index: 2;
 }
 
-.dark-theme .theme-toggle-thumb {
+html.dark .theme-toggle-thumb {
   transform: translateY(-50%) translateX(calc(var(--thumb-offset)));
   background: #f8f9fa;
 }
@@ -384,12 +504,12 @@ body.dark-theme .base-toggle-btn {
   transform: scale(0.8) rotate(90deg);
 }
 
-.dark-theme .theme-toggle-icon.sun {
+html.dark .theme-toggle-icon.sun {
   opacity: 0;
   transform: scale(0.8) rotate(-90deg);
 }
 
-.dark-theme .theme-toggle-icon.moon {
+html.dark .theme-toggle-icon.moon {
   opacity: 1;
   transform: scale(1) rotate(0deg);
 }
@@ -424,11 +544,15 @@ body.dark-theme .base-toggle-btn {
   opacity: 1;
 }
 
-.dark-theme .theme-toggle-text.light {
+.theme-toggle-text.dark {
   opacity: 0;
 }
 
-.dark-theme .theme-toggle-text.dark {
+html.dark .theme-toggle-text.light {
+  opacity: 0;
+}
+
+html.dark .theme-toggle-text.dark {
   opacity: 1;
 }
 
@@ -441,7 +565,7 @@ body.dark-theme .base-toggle-btn {
   transform: translateY(-50%) scale(0.95);
 }
 
-.dark-theme .theme-toggle-btn:active .theme-toggle-thumb {
+html.dark .theme-toggle-btn:active .theme-toggle-thumb {
   transform: translateY(-50%) translateX(calc(var(--thumb-offset))) scale(0.95);
 }
 
@@ -461,11 +585,8 @@ body {
 
 /* Footer Styling */
 .site-footer {
-  background-color: var(
-    --footer-background-color,
-    #588157
-  ); /* Light theme default */
-  font-family: 'Noto Sans Mono', monospace;
+  background-color: var(--footer-bg);
+  font-family: var(--font-family);
   padding: 20px;
   text-align: center;
 }
@@ -475,7 +596,18 @@ body {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  color: var(--footer-text-color, white); /* Light theme default */
+  color: var(--footer-text);
+}
+
+.version {
+  display: inline-block;
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 4px;
+  font-family: monospace;
+  font-size: 0.9em;
+  letter-spacing: 0.5px;
 }
 
 .footer-nav ul {
@@ -490,13 +622,13 @@ body {
 }
 
 .footer-nav ul li a {
-  color: var(--footer-text-color, white); /* Light theme default */
+  color: var(--footer-text);
   text-decoration: none;
   transition: color 0.3s ease;
 }
 
 .footer-nav ul li a:hover {
-  color: var(--footer-hover-color, #f4a261); /* Light theme default */
+  color: var(--footer-hover);
 }
 
 @media (min-width: 768px) {
@@ -506,22 +638,69 @@ body {
   }
 }
 
-/* Dark theme for footer */
-body.dark-theme .site-footer {
-  background-color: #343a40;
+/* Form Elements Styling */
+input, select, textarea {
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  border: 2px solid var(--border-color);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-family: var(--font-family);
+  font-size: 14px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-body.dark-theme .footer-container {
-  color: #d3d3d3; /* Dark theme footer text color */
+/* Select dropdown options styling */
+select option {
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  padding: 8px 12px;
 }
 
-body.dark-theme .footer-nav ul li a {
-  color: #d3d3d3; /* Dark theme link color */
+/* Ensure dropdown options are visible in dark mode */
+html.dark select option {
+  background-color: var(--input-bg);
+  color: var(--text-primary);
 }
 
-body.dark-theme .footer-nav ul li a:hover {
-  color: #a9d9b7; /* Dark theme link hover color */
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.2);
 }
+
+label {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+/* Button Styling */
+button, .btn {
+  background-color: var(--secondary-color);
+  color: var(--text-light);
+  border: none;
+  border-radius: 6px;
+  padding: 12px 24px;
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.1s ease;
+}
+
+button:hover, .btn:hover {
+  background-color: var(--secondary-hover);
+  transform: translateY(-1px);
+}
+
+/* Legacy dark theme footer styles - removed in favor of CSS variables */
 
 .flash-message {
   padding: 10px;
