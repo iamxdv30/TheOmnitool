@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [1.4.1] - 2025-08-31
 ### Highlights
 
-### Batch 1 release
+### Phase 1 release
 
 ### ✨ Added
 - **Admin Dashboard**: Complete user management interface with search and pagination
@@ -49,7 +49,7 @@ All notable changes to this project will be documented in this file.
 - Optimized container layouts for small screens (320px minimum)
 - Better viewport handling and touch-friendly controls
 
-### Batch 2 release
+### Phase 2 release
 ### Highlights
 
 - Captcha in Login
