@@ -1,0 +1,83 @@
+/* Flash Message Global Theme */
+
+:root {
+    /* Colors */
+    --flash-error-color: #f17269;
+    --flash-success-color: #D6EFD8;
+
+    /* Text Colors */
+    --text-flash-error: #d32f2f;
+    --text-flash-success: #1A5319;
+}
+
+/** Flash Message Dimensions */
+.flash-message {
+  padding: 10px;
+  margin: 10px auto;
+  border-radius: 5px;
+  text-align: center;
+  width: 100%;
+  max-width: 960px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/** Light Theme Variables */
+html.light .error {
+  background-color: var(--flash-error-color);
+  color: var(--text-flash-error);
+  border: 1.5px solid var(--text-flash-error);
+}
+
+html.light .success {
+  background-color: var(--flash-success-color);
+  color: var(--text-flash-success);
+  border: 1.5px solid var(--text-flash-success);
+}
+
+
+/* Dark Theme Variables */
+html.dark .error {
+  background-color: var(--flash-error-color);
+  color: var(--text-flash-error);
+  border: 1.5px solid var(--text-flash-error);
+}
+
+html.dark .success {
+  background-color: var(--flash-success-color);
+  color: var(--text-flash-success);
+  border: 1.5px solid var(--text-flash-success);
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 768px) {
+  .flash-message {
+    padding: 8px;
+    margin: 8px auto;
+    font-size: 0.95em;
+    width: 95%;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .flash-message {
+    padding: 6px;
+    margin: 6px auto;
+    font-size: 0.9em;
+    width: 92%;
+  }
+}
+
+@media screen and (max-width: 320px) {
+  .flash-message {
+    padding: 5px;
+    margin: 5px auto;
+    font-size: 0.85em;
+    width: 90%;
+    min-width: 280px;
+  }
+}
