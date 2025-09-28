@@ -1,36 +1,36 @@
 /* static/css/user_dashboard.css */
 .user-dashboard-container {
-  font-family: 'Noto Sans Mono', monospace; /* Retaining for consistency */
-  padding: 30px; /* Increased padding */
-  margin: 30px auto; /* Increased margin and auto for centering */
-  background-color: #ffffff; /* Cleaner white background */
-  color: #333;
-  width: 90%; /* Slightly wider */
-  max-width: 960px; /* Increased max-width */
-  border-radius: 12px; /* Slightly more rounded corners */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Softer, more modern shadow */
-  border: 1px solid #e0e0e0; /* Subtle border */
+  font-family: 'Noto Sans Mono', monospace;
+  padding: 30px;
+  margin: 30px auto;
+  background-color: var(--tool-form-bg);
+  color: var(--text-primary);
+  width: 90%;
+  max-width: 960px; 
+  border-radius: 12px;
+  box-shadow: var(--shadow-light); 
+  border: 1px solid var(--border-color); 
 }
 
 .user-dashboard-container h1 {
-  font-size: 28px; /* Larger heading */
+  font-size: 28px;
   margin-bottom: 25px;
-  color: #222; /* Darker heading color */
-  text-align: center; /* Center heading */
+  color: var(--text-secondary);
+  text-align: center;
 }
 
 .user-dashboard-container h2 {
-  font-size: 22px; /* Consistent heading size */
+  font-size: 22px;
   margin-top: 30px;
   margin-bottom: 20px;
-  color: #444;
-  border-bottom: 1px solid #eee; /* Subtle separator */
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color); 
   padding-bottom: 10px;
 }
 
 .user-dashboard-container p {
   margin-bottom: 15px;
-  line-height: 1.6; /* Improved readability */
+  line-height: 1.6;
   font-size: 16px;
 }
 
@@ -39,78 +39,76 @@
   list-style-type: none;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Responsive grid */
-  gap: 25px; /* Space between cards */
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+  gap: 25px; 
   margin-top: 20px;
 }
 
 .tool-card {
-  background-color: #eeeeee; /* Made slightly darker for better visibility */
   border-radius: 8px;
   padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-light);
   transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-  display: flex; /* For aligning content if needed */
-  flex-direction: column; /* Stack content vertically */
-  justify-content: center; /* Center content vertically */
-  align-items: center; /* Center content horizontally */
+  display: flex; 
+  flex-direction: column; 
+  justify-content: center; 
+  align-items: center; 
   text-align: center;
 }
 
 .tool-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-light);
 }
 
 .tool-card a {
   text-decoration: none;
-  color: #007bff; /* Primary action color */
-  font-size: 18px; /* Larger font for tool name */
+  color: var(--secondary-color); 
+  font-size: 18px; 
   font-weight: bold;
   font-family: 'Noto Sans Mono', monospace;
 }
 
 .tool-card a:hover {
-  color: #0056b3; /* Darker shade on hover */
+  color: var(--secondary-hover); 
 }
 
 /* Dark Mode Styles */
-body.dark-theme .user-dashboard-container {
-  background-color: #2c2c2c; /* Darker background */
-  color: #e0e0e0;
-  border: 1px solid #444; /* Darker border */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); /* Adjusted shadow for dark mode */
+html.dark .user-dashboard-container {
+  background-color: var(--tool-form-bg); 
+  color: var(--text-primary);
+  border: 1px solid var(--border-color); 
 }
 
-body.dark-theme .user-dashboard-container h1 {
-  color: #f5f5f5;
+html.dark .user-dashboard-container h1 {
+  color: var(--text-light);
 }
 
-body.dark-theme .user-dashboard-container h2 {
-  color: #cccccc;
-  border-bottom-color: #444;
+html.dark .user-dashboard-container h2 {
+  color: var(--text-light);
+  border-bottom-color: var(--border-color);
 }
 
-body.dark-theme .user-dashboard-container p {
-  color: #c5c5c5;
+html.dark .user-dashboard-container p {
+  color: var(--text-light);
 }
 
-body.dark-theme .tool-card {
-  background-color: #3a3a3a; /* Darker card background */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  border: 1px solid #505050; /* Subtle border for cards in dark mode */
+html.dark .tool-card {
+  background-color: var(--tool-form-bg); 
+  box-shadow: var(--shadow-light);
+  border: 1px solid var(--border-color); 
 }
 
-body.dark-theme .tool-card:hover {
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+html.dark .tool-card:hover {
+  box-shadow: var(--shadow-dark);
 }
 
-body.dark-theme .tool-card a {
-  color: #ff9800; /* Accent color for dark mode links */
+html.dark .tool-card a {
+  color: var(--accent-color); 
 }
 
-body.dark-theme .tool-card a:hover {
-  color: #e68a00; /* Darker accent on hover */
+html.dark .tool-card a:hover {
+  color: var(--accent-hover); 
 }
 
 /* Flashes styling is assumed to be handled by base.css or is acceptable as is */
