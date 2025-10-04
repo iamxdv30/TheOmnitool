@@ -2,6 +2,61 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.1] - 2025-08-31
+### Highlights
+
+### Phase 1 release
+
+### ✨ Added
+- **Admin Dashboard**: Complete user management interface with search and pagination
+- **Character Counter Tool**: Adjustable character limits with real-time validation and visual feedback
+- **Advanced Search System**: Reusable search with pagination (8 items per page) and item counting
+- **Client-side Form Validation**: Real-time validation with contextual error messages above input fields
+- **Company Logo**: Responsive logo with automatic theme adaptation and brightness filters
+- **Version Display**: Automatic version number parsing and display in footer
+- **Flash Message System**: Centralized, theme-aware flash messages with proper mobile alignment
+
+### 🎨 Enhanced
+- **Dark Theme System**: Comprehensive CSS variable system with standardized `html.dark` selector
+- **Mobile Responsiveness**: Optimized layouts for 320px+ devices with improved touch targets
+- **Form Styling**: Consistent 2px borders, enhanced focus states with orange accent and glow effects
+- **Button Interactions**: Improved hover animations and visual feedback across all components
+- **Typography**: Better contrast and readability in both light and dark modes
+
+### 🔧 Technical Improvements
+- **JavaScript Modernization**: Complete migration from inline scripts to modular ES6 architecture
+- **Code Organization**: Implemented `utils/`, `modules/`, `pages/` directory structure
+- **Performance**: Applied IIFE patterns, event delegation, and efficient search algorithms (O(n) complexity)
+- **Error Handling**: Enhanced SMTP authentication and user-friendly error messages
+- **Accessibility**: Added proper ARIA attributes and keyboard navigation support
+
+### 🐛 Fixed
+- Canada tax calculator province selection and add item functionality
+- Email verification ReferenceError in contact.js fetch response handling
+- Country redirection between US/Canada tax calculators
+- Email templates CRUD operations and API endpoint routing
+- Mobile UI text wrapping and search bar alignment issues
+- Dark theme toggle functionality and JavaScript implementation
+
+### 💔 Breaking Changes
+- All templates now use external JavaScript modules instead of inline scripts
+- Dark theme selector changed from `body.dark-theme` to `html.dark`
+- Requires proper static file serving for new modular JS architecture
+
+### 📱 Mobile Optimizations
+- Enhanced responsive behavior across all screen sizes
+- Improved touch targets and mobile form interactions
+- Optimized container layouts for small screens (320px minimum)
+- Better viewport handling and touch-friendly controls
+
+### Phase 2 release
+### Highlights
+
+- Captcha in Login
+- Simple registration
+
+---
+
 
 ## [1.4.0] - 2025-06-20
 ### Highlights
