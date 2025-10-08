@@ -38,7 +38,7 @@ All notable changes to this project will be documented in this file.
 - Mobile UI text wrapping and search bar alignment issues
 - Dark theme toggle functionality and JavaScript implementation
 
-### 💔 Breaking Changes
+### 🔧 Breaking Changes
 - All templates now use external JavaScript modules instead of inline scripts
 - Dark theme selector changed from `body.dark-theme` to `html.dark`
 - Requires proper static file serving for new modular JS architecture
