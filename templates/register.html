@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}Register - OmniTools{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+{% endblock %}
+
+{% block scripts %}
+<!-- Common utility scripts -->
+<script src="{{ url_for('static', filename='js/utils/common.js') }}"></script>
+<script src="{{ url_for('static', filename='js/utils/ajax.js') }}"></script>
+<script src="{{ url_for('static', filename='js/utils/ui.js') }}"></script>
+
+<!-- Captcha component -->
+<script src="{{ url_for('static', filename='js/components/captcha.js') }}"></script>
+
+<!-- Page-specific script -->
+<script src="{{ url_for('static', filename='js/pages/register.js') }}"></script>
+
+{% if captcha_enabled %}
+<!-- reCAPTCHA API -->
+<script>
+    window.RECAPTCHA_SITE_KEY = '{{ captcha_site_key }}';
+</script>
+<script src="https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit" async defer></script>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h1>Create Your Account</h1>
+            <p>Join OmniTools and access powerful utilities</p>
+        </div>
+
+        {% include '_flash_messages.html' %}
+
+        <form method="POST" action="{{ url_for('auth.register') }}" class="auth-form" id="registrationForm" novalidate>
+            <!-- Name Field -->
+            <div class="form-group">
+                <label for="name" class="form-label">Full Name *</label>
+                <input 
+                    type="text" 
+                    id="name" 
+                    name="name" 
+                    class="form-input"
+                    value="{{ form_data.name if form_data else '' }}"
+                    required
+                    autocomplete="name"
+                    placeholder="Enter your full name"
+                >
+                <div class="field-error" id="nameError"></div>
+            </div>
+
+            <!-- Username Field -->
+            <div class="form-group">
+                <label for="username" class="form-label">Username *</label>
+                <input 
+                    type="text" 
+                    id="username" 
+                    name="username" 
+                    class="form-input"
+                    value="{{ form_data.username if form_data else '' }}"
+                    required
+                    autocomplete="username"
+                    placeholder="Choose a unique username"
+                >
+                <div class="field-help">3-50 characters, letters, numbers, and underscores only</div>
+                <div class="field-error" id="usernameError"></div>
+            </div>
+
+            <!-- Email Field -->
+            <div class="form-group">
+                <label for="email" class="form-label">Email Address *</label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    name="email" 
+                    class="form-input"
+                    value="{{ form_data.email if form_data else '' }}"
+                    required
+                    autocomplete="email"
+                    placeholder="Enter your email address"
+                >
+                <div class="field-help">We'll send a verification email to this address</div>
+                <div class="field-error" id="emailError"></div>
+            </div>
+
+            <!-- Password Field -->
+            <div class="form-group">
+                <label for="password" class="form-label">Password *</label>
+                <div class="password-input-wrapper">
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        class="form-input"
+                        required
+                        autocomplete="new-password"
+                        placeholder="Create a strong password"
+                    >
+                    <button type="button" class="password-toggle" id="passwordToggle">
+                        <span class="sr-only">Show password</span>
+                        👁️
+                    </button>
+                </div>
+                <div class="field-help">{{ password_requirements }}</div>
+                <div class="password-strength" id="passwordStrength">
+                    <div class="strength-bar">
+                        <div class="strength-fill" id="strengthFill"></div>
+                    </div>
+                    <div class="strength-text" id="strengthText">Password strength</div>
+                </div>
+                <div class="field-error" id="passwordError"></div>
+            </div>
+
+            <!-- Confirm Password Field -->
+            <div class="form-group">
+                <label for="confirm_password" class="form-label">Confirm Password *</label>
+                <input 
+                    type="password" 
+                    id="confirm_password" 
+                    name="confirm_password" 
+                    class="form-input"
+                    required
+                    autocomplete="new-password"
+                    placeholder="Confirm your password"
+                >
+                <div class="field-error" id="confirmPasswordError"></div>
+            </div>
+
+            <!-- Captcha Section -->
+            {% if captcha_enabled %}
+            <div class="form-group">
+                <label class="form-label">Verification *</label>
+                <div class="captcha-wrapper">
+                    <div id="recaptcha-container" data-captcha></div>
+                </div>
+                <div class="field-error" id="captchaError"></div>
+            </div>
+            {% endif %}
+
+            <!-- Submit Button -->
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary btn-full" id="submitBtn">
+                    <span class="btn-text">Create Account</span>
+                    <span class="btn-loading" style="display: none;">
+                        <span class="loading-spinner"></span>
+                        Creating Account...
+                    </span>
+                </button>
+            </div>
+
+            <!-- Login Link -->
+            <div class="auth-footer">
+                <p>Already have an account? <a href="{{ url_for('auth.login') }}" class="auth-link">Sign in here</a></p>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Password Requirements Modal (optional) -->
+<div id="passwordModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Password Requirements</h3>
+            <button type="button" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Your password must meet the following requirements:</p>
+            <ul>
+                <li>At least 8 characters long</li>
+                <li>At least 1 uppercase letter (A-Z)</li>
+                <li>At least 1 lowercase letter (a-z)</li>
+                <li>At least 1 number (0-9)</li>
+                <li>At least 1 special character (!@#$%^&*()_+-=[]{}|;:,.<>?)</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialize page when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.RegisterPage) {
+        window.RegisterPage.init();
+    }
+});
+</script>
+{% endblock %}

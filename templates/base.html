@@ -85,13 +85,10 @@
             </div>
             {% else %}
             <a href="{{ url_for('auth.login') }}" class="btn">Login</a>
-            <a href="{{ url_for('auth.register_step1') }}" class="btn"
-              >Sign Up</a
-            >
+            <a href="{{ url_for('auth.register') }}" class="btn">Sign Up</a>
             {% endif %}
             <button class="theme-toggle-btn" role="switch" aria-checked="false" aria-label="Toggle theme">
               <span class="theme-toggle-track">
-                <span class="theme-toggle-thumb">
                   <span class="theme-toggle-icon sun">☀️</span>
                   <span class="theme-toggle-icon moon">🌙</span>
                 </span>
