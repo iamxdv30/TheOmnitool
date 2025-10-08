@@ -214,5 +214,59 @@ For production: Database backup/restore is part of the CI/CD pipeline.
 
 # Agent Context & Tooling
 
-- **MCP Rule:** The Model Context Protocol server responsible for persistent long-term context is named **knowledge graph memory server (kgm)**.
-- **Usage Rule:** When storing or retrieving persistent facts, always refer to the tool by its full name: **knowledge graph memory server (kgm)**.
+## MCP Rule** The Model Context Protocol server responsible for persistent long-term context is named **knowledge graph memory server (kgm)**.
+**Usage Rule:** Always refer to the tool by its full name: **knowledge graph memory server (kgm)**.
+
+## MCP Server Usage Guidelines
+
+Use MCP servers strategically and only when they add clear value to the task. Follow these rules:
+
+### 1. **Knowledge Graph Memory Server (kgm)**
+- **When to use:** Store important facts, preferences, decisions, or context the user wants remembered across conversations
+- **When NOT to use:** For temporary information, current conversation context, or general knowledge queries
+- **Examples:** User preferences, project details, personal information, ongoing work context
+
+### 2. **Context7**
+- **When to use:** For accessing real-time data, external APIs, or specialized context not available through standard tools
+- **When NOT to use:** If web_search or other built-in tools can accomplish the task
+- **Examples:** Specialized API integrations, real-time data feeds
+
+### 3. **Playwright**
+- **When to use:** Browser automation tasks, testing web applications, scraping dynamic content, or interacting with web pages programmatically
+- **When NOT to use:** Simple web fetching (use web_fetch instead), or when manual instructions suffice
+- **Examples:** Form submissions, clicking through multi-step processes, testing UI flows
+
+### 4. **Sequential Thinking**
+- **When to use:** Complex multi-step reasoning, mathematical proofs, logic puzzles, or when explicit step-by-step analysis improves accuracy
+- **When NOT to use:** Simple questions, casual conversation, or when normal reasoning suffices
+- **Examples:** Complex algorithm design, detailed problem decomposition, systematic analysis
+
+### 5. **Sentry**
+- **When to use:** Debugging application errors, monitoring issues, or analyzing error logs from Sentry projects
+- **When NOT to use:** General debugging not related to Sentry-monitored applications
+- **Examples:** Investigating production errors, analyzing error patterns
+
+### 6. **Apidog Project**
+- **When to use:** Working with APIs documented in Apidog project #1089534, testing API endpoints, or generating API-related code
+- **When NOT to use:** For APIs not in this specific project or general API documentation
+- **Examples:** Testing endpoints, generating API client code, understanding API specifications
+
+### 7. **GitHub**
+- **When to use:** Searching repositories, reading code, creating issues, managing pull requests, or accessing GitHub-hosted content
+- **When NOT to use:** For non-GitHub code repositories or when web_search/web_fetch would suffice
+- **Examples:** Code analysis, repository exploration, GitHub workflow automation
+
+## General Principles
+
+1. **Default to built-in tools first** - Use web_search, web_fetch, or repl before reaching for specialized MCP servers
+2. **One task, one server** - Don't use multiple servers when one will do
+3. **Justify usage** - If using an MCP server, it should solve a problem that built-in tools cannot
+4. **User context matters** - If the user explicitly mentions a tool or workflow (e.g., "save this to memory", "test this in a browser"), use the appropriate MCP server
+5. **Efficient selection** - Choose the most direct path to the solution
+
+## Priority Order
+
+When multiple tools could work:
+1. Built-in Claude tools (web_search, web_fetch, repl, artifacts)
+2. Lightweight MCP servers (kgm for memory, GitHub for code)
+3. Heavy automation tools (Playwright, Sequential Thinking) - only when clearly beneficial
