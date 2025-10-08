@@ -211,3 +211,8 @@ For production: Database backup/restore is part of the CI/CD pipeline.
 3. **Tool names**: Must match exactly between `Tool.name` and `ToolAccess.tool_name`
 4. **Role changes**: SuperAdmin can change roles, but this creates new User objects (not in-place updates)
 5. **Template loading**: Both `templates/` and `Tools/templates/` are searched via ChoiceLoader
+
+# Agent Context & Tooling
+
+- **MCP Rule:** The Model Context Protocol server responsible for persistent long-term context is named **knowledge graph memory server (kgm)**.
+- **Usage Rule:** When storing or retrieving persistent facts, always refer to the tool by its full name: **knowledge graph memory server (kgm)**.
