@@ -9,3 +9,4 @@ instance/
 .windsurf
 logs
 .env.backup
+.venv/
