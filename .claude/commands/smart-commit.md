@@ -39,9 +39,6 @@ Create a commit message following this structure:
 
 <additional notes if needed>
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
 ```
 
 **Type options**: feat, fix, refactor, docs, style, test, chore, perf, build, ci
