@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="error-container">
+    <div class="error-content">
+        <h1 class="error-title">Verification Failed</h1>
+        
+        <div class="error-message">
+            <div class="error-icon">✕</div>
+            <p class="error-text">{{ message }}</p>
+            <p class="error-subtext">
+                Please try verifying your email again or contact support if the problem persists.
+            </p>
+        </div>
+        
+        <div class="error-actions">
+            <a href="{{ url_for('contact.contact_page') }}" class="return-button">
+                Return to Contact Form
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .error-container {
+        max-width: 600px;
+        margin: 50px auto;
+        padding: 2rem;
+        background: linear-gradient(to bottom right, #ffffff, #fff5f5);
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        font-family: 'Noto Sans Mono', monospace;
+    }
+
+    .error-content {
+        text-align: center;
+    }
+
+    .error-title {
+        color: #dc3545;
+        font-size: 2rem;
+        margin-bottom: 2rem;
+        font-weight: 600;
+    }
+
+    .error-message {
+        background-color: #fff5f5;
+        padding: 2rem;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+        border: 1px solid rgba(220, 53, 69, 0.1);
+    }
+
+    .error-icon {
+        font-size: 3rem;
+        color: #dc3545;
+        margin-bottom: 1rem;
+        animation: fadeIn 0.5s ease-in;
+    }
+
+    .error-text {
+        font-size: 1.2rem;
+        color: #2c3e50;
+        margin-bottom: 1rem;
+        line-height: 1.5;
+    }
+
+    .error-subtext {
+        color: #6c757d;
+        font-size: 1.1rem;
+        margin-bottom: 0;
+    }
+
+    .error-actions {
+        margin-top: 2rem;
+    }
+
+    .return-button {
+        display: inline-block;
+        padding: 0.8rem 1.5rem;
+        background-color: #dc3545;
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .return-button:hover {
+        background-color: #c82333;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(220, 53, 69, 0.2);
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .error-container {
+            margin: 20px;
+            padding: 1.5rem;
+        }
+
+        .error-title {
+            font-size: 1.75rem;
+        }
+
+        .error-text {
+            font-size: 1.1rem;
+        }
+    }
+</style>
+{% endblock %}

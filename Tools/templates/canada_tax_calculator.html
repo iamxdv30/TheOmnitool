@@ -32,9 +32,20 @@
     </select>
   </div>
 
+  <div class="ca-options-form-group">
+    <label>
+      <input type="checkbox" id="isSalesBeforeTax" /> Apply Discounts Before Tax
+    </label>
+  </div>
+  <div class="ca-options-form-group">
+    <label>
+      <input type="checkbox" id="discountTaxable" checked /> Discounts Are Taxable
+    </label>
+  </div>
+
   <div id="taxRates"></div>
   <div id="itemsContainer"></div>
-  <button class="ca-add-item" onclick="addItem()">Add Item</button>
+  <button id="addItemBtn" class="ca-add-item" onclick="addItem()">Add Item</button>
 
   <div class="ca-shipping-form-group">
     <label for="shippingCost">Shipping Cost:</label>
@@ -45,7 +56,8 @@
       <input type="checkbox" id="shippingTaxable" /> Shipping Taxable
     </label>
   </div>
-  <button class="ca-calculate-tax" onclick="calculateTax()">
+
+  <button id="calculateTaxBtn" class="ca-calculate-tax" onclick="calculateTax()">
     Calculate Tax
   </button>
   <div id="results"></div>
@@ -102,11 +114,6 @@
             <label>Discount Amount:</label>
             <input type="number" class="discountAmount" step="0.01" min="0" required>
           </div>
-          <div class="discount-checkbox">
-            <label>
-              <input type="checkbox" class="discountTaxable"> Discount Taxable
-            </label>
-          </div>
         `;
     itemsContainer.appendChild(itemDiv);
   }
@@ -120,48 +127,71 @@
       );
       taxRates[rate] = rateValue;
     });
-
+  
     const items = Array.from(document.querySelectorAll('.item')).map(
       (itemDiv) => ({
         price: parseFloat(itemDiv.querySelector('.itemPrice').value) || 0,
-        discount:
-          parseFloat(itemDiv.querySelector('.discountAmount').value) || 0,
-        discount_taxable: itemDiv.querySelector('.discountTaxable').checked,
+        discount: parseFloat(itemDiv.querySelector('.discountAmount').value) || 0
       })
     );
-
+  
     const shippingCost =
       parseFloat(document.getElementById('shippingCost').value) || 0;
     const shippingTaxable = document.getElementById('shippingTaxable').checked;
-
+    
+    // Get global settings
+    const isSalesBeforeTax = document.getElementById('isSalesBeforeTax').checked;
+    const discountTaxable = document.getElementById('discountTaxable').checked;
+  
     const result = calculateTaxResult(
       items,
       taxRates,
       shippingCost,
-      shippingTaxable
+      shippingTaxable,
+      isSalesBeforeTax,
+      discountTaxable
     );
     displayResults(result);
   }
-
-  function calculateTaxResult(items, taxRates, shippingCost, shippingTaxable) {
+  
+  function calculateTaxResult(items, taxRates, shippingCost, shippingTaxable, isSalesBeforeTax, discountTaxable) {
     let orderTotal = 0;
     let itemTotal = 0;
     let taxTotal = 0;
     let discountTotal = 0;
     let taxBreakdown = {};
-
-    items.forEach((item, index) => {
+  
+    // Calculate item totals and discount totals
+    items.forEach((item) => {
       itemTotal += item.price;
-      let taxableAmount = item.price;
       if (item.discount > 0) {
         discountTotal += item.discount;
-        taxableAmount = item.discount_taxable
-          ? item.price - item.discount
-          : item.price;
       }
-
+    });
+    
+    // Adjust itemTotal for display when conditions match
+    let adjustedItemTotal = itemTotal;
+    if (isSalesBeforeTax && !discountTaxable) {
+      adjustedItemTotal = itemTotal - discountTotal;
+    }
+  
+    // Calculate taxes for each item
+    items.forEach((item, index) => {
+      let taxableAmount = item.price;
+      
+      if (item.discount > 0) {
+        if (isSalesBeforeTax) {
+          // Apply discount before calculating tax
+          taxableAmount = item.price - item.discount;
+        } else if (!discountTaxable) {
+          // Don't include discount in tax calculation
+          taxableAmount = item.price;
+        }
+      }
+  
       let itemTax = 0;
       taxBreakdown[`item${index + 1}`] = {};
+      
       for (const [taxType, rate] of Object.entries(taxRates)) {
         const taxAmount = (taxableAmount * rate) / 100;
         itemTax += taxAmount;
@@ -170,7 +200,8 @@
       }
       taxTotal += itemTax;
     });
-
+  
+    // Calculate shipping tax if applicable
     let shippingTax = 0;
     if (shippingTaxable) {
       taxBreakdown['shipping'] = {};
@@ -182,12 +213,19 @@
       }
       taxTotal += shippingTax;
     }
-
-    orderTotal = itemTotal + taxTotal + shippingCost - discountTotal;
-
+  
+    // Calculate final amount based on conditions
+    if (isSalesBeforeTax && !discountTaxable) {
+      // Special case for conditions 4 and 5
+      orderTotal = adjustedItemTotal + taxTotal + shippingCost;
+    } else {
+      // Standard formula for other conditions
+      orderTotal = itemTotal + taxTotal + shippingCost - discountTotal;
+    }
+  
     return {
       orderTotal: Math.round(orderTotal * 100) / 100,
-      itemTotal: Math.round(itemTotal * 100) / 100,
+      itemTotal: Math.round(adjustedItemTotal * 100) / 100,
       taxTotal: Math.round(taxTotal * 100) / 100,
       shippingCost: Math.round(shippingCost * 100) / 100,
       shippingTax: Math.round(shippingTax * 100) / 100,
@@ -231,30 +269,6 @@
   }
 
   function initializeForm() {
-    const provinceSelect = document.getElementById('province');
-    const provinceNames = {
-      ON: 'Ontario',
-      BC: 'British Columbia',
-      AB: 'Alberta',
-      MB: 'Manitoba',
-      NB: 'New Brunswick',
-      NL: 'Newfoundland and Labrador',
-      NS: 'Nova Scotia',
-      NT: 'Northwest Territories',
-      NU: 'Nunavut',
-      PE: 'Prince Edward Island',
-      QC: 'Quebec',
-      SK: 'Saskatchewan',
-      YT: 'Yukon',
-    };
-
-    Object.entries(provinceNames).forEach(([abbr, fullName]) => {
-      const option = document.createElement('option');
-      option.value = abbr;
-      option.textContent = fullName;
-      provinceSelect.appendChild(option);
-    });
-
     updateTaxRates();
     addItem();
   }
@@ -275,10 +289,6 @@
     document
       .getElementById('country')
       .addEventListener('change', selectTaxCalculator);
-    document.getElementById('addItemBtn').addEventListener('click', addItem);
-    document
-      .getElementById('calculateTaxBtn')
-      .addEventListener('click', calculateTax);
   });
 </script>
 

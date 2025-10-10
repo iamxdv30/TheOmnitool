@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verification</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f6f6f6;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <!-- Header with Logo -->
+        <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #f0f0f0;">
+            <h2 style="color: #333333; margin: 0;">OmniTools Email Verification</h2>
+        </div>
+        
+        <!-- Content -->
+        <div style="padding: 30px 20px; color: #333333;">
+            <p style="margin-bottom: 20px;">Hi {{ name }},</p>
+            <p style="margin-bottom: 30px;">Thank you for using OmniTools. Please verify your email address by clicking the button below:</p>
+            
+            <!-- Button Container -->
+            <div style="text-align: center; margin: 35px 0;">
+                <a href="{{ verification_link }}" 
+                   style="background-color: #007bff; 
+                          color: #ffffff; 
+                          padding: 12px 30px; 
+                          text-decoration: none; 
+                          border-radius: 5px; 
+                          font-weight: bold; 
+                          display: inline-block;
+                          border: 1px solid #0056b3;">
+                    Verify Email
+                </a>
+            </div>
+            
+            <!-- Security Note -->
+            <p style="margin-top: 30px; font-size: 14px; color: #666666;">
+                If you didn't request this verification, please ignore this email.
+            </p>
+        </div>
+        
+        <!-- Footer -->
+        <div style="text-align: center; padding-top: 20px; border-top: 2px solid #f0f0f0; margin-top: 20px;">
+            <p style="color: #666666; font-size: 12px;">
+                &copy; 2024 OmniTools. All rights reserved.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

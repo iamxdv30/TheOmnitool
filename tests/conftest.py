@@ -5,13 +5,21 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 import pytest
 from main import create_app
 from model.model import db, User, Admin, SuperAdmin, Tool, ToolAccess
+from dotenv import load_dotenv
+
+load_dotenv()
 
 @pytest.fixture
 def app():
     app = create_app()
-    app.config['TESTING'] = True
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
-    app.config['WTF_CSRF_ENABLED'] = False  # Disable CSRF for testing
+    app.config.update({
+        'TESTING': True,
+        'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:',
+        'WTF_CSRF_ENABLED': False,  # Disable CSRF for testing
+        'SECRET_KEY': os.getenv('SECRET_KEY', 'test-secret-key'),
+        'SECURITY_PASSWORD_SALT': os.getenv('SECURITY_PASSWORD_SALT', 'test-salt'),
+        'TOKEN_SECRET_KEY': os.getenv('TOKEN_SECRET_KEY', 'test-token-key')
+    })
     
     with app.app_context():
         db.create_all()
@@ -57,18 +65,30 @@ def init_database(app):
 
 @pytest.fixture
 def logged_in_user(client):
-    client.post('/login', data={'username': 'testuser', 'password': 'testpass'})
+    with client.session_transaction() as session:
+        client.post('/login', data={'username': 'testuser', 'password': 'testpass'})
+        session['logged_in'] = True
+        session['username'] = 'testuser'
+        session['role'] = 'user'
     yield
     client.get('/logout')
 
 @pytest.fixture
 def logged_in_admin(client):
-    client.post('/login', data={'username': 'adminuser', 'password': 'adminpass'})
+    with client.session_transaction() as session:
+        client.post('/login', data={'username': 'adminuser', 'password': 'adminpass'})
+        session['logged_in'] = True
+        session['username'] = 'adminuser'
+        session['role'] = 'admin'
     yield
     client.get('/logout')
 
 @pytest.fixture
 def logged_in_superadmin(client):
-    client.post('/login', data={'username': 'superadmin', 'password': 'superpass'})
+    with client.session_transaction() as session:
+        client.post('/login', data={'username': 'superadmin', 'password': 'superpass'})
+        session['logged_in'] = True
+        session['username'] = 'superadmin'
+        session['role'] = 'super_admin'
     yield
     client.get('/logout')
