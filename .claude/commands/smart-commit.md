@@ -99,9 +99,6 @@ user selection, role changes, and tool access management.
 - Create confirmation modals for bulk operations
 - Update admin dashboard UI with bulk action buttons
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
 ```
 
 **Example 2 - Bug Fix**:

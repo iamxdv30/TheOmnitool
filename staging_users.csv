@@ -1,0 +1,1 @@
+id,fname,lname,address,city,state,zip,name,username,email,password,role,email_verified,email_verification_token,email_verification_sent_at,oauth_provider,oauth_id,requires_password_setup,created_at,updated_at,last_login,is_active
