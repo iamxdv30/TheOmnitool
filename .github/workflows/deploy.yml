@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - development
+  pull_request:
+    branches:
+      - main
+      - development
 
 jobs:
   test:
@@ -64,6 +68,7 @@ jobs:
   deploy-to-staging:
     runs-on: ubuntu-latest
     needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/development'
     environment: staging
 
     steps:
