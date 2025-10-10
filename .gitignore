@@ -1,18 +1,29 @@
+# IDE and Editor
 .vscode/
-templates/test.html
-setup_route_for_admin.md
+.windsurf/
+
+# Python
 *.pyc
 __pycache__/
-instance/
-*.db
-#.env*
-.windsurf
-.windsurf/
-logs
-logs/
-.env
-.env.backup
 .venv/
 venv/
 env/
+
+# Database
+instance/
+*.db
+
+# Environment and Secrets
+.env
+.env.*
+
+# Logs
+logs/
 app.log
+
+# Temporary and Test Files
+templates/test.html
+setup_route_for_admin.md
+
+# macOS
+.DS_Store
