@@ -85,19 +85,16 @@
             </div>
             {% else %}
             <a href="{{ url_for('auth.login') }}" class="btn">Login</a>
-            <a href="{{ url_for('auth.register_step1') }}" class="btn"
-              >Sign Up</a
-            >
+            <a href="{{ url_for('auth.register') }}" class="btn">Sign Up</a>
             {% endif %}
-            <button class="theme-toggle-btn" role="switch" aria-checked="false" aria-label="Toggle theme">
+            <button id="theme-toggle-button" class="theme-toggle-btn" role="switch" aria-checked="false" aria-label="Toggle theme">
               <span class="theme-toggle-track">
-                <span class="theme-toggle-thumb">
-                  <span class="theme-toggle-icon sun">☀️</span>
-                  <span class="theme-toggle-icon moon">🌙</span>
-                </span>
-                <span class="theme-toggle-text light">Light</span>
-                <span class="theme-toggle-text dark">Dark</span>
+                <img src="{{ url_for('static', filename='images/sun.png') }}" alt="Sun" class="theme-toggle-icon sun">
+                <img src="{{ url_for('static', filename='images/moon.png') }}" alt="Moon" class="theme-toggle-icon moon">
+                <span class="theme-toggle-thumb"></span>
               </span>
+              <span class="theme-toggle-text light">Light</span>
+              <span class="theme-toggle-text dark">Dark</span>
             </button>
           </div>
         </div>
@@ -129,7 +126,7 @@
 
     <script>
       function checkToolAccess(toolName, url) {
-        fetch(`/check_tool_access/${toolName}`, {
+        fetch(`/tools/check_tool_access/${encodeURIComponent(toolName)}`, {
           headers: {
             'X-Requested-With': 'XMLHttpRequest',
           },

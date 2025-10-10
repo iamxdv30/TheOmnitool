@@ -1,9 +1,9 @@
-name: Production Deployment Workflow
+name: CI/CD Workflow
 
 on:
   push:
     branches:
-      - main
+      - development
 
 jobs:
   test:
@@ -19,7 +19,7 @@ jobs:
       FLASK_ENV: 'testing'
       IS_LOCAL: 'true'
       SESSION_TYPE: 'filesystem'
-      
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -53,132 +53,18 @@ jobs:
           SESSION_TYPE: filesystem
         run: |
           pytest --cov=./ --cov-report=html
-      - name: Notify Test Status
-        if: always()
-        env:
-          DISCORD_WEBHOOK: "https://discord.com/api/webhooks/1299838194728177684/DuMFG_NFU1__YLawLIlovT4Dth8iUn9vNu2HLj4PibImQq6QL0iCDLd1lObrVGhV7BbK"
-        run: |
-          if [ "${{ job.status }}" == "success" ]; then
-            curl -H "Content-Type: application/json" -X POST $DISCORD_WEBHOOK \
-              -d "{\"embeds\":[{\"title\":\"✅ Tests Passed\",\"color\":5763719,\"description\":\"All tests completed successfully\",\"fields\":[{\"name\":\"Commit\",\"value\":\"${{ github.sha }}\",\"inline\":true}]}]}"
-          else
-            curl -H "Content-Type: application/json" -X POST $DISCORD_WEBHOOK \
-              -d "{\"embeds\":[{\"title\":\"❌ Tests Failed\",\"color\":15548997,\"description\":\"Test suite failed\",\"fields\":[{\"name\":\"Commit\",\"value\":\"${{ github.sha }}\",\"inline\":true}]}]}"
-          fi
 
-  backup-and-migrate:
-    runs-on: ubuntu-latest
-    needs: test
-    environment: production
-    outputs:
-      backup_file: ${{ steps.backup.outputs.backup_file }}
-      has_schema_changes: ${{ steps.check_migrations.outputs.has_changes }}
-      
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Install Heroku CLI
-        run: |
-          curl https://cli-assets.heroku.com/install.sh | sh
-          echo "/usr/local/bin" >> $GITHUB_PATH
-
-      - name: Check for Migration Changes
-        id: check_migrations
-        run: |
-          if git rev-parse HEAD~1 >/dev/null 2>&1; then
-            MIGRATION_CHANGES=$(git diff --name-only HEAD HEAD~1 | grep -c "migrations/" || echo "0")
-          else
-            MIGRATION_CHANGES=$(git diff --name-only $(git hash-object -t tree /dev/null) HEAD | grep -c "migrations/" || echo "0")
-          fi
-          echo "has_changes=$([[ $MIGRATION_CHANGES -gt 0 ]] && echo "true" || echo "false")" >> $GITHUB_OUTPUT
-          
-          if [[ $MIGRATION_CHANGES -gt 0 ]]; then
-            curl -H "Content-Type: application/json" -X POST "https://discord.com/api/webhooks/1299838194728177684/DuMFG_NFU1__YLawLIlovT4Dth8iUn9vNu2HLj4PibImQq6QL0iCDLd1lObrVGhV7BbK" \
-              -d "{\"embeds\":[{\"title\":\"🔄 Database Changes Detected\",\"color\":16776960,\"description\":\"Found $MIGRATION_CHANGES migration changes - Preparing backup\"}]}"
-          fi
-
-      - name: Backup Production Database
-        id: backup
-        env:
-          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-        run: |
-          set -e # Exit immediately if a command exits with a non-zero status.
-          DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/1299838194728177684/DuMFG_NFU1__YLawLIlovT4Dth8iUn9vNu2HLj4PibImQq6QL0iCDLd1lObrVGhV7BbK"
-
-          mkdir -p backups
-          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-          BACKUP_FILE_NAME="backup_${TIMESTAMP}.dump"
-          BACKUP_FILE_PATH="backups/${BACKUP_FILE_NAME}"
-
-          echo "Creating database backup..."
-          if ! heroku pg:backups:capture --app omnitool-by-xdv; then
-            echo "::error::Failed to capture Heroku database backup."
-            curl -H "Content-Type: application/json" -X POST "${DISCORD_WEBHOOK_URL}" \
-              -d "{\"embeds\":[{\"title\":\"❌ Backup Capture Failed\",\"color\":15548997,\"description\":\"Failed to capture Heroku database backup for omnitool-by-xdv.\"}]}"
-            exit 1
-          fi
-
-          echo "Downloading backup..."
-          if ! heroku pg:backups:download --app omnitool-by-xdv --output "${BACKUP_FILE_PATH}"; then
-            echo "::error::Failed to download Heroku database backup."
-            curl -H "Content-Type: application/json" -X POST "${DISCORD_WEBHOOK_URL}" \
-              -d "{\"embeds\":[{\"title\":\"❌ Backup Download Failed\",\"color\":15548997,\"description\":\"Failed to download Heroku database backup for omnitool-by-xdv.\"}]}"
-            exit 1
-          fi
-
-          echo "Verifying backup file: ${BACKUP_FILE_PATH}"
-          if [ ! -s "${BACKUP_FILE_PATH}" ]; then
-            echo "::error::Backup file ${BACKUP_FILE_PATH} is empty."
-            curl -H "Content-Type: application/json" -X POST "${DISCORD_WEBHOOK_URL}" \
-              -d "{\"embeds\":[{\"title\":\"❌ Backup Verification Failed\",\"color\":15548997,\"description\":\"Downloaded backup file ${BACKUP_FILE_PATH} is empty.\"}]}"
-            exit 1
-          fi
-
-          FILE_TYPE_MIME=$(file -b --mime-type "${BACKUP_FILE_PATH}")
-          echo "Detected MIME type: ${FILE_TYPE_MIME}"
-          if [[ "${FILE_TYPE_MIME}" == "text/plain" ]]; then
-            echo "::error::Backup file ${BACKUP_FILE_PATH} appears to be a text file (MIME: ${FILE_TYPE_MIME}), not a binary dump. Contents:"
-            cat "${BACKUP_FILE_PATH}" # Output the content for debugging in GitHub Actions logs
-            curl -H "Content-Type: application/json" -X POST "${DISCORD_WEBHOOK_URL}" \
-              -d "{\"embeds\":[{\"title\":\"❌ Backup File Invalid\",\"color\":15548997,\"description\":\"Backup file ${BACKUP_FILE_PATH} is a text file, not a binary dump. Check workflow logs for content.\"}]}"
-            exit 1
-          elif [[ "${FILE_TYPE_MIME}" != "application/octet-stream" && "${FILE_TYPE_MIME}" != "application/x-custom-pg-dump" ]]; then
-            echo "::warning::Backup file ${BACKUP_FILE_PATH} has an unexpected MIME type: ${FILE_TYPE_MIME}. Proceeding with caution."
-          fi
-          echo "Backup file ${BACKUP_FILE_PATH} verified as non-empty and likely binary."
-
-          echo "Exporting user data (CSV)..."
-          heroku pg:psql --app omnitool-by-xdv -c "COPY users TO STDOUT WITH CSV HEADER" > "backups/users_${TIMESTAMP}.csv"
-          heroku pg:psql --app omnitool-by-xdv -c "COPY tool_access TO STDOUT WITH CSV HEADER" > "backups/tool_access_${TIMESTAMP}.csv"
-          heroku pg:psql --app omnitool-by-xdv -c "COPY email_templates TO STDOUT WITH CSV HEADER" > "backups/email_templates_${TIMESTAMP}.csv"
-
-          echo "backup_file=${BACKUP_FILE_NAME}" >> $GITHUB_OUTPUT
-          echo "timestamp=${TIMESTAMP}" >> $GITHUB_OUTPUT
-
-          curl -H "Content-Type: application/json" -X POST "${DISCORD_WEBHOOK_URL}" \
-            -d "{\"embeds\":[{\"title\":\"💾 Backup Created & Verified\",\"color\":3447003,\"description\":\"Database backup completed and verified successfully.\",\"fields\":[{\"name\":\"Backup File\",\"value\":\"${BACKUP_FILE_NAME}\",\"inline\":true}]}]}"
-
-      - name: Upload backup artifacts
+      - name: Archive code coverage results
         uses: actions/upload-artifact@v4
         with:
-          name: database-backup
-          path: backups/
-          retention-days: 30
+          name: code-coverage-report
+          path: htmlcov/
+          retention-days: 14
 
-  deploy-and-migrate:
+  deploy-to-staging:
     runs-on: ubuntu-latest
-    needs: backup-and-migrate
-    environment: production
+    needs: test
+    environment: staging
 
     steps:
       - name: Checkout Code
@@ -186,7 +72,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Python and Dependencies
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.12.0'
@@ -197,135 +83,60 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Configure Git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+      - name: Push to Staging Branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git checkout -b staging
+          git push origin staging --force
+
       - name: Install Heroku CLI
         run: |
           curl https://cli-assets.heroku.com/install.sh | sh
-          echo "/usr/local/bin" >> $GITHUB_PATH
+
+      - name: Login to Heroku
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+          HEROKU_EMAIL: ${{ secrets.HEROKU_EMAIL }}
+        run: |
+          cat > ~/.netrc <<EOF
+          machine api.heroku.com
+            login $HEROKU_EMAIL
+            password $HEROKU_API_KEY
+          machine git.heroku.com
+            login $HEROKU_EMAIL
+            password $HEROKU_API_KEY
+          EOF
+          chmod 600 ~/.netrc
+          heroku auth:whoami
+
+      - name: Add Heroku Remote
+        run: heroku git:remote -a omnitool-by-xdv-staging
 
       - name: Deploy to Heroku
-        env:
-          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-        run: |
-          git remote add heroku https://heroku:${{ secrets.HEROKU_API_KEY }}@git.heroku.com/omnitool-by-xdv.git
-          git push heroku main --force
+        run: git push heroku staging:main --force
 
       - name: Update Heroku Config
-        env:
-          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
-          heroku config:set FLASK_APP="main.py" -a omnitool-by-xdv
-          heroku config:set FLASK_ENV="production" -a omnitool-by-xdv
-          heroku config:set IS_LOCAL="false" -a omnitool-by-xdv
-          heroku config:set MAIL_USERNAME="info.omnitools@gmail.com" -a omnitool-by-xdv
-          heroku config:set MAIL_DEFAULT_SENDER="info@theomnitools.com" -a omnitool-by-xdv
-          heroku config:set MAIL_PASSWORD="${{ secrets.MAIL_PASSWORD }}" -a omnitool-by-xdv
-          heroku config:set TOKEN_SECRET_KEY="${{ secrets.TOKEN_SECRET_KEY }}" -a omnitool-by-xdv
-          heroku config:set SECURITY_PASSWORD_SALT="${{ secrets.SECURITY_PASSWORD_SALT }}" -a omnitool-by-xdv
-          heroku config:set SESSION_TYPE="filesystem" -a omnitool-by-xdv
+          heroku config:set FLASK_APP="main.py" -a omnitool-by-xdv-staging
+          heroku config:set FLASK_ENV="staging" -a omnitool-by-xdv-staging
+          heroku config:set IS_LOCAL="false" -a omnitool-by-xdv-staging
+          heroku config:set MAIL_USERNAME="info.omnitools@gmail.com" -a omnitool-by-xdv-staging
+          heroku config:set MAIL_DEFAULT_SENDER="info@theomnitools.com" -a omnitool-by-xdv-staging
+          heroku config:set MAIL_PASSWORD="${{ secrets.MAIL_PASSWORD }}" -a omnitool-by-xdv-staging
+          heroku config:set TOKEN_SECRET_KEY="${{ secrets.TOKEN_SECRET_KEY }}" -a omnitool-by-xdv-staging
+          heroku config:set SECURITY_PASSWORD_SALT="${{ secrets.SECURITY_PASSWORD_SALT }}" -a omnitool-by-xdv-staging
+          heroku config:set SESSION_TYPE="filesystem" -a omnitool-by-xdv-staging
 
       - name: Run Database Migrations
-        if: needs.backup-and-migrate.outputs.has_schema_changes == 'true'
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+          FLASK_ENV: staging
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
         run: |
-          echo "Running database migrations..."
-          if heroku run python -m flask db upgrade --app omnitool-by-xdv; then
-            curl -H "Content-Type: application/json" -X POST "https://discord.com/api/webhooks/1299838194728177684/DuMFG_NFU1__YLawLIlovT4Dth8iUn9vNu2HLj4PibImQq6QL0iCDLd1lObrVGhV7BbK" \
-              -d "{\"embeds\":[{\"title\":\"✅ Migration Successful\",\"color\":5763719,\"description\":\"Database schema updated successfully\"}]}"
-          else
-            curl -H "Content-Type: application/json" -X POST "https://discord.com/api/webhooks/1299838194728177684/DuMFG_NFU1__YLawLIlovT4Dth8iUn9vNu2HLj4PibImQq6QL0iCDLd1lObrVGhV7BbK" \
-              -d "{\"embeds\":[{\"title\":\"❌ Migration Failed\",\"color\":15548997,\"description\":\"Database migration failed - Check logs\"}]}"
-            exit 1
-          fi
-
-  restore-data:
-    runs-on: ubuntu-latest
-    needs: [backup-and-migrate, deploy-and-migrate]
-    environment: production
-    if: needs.backup-and-migrate.outputs.has_schema_changes == 'true'
-
-    steps:
-      - name: Download backup artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: database-backup
-          path: backups/
-
-      - name: Install PostgreSQL client
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client
-
-      - name: Restore User Data
-        env:
-          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-        run: |
-          echo "Restoring user data..."
-          
-          for file in backups/users_*.csv; do
-            echo "Restoring users table..."
-            heroku pg:psql --app omnitool-by-xdv -c "
-              ALTER TABLE users DISABLE TRIGGER ALL;
-              \COPY users FROM '$file' WITH CSV HEADER;
-              ALTER TABLE users ENABLE TRIGGER ALL;"
-          done
-
-          for file in backups/tool_access_*.csv; do
-            echo "Restoring tool_access table..."
-            heroku pg:psql --app omnitool-by-xdv -c "
-              ALTER TABLE tool_access DISABLE TRIGGER ALL;
-              \COPY tool_access FROM '$file' WITH CSV HEADER;
-              ALTER TABLE tool_access ENABLE TRIGGER ALL;"
-          done
-
-          for file in backups/email_templates_*.csv; do
-            echo "Restoring email_templates table..."
-            heroku pg:psql --app omnitool-by-xdv -c "
-              ALTER TABLE email_templates DISABLE TRIGGER ALL;
-              \COPY email_templates FROM '$file' WITH CSV HEADER;
-              ALTER TABLE email_templates ENABLE TRIGGER ALL;"
-          done
-          
-          curl -H "Content-Type: application/json" -X POST "https://discord.com/api/webhooks/1299838194728177684/DuMFG_NFU1__YLawLIlovT4Dth8iUn9vNu2HLj4PibImQq6QL0iCDLd1lObrVGhV7BbK" \
-            -d "{\"embeds\":[{\"title\":\"✅ Data Restored\",\"color\":5763719,\"description\":\"User data has been restored successfully\"}]}"
-
-      - name: Verify Data Restoration
-        env:
-          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-        run: |
-          echo "Verifying data restoration..."
-          verification_results=$(heroku pg:psql --app omnitool-by-xdv -c "
-            SELECT COUNT(*) as user_count FROM users;
-            SELECT COUNT(*) as tool_access_count FROM tool_access;
-            SELECT COUNT(*) as template_count FROM email_templates;")
-          
-          curl -H "Content-Type: application/json" -X POST "https://discord.com/api/webhooks/1299838194728177684/DuMFG_NFU1__YLawLIlovT4Dth8iUn9vNu2HLj4PibImQq6QL0iCDLd1lObrVGhV7BbK" \
-            -d "{\"embeds\":[{\"title\":\"📊 Verification Results\",\"color\":3447003,\"description\":\"${verification_results}\"}]}"
-
-  cleanup:
-    runs-on: ubuntu-latest
-    needs: [restore-data, deploy-and-migrate]
-    if: always()
-    
-    steps:
-      - name: Cleanup Old Backups
-        env:
-          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-        run: |
-          # Get list of backups and extract only the backup IDs
-          backup_list=$(heroku pg:backups --app omnitool-by-xdv | grep '^b' | awk '{print $1}' | tail -n +6)
-          
-          # Check if there are backups to delete
-          if [ ! -z "$backup_list" ]; then
-            echo "Found old backups to clean up: $backup_list"
-            for backup_id in $backup_list; do
-              echo "Deleting backup $backup_id..."
-              heroku pg:backups:delete $backup_id --app omnitool-by-xdv --confirm omnitool-by-xdv || true
-            done
-          else
-            echo "No old backups to clean up"
-          fi
-          
-          # Notify Discord about cleanup
-          curl -H "Content-Type: application/json" -X POST "https://discord.com/api/webhooks/1299838194728177684/DuMFG_NFU1__YLawLIlovT4Dth8iUn9vNu2HLj4PibImQq6QL0iCDLd1lObrVGhV7BbK" \
-            -d "{\"embeds\":[{\"title\":\"🧹 Cleanup Complete\",\"color\":3447003,\"description\":\"Backup cleanup process finished\"}]}"
+          heroku run python migrate_db.py -a omnitool-by-xdv-staging

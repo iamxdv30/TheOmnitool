@@ -25,19 +25,13 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-# Load environment variables from .env
-print("DEBUG: Current directory:", os.getcwd())
-print("DEBUG: .env file exists:", os.path.exists(os.path.join(os.path.dirname(__file__), '.env')))
-load_dotenv(os.path.join(os.path.dirname(__file__), '.env'), override=True)
-
-# Force set environment variables for development
-if os.path.exists(os.path.join(os.path.dirname(__file__), '.env')):
-    os.environ['FLASK_ENV'] = 'development'
-    os.environ['IS_LOCAL'] = 'true'
+# Load environment variables from .env (only for local development)
+# Heroku uses environment variables set via `heroku config:set`
+load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 
 # Debug: Print environment variables
-print("DEBUG: FLASK_ENV =", os.getenv('FLASK_ENV'))
-print("DEBUG: IS_LOCAL =", os.getenv('IS_LOCAL'))
+print("DEBUG: FLASK_ENV =", os.getenv('FLASK_ENV', 'development'))
+print("DEBUG: IS_LOCAL =", os.getenv('IS_LOCAL', 'true'))
 
 # Factory function to create a Flask app
 
@@ -111,14 +105,23 @@ def create_app():
 
     # Database configuration
     if is_local:
+        # Local development: Use SQLite
         database_url = 'sqlite:///users.db'
+        logging.info(f"Using local SQLite database: {database_url}")
     else:
-        # Use DATABASE_URL provided by Heroku
+        # Production/Staging: Use DATABASE_URL from Heroku
         database_url = os.getenv('DATABASE_URL', '')
 
-    # Replace deprecated PostgreSQL connection string format
-    if database_url.startswith("postgres://"):
-        database_url = database_url.replace("postgres://", "postgresql://", 1)
+        if not database_url:
+            raise ValueError("DATABASE_URL environment variable not set in production!")
+
+        # Replace deprecated PostgreSQL connection string format
+        if database_url.startswith("postgres://"):
+            database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+        # Log database connection (mask password)
+        masked_db_url = re.sub(r"://[^:]+:[^@]+@", "://****:****@", database_url)
+        logging.info(f"Using PostgreSQL database: {masked_db_url}")
 
     app.config["SQLALCHEMY_DATABASE_URI"] = database_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
@@ -178,13 +181,16 @@ def create_app():
     @app.after_request
     def add_security_headers(response):
         is_local = os.getenv('IS_LOCAL', 'true').lower() == 'true'
-        
+
         if not is_local:  # Only add strict security headers in production
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
             response.headers["Content-Security-Policy"] = (
-                "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+                "default-src 'self'; "
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google.com https://www.gstatic.com; "
                 "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-                "font-src 'self' https://fonts.gstatic.com;"
+                "font-src 'self' https://fonts.gstatic.com; "
+                "frame-src https://www.google.com; "
+                "img-src 'self' data:;"
             )
         return response
 
