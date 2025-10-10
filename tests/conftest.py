@@ -10,7 +10,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 @pytest.fixture
-def app():
+def app(monkeypatch):
+    # Disable reCAPTCHA for testing by monkeypatching AuthConfig
+    from config.auth_config import AuthConfig
+    monkeypatch.setattr(AuthConfig, 'RECAPTCHA_SITE_KEY', None)
+    monkeypatch.setattr(AuthConfig, 'RECAPTCHA_SECRET_KEY', None)
+
     app = create_app()
     app.config.update({
         'TESTING': True,
@@ -20,12 +25,12 @@ def app():
         'SECURITY_PASSWORD_SALT': os.getenv('SECURITY_PASSWORD_SALT', 'test-salt'),
         'TOKEN_SECRET_KEY': os.getenv('TOKEN_SECRET_KEY', 'test-token-key')
     })
-    
+
     with app.app_context():
         db.create_all()
-    
+
     yield app
-    
+
     with app.app_context():
         db.drop_all()
 
@@ -36,17 +41,20 @@ def client(app):
 @pytest.fixture
 def init_database(app):
     with app.app_context():
-        # Create test users
+        # Create test users with email verified (for testing purposes)
         user = User(username='testuser', email='test@test.com', fname='Test', lname='User',
-                    address='123 Test St', city='Testville', state='TS', zip='12345')
+                    address='123 Test St', city='Testville', state='TS', zip='12345',
+                    email_verified=True)
         user.set_password('testpass')
-        
+
         admin = Admin(username='adminuser', email='admin@test.com', fname='Admin', lname='User',
-                      address='456 Admin St', city='Adminville', state='AS', zip='67890')
+                      address='456 Admin St', city='Adminville', state='AS', zip='67890',
+                      email_verified=True)
         admin.set_password('adminpass')
-        
+
         superadmin = SuperAdmin(username='superadmin', email='super@test.com', fname='Super', lname='Admin',
-                                address='789 Super St', city='Superville', state='SA', zip='24680')
+                                address='789 Super St', city='Superville', state='SA', zip='24680',
+                                email_verified=True)
         superadmin.set_password('superpass')
         
         # Create test tools
