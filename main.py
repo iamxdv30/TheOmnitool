@@ -181,13 +181,16 @@ def create_app():
     @app.after_request
     def add_security_headers(response):
         is_local = os.getenv('IS_LOCAL', 'true').lower() == 'true'
-        
+
         if not is_local:  # Only add strict security headers in production
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
             response.headers["Content-Security-Policy"] = (
-                "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+                "default-src 'self'; "
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google.com https://www.gstatic.com; "
                 "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-                "font-src 'self' https://fonts.gstatic.com;"
+                "font-src 'self' https://fonts.gstatic.com; "
+                "frame-src https://www.google.com; "
+                "img-src 'self' data:;"
             )
         return response
 
