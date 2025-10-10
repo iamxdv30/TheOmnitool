@@ -113,9 +113,7 @@ prematurely due to incorrect session configuration.
 - Add proper error messages for expired tokens
 - Update tests to cover token expiration scenarios
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
-Co-Authored-By: Claude <noreply@anthropic.com>
 ```
 
 **Example 3 - Refactor**:
@@ -131,9 +129,6 @@ for better maintainability and extensibility.
 - Update imports across all routes and tests
 - Maintain backward compatibility with existing code
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
 ```
 
 ## Edge Cases
