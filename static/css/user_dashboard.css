@@ -1,71 +1,114 @@
+/* static/css/user_dashboard.css */
 .user-dashboard-container {
   font-family: 'Noto Sans Mono', monospace;
-  font-size: 16px;
-  padding: 20px;
-  margin: 20px;
-  background-color: #f9f9f9;
-  color: #333;
-  width: 80%;
-  max-width: 800px;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  padding: 30px;
+  margin: 30px auto;
+  background-color: var(--tool-form-bg);
+  color: var(--text-primary);
+  width: 90%;
+  max-width: 960px; 
+  border-radius: 12px;
+  box-shadow: var(--shadow-light); 
+  border: 1px solid var(--border-color); 
 }
 
 .user-dashboard-container h1 {
-  font-size: 24px;
+  font-size: 28px;
+  margin-bottom: 25px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.user-dashboard-container h2 {
+  font-size: 22px;
+  margin-top: 30px;
   margin-bottom: 20px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color); 
+  padding-bottom: 10px;
 }
 
 .user-dashboard-container p {
-  margin-bottom: 10px;
+  margin-bottom: 15px;
+  line-height: 1.6;
+  font-size: 16px;
 }
 
+/* Tool List - Card Layout */
 .tool-list {
   list-style-type: none;
   padding: 0;
-  font-family: 'Noto Sans Mono', monospace;
-  font-size: 16px;
-  font-weight: bold;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+  gap: 25px; 
+  margin-top: 20px;
 }
 
-.tool-list a {
+.tool-card {
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: var(--shadow-light);
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  display: flex; 
+  flex-direction: column; 
+  justify-content: center; 
+  align-items: center; 
+  text-align: center;
+}
+
+.tool-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-light);
+}
+
+.tool-card a {
   text-decoration: none;
-  color: #007bff;
-  margin-left: 10px;
-  padding: 5px 0px;
+  color: var(--secondary-color); 
+  font-size: 18px; 
+  font-weight: bold;
   font-family: 'Noto Sans Mono', monospace;
-  display: inline-block;
 }
 
-.tool-list a:hover {
-  color: #0056b3;
+.tool-card a:hover {
+  color: var(--secondary-hover); 
 }
 
-.tool-list li {
-  margin-bottom: 10px;
+/* Dark Mode Styles */
+html.dark .user-dashboard-container {
+  background-color: var(--tool-form-bg); 
+  color: var(--text-primary);
+  border: 1px solid var(--border-color); 
 }
 
-/* dark mode */
-
-body.dark-theme .user-dashboard-container {
-  background-color: #2e2e2e;
-  color: #e0e0e0;
-  border: 1px solid #555;
-  font-family: 'Noto Sans Mono', monospace;
-  font-size: 16px;
-  box-shadow: 0 0 10px 0 rgba(0, 128, 0, 0.5);
+html.dark .user-dashboard-container h1 {
+  color: var(--text-light);
 }
 
-body.dark-theme .user-dashboard-container h1,
-body.dark-theme .user-dashboard-container p,
-body.user-dashboard-container h2 {
-  color: #e0e0e0;
+html.dark .user-dashboard-container h2 {
+  color: var(--text-light);
+  border-bottom-color: var(--border-color);
 }
 
-body.dark-theme .tool-list a {
-  color: #ff9800;
+html.dark .user-dashboard-container p {
+  color: var(--text-light);
 }
 
-body.dark-theme .tool-list a:hover {
-  color: #ff9800;
+html.dark .tool-card {
+  background-color: var(--tool-form-bg); 
+  box-shadow: var(--shadow-light);
+  border: 1px solid var(--border-color); 
 }
+
+html.dark .tool-card:hover {
+  box-shadow: var(--shadow-dark);
+}
+
+html.dark .tool-card a {
+  color: var(--accent-color); 
+}
+
+html.dark .tool-card a:hover {
+  color: var(--accent-hover); 
+}
+
+/* Flashes styling is assumed to be handled by base.css or is acceptable as is */

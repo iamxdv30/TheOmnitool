@@ -1,6 +1,6 @@
 import pytest
 from flask import session
-from model.model import EmailTemplate, db, User, Tool, ToolAccess
+from model import EmailTemplate, db, User, Tool, ToolAccess
 from sqlalchemy.exc import IntegrityError
 
 @pytest.fixture

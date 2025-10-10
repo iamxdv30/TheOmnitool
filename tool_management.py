@@ -1,6 +1,6 @@
 from flask import current_app
-from model.model import db
-from model.model import Tool, ToolAccess, User
+from model import db
+from model import Tool, ToolAccess, User
 
 
 def initialize_tools():

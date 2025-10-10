@@ -1,105 +1,138 @@
 {% extends "base.html" %}
+
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/superadmin.css') }}">
+{% endblock %}
+
+{% block scripts %}
+    <!-- Load utility JS files -->
+    <script src="{{ url_for('static', filename='js/utils/common.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/modules/ajax.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/modules/ui.js') }}"></script>
+    <!-- Load page-specific JS -->
+    <script src="{{ url_for('static', filename='js/pages/admin_dashboard.js') }}"></script>
+{% endblock %}
+
 {% block content %}
-<h1 id="admin-dashboard" class="admin-dashboard-title">Admin Dashboard</h1>
+<div class="dashboard-container">
+    <h1 class="dashboard-title">Admin Dashboard</h1>
 
-<h2>Create New User</h2>
-<form action="{{ url_for('admin.create_user') }}" method="post">
-    <input type="text" name="username" placeholder="Username" required>
-    <input type="email" name="email" placeholder="Email" required>
-    <input type="password" name="password" placeholder="Password" required>
-    <input type="text" name="fname" placeholder="First Name" required>
-    <input type="text" name="lname" placeholder="Last Name" required>
-    <input type="text" name="address" placeholder="Address" required>
-    <input type="text" name="city" placeholder="City" required>
-    <input type="text" name="state" placeholder="State" required>
-    <input type="text" name="zip" placeholder="ZIP" required>
-    <select name="role">
-        <option value="user">User</option>
-        <option value="admin">Admin</option>
-    </select>
-    <button type="submit">Create User</button>
-</form>
-
-<h2>Manage Users</h2>
-<table>
-    <thead>
-        <tr>
-            <th>Username</th>
-            <th>Email</th>
-            <th>Role</th>
-            <th>Actions</th>
-            <th>Tool Access</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for user in users %}
-        {% if user.role != 'super_admin' %}
-        <tr>
-            <td>{{ user.username }}</td>
-            <td>{{ user.email }}</td>
-            <td>{{ user.role }}</td>
-            <td>
-                <button onclick="showUpdateForm('{{ user.id }}')">Update</button>
-                <form action="{{ url_for('admin.delete_user', user_id=user.id) }}" method="post" onsubmit="return confirm('Are you sure you want to delete this user?');">
-                    <button type="submit">Delete</button>
-                </form>
-            </td>
-            <td>
-                <h4>Available Tools</h4>
-                <ul>
-                    {% for tool in tools %}
-                    {% if tool not in user_tools[user.id] %}
-                    <li>
-                        {{ tool }}
-                        <form action="{{ url_for('admin.grant_tool_access') }}" method="post">
-                            <input type="hidden" name="user_id" value="{{ user.id }}">
-                            <input type="hidden" name="tool_name" value="{{ tool }}">
-                            <button type="submit">Grant Access</button>
+    <!-- Display flash messages -->
+    {% include '_flash_messages.html' %}
+    
+    <!-- Add a button to show/hide the create user form -->
+    <button id="showCreateUserForm" class="btn btn-manage-tools">Create New User</button>
+    
+    <!-- Create user form (initially hidden) -->
+    <div id="createUserForm" style="display:none;">
+        <h2 class="section-title">Create New User</h2>
+        <form action="{{ url_for('admin.create_user') }}" method="post" class="user-form">
+            <input type="text" name="username" placeholder="Username" required class="form-input">
+            <input type="email" name="email" placeholder="Email" required class="form-input">
+            <input type="password" name="password" placeholder="Password" required class="form-input">
+            <input type="text" name="fname" placeholder="First Name" required class="form-input">
+            <input type="text" name="lname" placeholder="Last Name" required class="form-input">
+            <input type="text" name="address" placeholder="Address" required class="form-input">
+            <input type="text" name="city" placeholder="City" required class="form-input">
+            <input type="text" name="state" placeholder="State" required class="form-input">
+            <input type="text" name="zip" placeholder="ZIP Code" required class="form-input">
+            <select name="role" class="form-select">
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+            </select>
+            <button type="submit" class="submit-btn">Create User</button>
+        </form>
+    </div>
+    
+    <!-- Add search bar -->
+    <div class="search-container">
+        <input type="text" id="userSearch" class="search-input" placeholder="Search users...">
+    </div>
+    
+    <!-- User table -->
+    <table class="user-table">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="userTableBody">
+            {% for user in users %}
+            {% if user.role != 'super_admin' %}
+            <tr class="user-row">
+                <td>{{ user.username }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.role }}</td>
+                <td>
+                    <button class="btn btn-secondary showUpdateForm">Update</button>
+                    <button class="btn btn-secondary showToolAccess">Tool Access</button>
+                    <form action="{{ url_for('admin.delete_user', user_id=user.id) }}" method="post" class="delete-form">
+                        <button type="submit" class="btn btn-danger">Delete User</button>
+                    </form>
+                </td>
+            </tr>
+                <tr class="update-form" style="display:none;">
+                    <td colspan="4">
+                        <form action="{{ url_for('admin.update_user', user_id=user.id) }}" method="post" class="user-form">
+                            <input type="text" name="username" value="{{ user.username }}" required class="form-input">
+                            <input type="email" name="email" value="{{ user.email }}" required class="form-input">
+                            <input type="text" name="fname" value="{{ user.fname }}" required class="form-input">
+                            <input type="text" name="lname" value="{{ user.lname }}" required class="form-input">
+                            <input type="text" name="address" value="{{ user.address }}" required class="form-input">
+                            <input type="text" name="city" value="{{ user.city }}" required class="form-input">
+                            <input type="text" name="state" value="{{ user.state }}" required class="form-input">
+                            <input type="text" name="zip" value="{{ user.zip }}" required class="form-input">
+                            <input type="password" name="password" placeholder="New Password (leave blank to keep current)" class="form-input">
+                            <button type="submit" class="submit-btn">Update User</button>
                         </form>
-                    </li>
-                    {% endif %}
-                    {% endfor %}
-                </ul>
+                    </td>
+                </tr>
+                <tr class="tool-access" style="display:none;">
+                    <td colspan="4">
+                        <div class="tool-access-container">
+                            <div class="tool-form-group">
+                                <h4>Grant Tool Access</h4>
+                                <form action="{{ url_for('tool.grant_tool_access') }}" method="post" class="tool-form">
+                                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                                    <select name="tool_name" class="form-select">
+                                        {% for tool in tools %}
+                                            <option value="{{ tool }}" {% if tool in user_tools[user.id] %}disabled{% endif %}>
+                                                {{ tool }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="submit" class="btn btn-primary">Grant Access</button>
+                                </form>
+                            </div>
 
-                <h4>Granted Tools</h4>
-                <ul>
-                    {% for tool in user_tools[user.id] %}
-                    <li>
-                        {{ tool }}
-                        <form action="{{ url_for('tool.revoke_tool_access') }}" method="post">
-                            <input type="hidden" name="user_id" value="{{ user.id }}">
-                            <input type="hidden" name="tool_name" value="{{ tool }}">
-                            <button type="submit">Revoke Access</button>
-                        </form>
-                    </li>
-                    {% endfor %}
-                </ul>
-            </td>
-        </tr>
-        {% endif %}
-        {% endfor %}
-    </tbody>
-</table>
-
-<div id="updateForm" style="display:none;">
-    <h2>Update User</h2>
-    <form action="{{ url_for('admin.update_user', user_id=0) }}" method="post" id="updateUserForm">
-        <input type="text" name="username" placeholder="Username" required>
-        <input type="email" name="email" placeholder="Email" required>
-        <input type="text" name="fname" placeholder="First Name" required>
-        <input type="text" name="lname" placeholder="Last Name" required>
-        <input type="text" name="address" placeholder="Address" required>
-        <input type="text" name="city" placeholder="City" required>
-        <input type="text" name="state" placeholder="State" required>
-        <input type="text" name="zip" placeholder="ZIP" required>
-        <button type="submit">Update User</button>
-    </form>
+                            <div class="tool-form-group">
+                                <h4>Revoke Tool Access</h4>
+                                <form action="{{ url_for('tool.revoke_tool_access') }}" method="post" class="tool-form">
+                                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                                    <select name="tool_name" class="form-select">
+                                        {% for tool_name in user_tools[user.id] %}
+                                            <option value="{{ tool_name }}">{{ tool_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="submit" class="btn btn-danger" {% if not user_tools[user.id] %}disabled{% endif %}>Revoke Access</button>
+                                </form>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <!-- All JavaScript has been moved to modular files:
+         - common.js: General utilities
+         - ajax.js: AJAX request handling
+         - ui.js: UI interaction handlers
+         - admin_dashboard.js: Page-specific functionality
+    -->
 </div>
-
-<script>
-function showUpdateForm(userId) {
-    document.getElementById('updateForm').style.display = 'block';
-    document.getElementById('updateUserForm').action = "{{ url_for('admin.update_user', user_id=0) }}".replace('0', userId);
-}
-</script>
 {% endblock %}

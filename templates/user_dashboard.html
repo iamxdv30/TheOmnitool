@@ -8,22 +8,13 @@
     <h1>User Dashboard</h1>
     <p>Welcome, {{ session['username'] }}!</p>
 
+    {% include '_flash_messages.html' %}
+
     <h2>Available Tools</h2>
     <ul class="tool-list">
     {% for tool in user_tools %}
-        <li><a href="{{ url_for('tool.check_tool_access', tool_name=tool) }}">{{ tool }}</a></li>
+        <li class="tool-card"><a href="{{ url_for('tool.check_tool_access', tool_name=tool) }}">{{ tool }}</a></li>
     {% endfor %}
     </ul>
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <ul class="flashes">
-            {% for category, message in messages %}
-                <li class="{{ category }}">{{ message }}</li>
-            {% endfor %}
-            </ul>
-        {% endif %}
-    {% endwith %}
-
 </div>
 {% endblock %}

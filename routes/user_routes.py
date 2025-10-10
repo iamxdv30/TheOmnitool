@@ -1,5 +1,5 @@
 from flask import Blueprint, request, redirect, url_for, render_template, session, flash
-from model.model import User, db, ToolAccess
+from model import User, db, ToolAccess
 from werkzeug.security import generate_password_hash
 import logging
 
@@ -8,6 +8,11 @@ user = Blueprint('user', __name__)
 @user.route("/")
 def index():
     return render_template("index.html")
+
+@user.route('/about')
+def about_page():
+    """Renders the about page."""
+    return render_template('about.html')
 
 @user.route("/user_dashboard", methods=["GET"])
 def user_dashboard():

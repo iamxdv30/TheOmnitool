@@ -1,0 +1,147 @@
+/* 
+ * Email Verification Styles
+ * Used by: verification_pending.html
+ */
+
+/* Main containers - extends auth.css styles */
+.verification-content {
+    text-align: center;
+}
+
+.verification-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+}
+
+/* Instructions section */
+.verification-instructions {
+    margin-bottom: 30px;
+}
+
+.verification-instructions p {
+    margin-bottom: 12px;
+    color: var(--auth-primary-color);
+    line-height: 1.5;
+}
+
+.email-highlight {
+    background-color: var(--auth-light-gray);
+    border: 2px solid var(--auth-border-color);
+    border-radius: 6px;
+    padding: 10px 15px;
+    font-family: 'Courier New', monospace;
+    color: var(--auth-primary-color);
+    font-size: 16px;
+    margin: 15px 0;
+}
+
+/* Important notes section */
+.verification-notes {
+    background-color: rgba(243, 156, 18, 0.1);
+    border: 1px solid rgba(243, 156, 18, 0.3);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 25px 0;
+    text-align: left;
+}
+
+.verification-notes h3 {
+    margin: 0 0 15px 0;
+    color: var(--auth-warning-color);
+    font-size: 16px;
+}
+
+.verification-notes ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.verification-notes li {
+    color: var(--auth-primary-color);
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+/* Action buttons section */
+.verification-actions {
+    margin: 30px 0;
+}
+
+.resend-form {
+    margin-bottom: 15px;
+}
+
+.action-divider {
+    margin: 15px 0;
+    color: var(--auth-dark-gray);
+    font-size: 14px;
+}
+
+/* Button styles specific to verification */
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+    transform: translateY(-1px);
+}
+
+.btn-outline {
+    background: var(--container-bg, #ffffff);
+    color: var(--auth-secondary-color);
+    border: 2px solid var(--auth-secondary-color);
+}
+
+.btn-outline:hover {
+    background: var(--auth-secondary-color);
+    color: white;
+    transform: translateY(-1px);
+}
+
+/* Help section */
+.verification-help {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid var(--auth-border-color);
+}
+
+.help-text {
+    font-size: 14px;
+    color: var(--auth-dark-gray);
+}
+
+.help-link {
+    color: var(--auth-secondary-color);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.help-link:hover {
+    text-decoration: underline;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 480px) {
+    .verification-icon {
+        font-size: 48px;
+    }
+    
+    .email-highlight {
+        font-size: 14px;
+        padding: 8px 12px;
+    }
+    
+    .verification-notes {
+        padding: 15px;
+    }
+    
+    .verification-notes h3 {
+        font-size: 14px;
+    }
+    
+    .verification-notes li {
+        font-size: 13px;
+    }
+}

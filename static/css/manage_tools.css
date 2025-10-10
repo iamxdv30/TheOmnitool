@@ -1,17 +1,10 @@
 /* Base styles for the page */
-body {
-  font-family: 'Noto Sans Mono', monospace;
-  background-color: #f4f4f4;
-  margin: 0;
-  padding: 0;
-}
-
 h1.manage-tools-title,
 h2.add-tool-title,
 h2.existing-tools-title,
 h2.update-tool-title {
   text-align: center;
-  color: #333;
+  color: var(--text-secondary);
   margin-top: 20px;
   font-size: 24px;
   font-weight: 700;
@@ -27,11 +20,11 @@ form.update-tool-form {
   display: flex;
   flex-direction: column;
   align-items: center;
-  background-color: #fff;
+  background-color: var(--card-bg);
   padding: 20px;
   margin: 20px auto;
   border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-medium);
   max-width: 600px;
 }
 
@@ -44,8 +37,10 @@ form.update-tool-form {
   padding: 10px;
   margin: 10px 0;
   border-radius: 4px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
   font-size: 16px;
+  background-color: var(--input-bg);
+  color: var(--text-primary);
 }
 
 .add-tool-textarea,
@@ -60,6 +55,7 @@ form.update-tool-form {
   align-items: center;
   margin: 10px 0;
   font-size: 16px;
+  color: var(--text-primary);
 }
 
 .add-tool-checkbox,
@@ -71,8 +67,8 @@ form.update-tool-form {
 .add-tool-btn,
 .update-tool-btn,
 .delete-tool-btn {
-  background-color: #28a745;
-  color: white;
+  background-color: var(--success-color);
+  color: var(--text-light);
   padding: 10px 15px;
   border: none;
   border-radius: 4px;
@@ -84,7 +80,7 @@ form.update-tool-form {
 .add-tool-btn:hover,
 .update-tool-btn:hover,
 .delete-tool-btn:hover {
-  background-color: #218838;
+  background-color: var(--success-hover);
 }
 
 .update-tool-btn,
@@ -93,26 +89,29 @@ form.update-tool-form {
 }
 
 .update-tool-btn {
-  background-color: #007bff;
+  background-color: var(--accent-color);
+}
+
+.update-tool-btn:hover {
+  background-color: var(--accent-hover);
 }
 
 .delete-tool-btn {
-  background-color: #dc3545;
+  background-color: var(--danger-color);
   margin-left: 10px; /* Added to space between buttons */
 }
 
 .delete-tool-btn:hover {
-  background-color: #c82333;
+  background-color: var(--danger-hover);
 }
-
 
 /* Table styles */
 .existing-tools-table {
   width: 90%; /* Reduced the width */
   margin: 20px auto;
   border-collapse: collapse;
-  background-color: #fff;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  background-color: var(--card-bg);
+  box-shadow: var(--shadow-medium);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -120,14 +119,14 @@ form.update-tool-form {
 .existing-tools-th,
 .existing-tools-td {
   padding: 10px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   text-align: left;
   font-size: 14px;
 }
 
 .existing-tools-th {
-  background-color: #007bff;
-  color: white;
+  background-color: var(--accent-color);
+  color: var(--text-light);
 }
 
 .existing-tools-tr {
@@ -135,16 +134,18 @@ form.update-tool-form {
 }
 
 .existing-tools-tr:nth-child(even) {
-  background-color: #f4f4f4;
+  background-color: var(--container-bg);
 }
 
 .existing-tools-tr:hover {
-  background-color: #e9ecef;
+  background-color: var(--container-bg);
+  opacity: 0.8;
 }
 
 .existing-tools-td {
   word-wrap: break-word;
   white-space: normal;
+  color: var(--text-primary);
 }
 
 .existing-tools-actions {
@@ -162,9 +163,9 @@ form.update-tool-form {
   transform: translate(-50%, -50%);
   width: 100%;
   max-width: 500px;
-  background-color: white;
+  background-color: var(--card-bg);
   padding: 20px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-heavy);
   border-radius: 8px;
   z-index: 1000;
 }
@@ -174,8 +175,8 @@ form.update-tool-form {
   position: absolute;
   top: 10px;
   right: 15px;
-  background-color: #dc3545;
-  color: white;
+  background-color: var(--danger-color);
+  color: var(--text-light);
   padding: 5px 10px;
   border: none;
   border-radius: 4px;
@@ -183,7 +184,7 @@ form.update-tool-form {
 }
 
 .update-tool-form .close-modal-btn:hover {
-  background-color: #c82333;
+  background-color: var(--danger-hover);
 }
 
 /* Responsive styles */

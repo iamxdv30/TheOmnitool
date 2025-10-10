@@ -1,0 +1,77 @@
+/* static/css/about.css */
+
+.about-page-container {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 20px;
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: var(--shadow-light);
+    font-family: var(--font-family);
+    color: var(--text-secondary);
+}
+
+.about-header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.about-header h1 {
+    font-size: 2.8em;
+    color: var(--accent-color);
+    font-weight: bold;
+}
+
+.about-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: var(--container-bg);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.about-section .section-title {
+    font-size: 1.8em;
+    color: var(--primary-color);
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed var(--border-color);
+}
+
+.about-section p {
+    font-size: 1.1em;
+    line-height: 1.7;
+    color: var(--text-muted);
+    text-align: justify;
+}
+
+/* Dark Theme Adjustments */
+html.dark .about-page-container {
+    background-color: var(--card-bg-dark);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+    color: var(--text-secondary-dark);
+}
+
+html.dark .about-header {
+    border-bottom-color: var(--border-color-dark);
+}
+
+html.dark .about-header h1 {
+    color: var(--accent-color); /* Uses the dark theme accent color from CSS variables */
+}
+
+html.dark .about-section {
+    background-color: var(--container-bg-dark);
+    border-color: var(--border-color-dark);
+}
+
+html.dark .about-section .section-title {
+    color: #a0c090; /* Keep the custom lighter green for dark theme readability */
+    border-bottom-color: var(--border-color-dark);
+}
+
+html.dark .about-section p {
+    color: var(--text-muted-dark);
+}
