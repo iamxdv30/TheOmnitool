@@ -384,12 +384,18 @@ def check_tool_access(tool_name):
     logging.debug(f"Checking access for tool: {tool_name}")
     if "logged_in" in session:
         user_id = session.get("user_id")
-        logging.debug(f"User ID: {user_id}")
+        user_role = session.get("role")
+        logging.debug(f"User ID: {user_id}, Role: {user_role}")
 
-        has_access = (
-            ToolAccess.query.filter_by(user_id=user_id, tool_name=tool_name).first()
-            is not None
-        )
+        # Admins and superadmins have access to all tools
+        if user_role in ["admin", "superadmin"]:
+            has_access = True
+        else:
+            # For regular users, check ToolAccess table
+            has_access = (
+                ToolAccess.query.filter_by(user_id=user_id, tool_name=tool_name).first()
+                is not None
+            )
         logging.debug(f"Has access: {has_access}")
 
         if has_access:
