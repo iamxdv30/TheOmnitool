@@ -32,6 +32,7 @@ def logged_in_user(client, app, init_database):
                 city="Testville",
                 state="TS",
                 zip="12345",
+                email_verified=True  # Test users are pre-verified
             )
             user.set_password("testpass")
             db.session.add(user)
