@@ -9,16 +9,37 @@ class User(db.Model):
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    fname = db.Column(db.String(50), nullable=False)
-    lname = db.Column(db.String(50), nullable=False)
-    address = db.Column(db.String(200), nullable=False)
-    city = db.Column(db.String(50), nullable=False)
-    state = db.Column(db.String(50), nullable=False)
-    zip = db.Column(db.String(10), nullable=False)
+
+    # Legacy fields (kept for backward compatibility with existing database)
+    fname = db.Column(db.String(50), nullable=True)
+    lname = db.Column(db.String(50), nullable=True)
+    address = db.Column(db.String(200), nullable=True)
+    city = db.Column(db.String(50), nullable=True)
+    state = db.Column(db.String(50), nullable=True)
+    zip = db.Column(db.String(10), nullable=True)
+
+    # Core user fields
+    name = db.Column(db.String(100), nullable=False)
     username = db.Column(db.String(50), unique=True, nullable=False)
-    email = db.Column(db.String(100), unique=True, nullable=False)
-    password = db.Column("password", db.String(128), nullable=False)
-    role = db.Column(db.String(20), nullable=False)
+    email = db.Column(db.String(255), unique=True, nullable=False)
+    password = db.Column("password", db.String(128), nullable=True)
+    role = db.Column(db.String(20), nullable=False, default='user')
+
+    # Email verification fields
+    email_verified = db.Column(db.Boolean, default=False, nullable=False)
+    email_verification_token = db.Column(db.String(255), nullable=True)
+    email_verification_sent_at = db.Column(db.DateTime, nullable=True)
+
+    # OAuth integration fields
+    oauth_provider = db.Column(db.String(50), nullable=True)
+    oauth_id = db.Column(db.String(255), nullable=True)
+    requires_password_setup = db.Column(db.Boolean, default=False)
+
+    # Account management fields
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_login = db.Column(db.DateTime, nullable=True)
+    is_active = db.Column(db.Boolean, default=True)
     
     # Relationships
     usage_logs = db.relationship(
@@ -34,8 +55,54 @@ class User(db.Model):
 
     __mapper_args__ = {"polymorphic_identity": "user", "polymorphic_on": role}
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, name=None, username=None, email=None, role='user',
+                 oauth_provider=None, oauth_id=None, email_verified=False,
+                 requires_password_setup=False, fname=None, lname=None,
+                 address=None, city=None, state=None, zip=None, **kwargs):
+        super().__init__(**kwargs)
+
+        # Set name field (required)
+        if name is not None:
+            self.name = name
+            # Also parse into fname/lname for backward compatibility
+            name_parts = name.strip().split()
+            if len(name_parts) == 1:
+                self.fname = name_parts[0]
+                self.lname = "User"
+            elif len(name_parts) >= 2:
+                self.fname = name_parts[0]
+                self.lname = " ".join(name_parts[1:])
+        elif fname is not None and lname is not None:
+            # Legacy: if fname/lname provided, combine into name
+            self.fname = fname
+            self.lname = lname
+            self.name = f"{fname} {lname}"
+        else:
+            # Fallback
+            self.name = username if username else "Unknown"
+
+        if username is not None:
+            self.username = username
+        if email is not None:
+            self.email = email
+        if role is not None:
+            self.role = role
+
+        # Set address fields with defaults (optional now)
+        self.address = address if address is not None else ""
+        self.city = city if city is not None else ""
+        self.state = state if state is not None else ""
+        self.zip = zip if zip is not None else ""
+
+        # Set authentication fields
+        if oauth_provider is not None:
+            self.oauth_provider = oauth_provider
+        if oauth_id is not None:
+            self.oauth_id = oauth_id
+        self.email_verified = email_verified if email_verified is not None else False
+        if requires_password_setup is not None:
+            self.requires_password_setup = requires_password_setup
+
         self.password_hasher = BcryptPasswordHasher()
         
     def set_password(self, password):

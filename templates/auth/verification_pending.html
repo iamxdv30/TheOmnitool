@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Email Verification Required - OmniTools{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auth/verification_pending.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h1>Check Your Email</h1>
+            <p>We've sent you a verification link</p>
+        </div>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash-message flash-{{ category }}">
+                            <span class="flash-icon">
+                                {% if category == 'error' %}❌{% elif category == 'success' %}✅{% else %}ℹ️{% endif %}
+                            </span>
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="verification-content">
+            <!-- Email Icon -->
+            <div class="verification-icon">
+                📧
+            </div>
+
+            <!-- Instructions -->
+            <div class="verification-instructions">
+                <p><strong>Hi {{ name if name else 'there' }}!</strong></p>
+                <p>We've sent a verification email to:</p>
+                <p class="email-highlight"><strong>{{ email }}</strong></p>
+                <p>Please click the verification link in your email to activate your account.</p>
+            </div>
+
+            <!-- Important Notes -->
+            <div class="verification-notes">
+                <h3>Important:</h3>
+                <ul>
+                    <li>The verification link will expire in <strong>1 hour</strong></li>
+                    <li>Check your spam/junk folder if you don't see the email</li>
+                    <li>You cannot log in until your email is verified</li>
+                </ul>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="verification-actions">
+                <form method="POST" action="{{ url_for('auth.resend_verification') }}" class="resend-form">
+                    <input type="hidden" name="email" value="{{ email }}">
+                    <button type="submit" class="btn btn-secondary">
+                        📨 Resend Verification Email
+                    </button>
+                </form>
+                
+                <div class="action-divider">or</div>
+                
+                <a href="{{ url_for('auth.login') }}" class="btn btn-outline">
+                    🔑 Go to Login Page
+                </a>
+            </div>
+
+            <!-- Help Section -->
+            <div class="verification-help">
+                <p class="help-text">
+                    Having trouble? <a href="{{ url_for('contact.contact_page') }}" class="help-link">Contact our support team</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}
