@@ -12,8 +12,8 @@ from sqlalchemy.sql import table, column
 from sqlalchemy import String, Boolean, DateTime, Integer
 
 # revision identifiers
-revision = 'simplify_user_model'
-down_revision = 'previous_revision_id'  # Replace with your actual previous revision
+revision = 'a1b2c3d4e5f6'  # Generated unique revision ID
+down_revision = None  # This is the first migration
 branch_labels = None
 depends_on = None
 
