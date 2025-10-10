@@ -46,8 +46,8 @@ def upgrade():
     # Add the new name column (nullable initially)
     op.add_column('users', sa.Column('name', sa.String(100), nullable=True))
     
-    # Add authentication enhancement columns
-    op.add_column('users', sa.Column('email_verified', sa.Boolean(), nullable=False, default=False))
+    # Add authentication enhancement columns (nullable initially to allow data migration)
+    op.add_column('users', sa.Column('email_verified', sa.Boolean(), nullable=True))
     op.add_column('users', sa.Column('email_verification_token', sa.String(255), nullable=True))
     op.add_column('users', sa.Column('email_verification_sent_at', sa.DateTime(), nullable=True))
     
@@ -84,9 +84,10 @@ def upgrade():
         )
     )
     
-    # Step 3: Make name column non-nullable after data migration
+    # Step 3: Make name and email_verified columns non-nullable after data migration
     op.alter_column('users', 'name', nullable=False)
-    
+    op.alter_column('users', 'email_verified', nullable=False)
+
     # Step 4: Make password column nullable (for OAuth users)
     op.alter_column('users', 'password', nullable=True)
     
