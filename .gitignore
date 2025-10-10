@@ -5,4 +5,10 @@ setup_route_for_admin.md
 __pycache__/
 instance/
 .env
+.venv/
+venv/
+*.db
+.windsurf/
+app.log
+logs/
 
