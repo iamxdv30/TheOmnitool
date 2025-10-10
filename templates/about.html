@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}
+About The OmniTool
+{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/about.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="about-page-container">
+    <header class="about-header">
+        <h1>About The OmniTool</h1>
+    </header>
+
+    <section class="about-section" id="story">
+        <h2 class="section-title">Our Story</h2>
+        <p>Hey there! Ever find yourself hopping between different sites for simple things like a Unix timestamp converter or wishing you had Email Templates at your fingertips? That's exactly why I created OmniTools! It started as my own little project to make my documentation work a breeze, but I soon realized lots of folks could use a handy, all-in-one spot for these everyday helpers – tools designed with genuine usefulness and simplicity in mind.</p>
+    </section>
+
+    <section class="about-section" id="what-is-omnitool">
+        <h2 class="section-title">What is OmniTool?</h2>
+        <p>So, OmniTools is now your friendly, cloud-based hub for just that. It's built with Flask, lives on Heroku, and Cloudflare keeps things running smoothly and securely. And here's something I'm really excited about: OmniTools is completely free to use and has absolutely no ads!</p>
+    </section>
+
+    <section class="about-section" id="philosophy">
+        <h2 class="section-title">Our Philosophy & Future</h2>
+        <p>The best part (besides that!) is that it's always growing. I'm actively cooking up more awesome, free tools to add to the collection. My goal is to make OmniTools your absolute go-to for saving time and making your workflow a whole lot smoother, without any distractions.</p>
+    </section>
+
+    <section class="about-section" id="join-us">
+        <h2 class="section-title">Join the Journey</h2>
+        <p>Why not dive in and try them out? I'm building OmniTools for people like you, and your feedback or suggestions for new tools would be amazing as it continues to evolve. Stay tuned for what's next!</p>
+    </section>
+</div>
+{% endblock %}

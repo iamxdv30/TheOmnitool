@@ -7,9 +7,9 @@ body {
   max-width: 1200px;
   margin: 20px auto;
   padding: 20px;
-  background-color: #f9f9f9;
+  background-color: var(--container-bg);
   border-radius: 4px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-heavy);
 }
 
 .dashboard-title {
@@ -144,91 +144,293 @@ a.btn-manage-tools:hover {
   margin-top: 10px;
 }
 
+/* Tool access container styles */
+.tool-access-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 15px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+}
+
+.tool-form-group {
+  flex: 1;
+  min-width: 300px;
+  padding: 15px;
+  background-color: #fff;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.tool-form-group:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.tool-form-group h4 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #333;
+  font-size: 16px;
+}
+
+.tool-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tool-form .form-select {
+  flex: 1;
+}
+
+.tool-form .btn {
+  align-self: flex-start;
+  transition: all 0.3s ease;
+}
+
+.tool-form .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Styling for select options */
+.form-select option {
+  padding: 8px;
+  transition: background-color 0.3s ease;
+}
+
+.form-select option:hover {
+  background-color: #f0f0f0;
+}
+
+/* Styling for disabled options */
+.form-select option:disabled {
+  color: #777777;
+  font-style: italic;
+  background-color: #f9f9f9;
+}
+
+html.dark .form-select option:disabled {
+  color: #999999;
+  background-color: #2a2a2a;
+}
+
+/* Dark theme styles for tool access */
+html.dark .tool-access-container {
+  background-color: #2a2a2a;
+}
+
+html.dark .tool-form-group {
+  background-color: #333;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+html.dark .tool-form-group h4 {
+  color: #e0e0e0;
+}
+
 .user-row td:last-child {
   white-space: nowrap;
+}
+
+.action-buttons {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
 }
 
-.user-row td:last-child .btn,
-.user-row td:last-child .delete-form {
-  flex: 1;
-  min-width: 100px; /* Adjust this value as needed */
+.action-buttons > * {
+  flex: 1 1 100px; /* Allow buttons to grow but have a base size */
 }
 
-.user-row td:last-child .delete-form {
-  margin: 0;
-}
-
-.user-row td:last-child .delete-form .btn {
-  width: 100%;
+.action-buttons .delete-form {
+  display: contents; /* Make the form wrapper not affect flex layout */
 }
 
 /* Responsive styles */
 @media screen and (max-width: 768px) {
-  .user-row td:last-child {
-    flex-direction: column;
+  .dashboard-container {
+    padding: 10px;
+    margin: 10px;
   }
 
-  .user-row td:last-child .btn,
-  .user-row td:last-child .delete-form {
+  #showCreateUserForm,
+  a.btn-manage-tools {
+    display: block;
     width: 100%;
+    margin: 0 0 10px 0;
+    box-sizing: border-box; /* Ensure padding doesn't affect width */
+  }
+
+  .user-table thead {
+    display: none; /* Hide table headers on small screens */
+  }
+
+  .user-table,
+  .user-table tbody,
+  .user-table tr,
+  .user-table td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .user-table tr {
+    margin-bottom: 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    overflow: hidden; /* Contain child elements */
+  }
+
+  .user-table td {
+    text-align: right; /* Align content to the right */
+    padding: 12px;
+    padding-left: 45%; /* Make space for the label */
+    position: relative;
+    border: none;
+    border-bottom: 1px solid var(--border-color-light);
+    white-space: normal; /* Allow wrapping */
+    word-wrap: break-word; /* Handle long words */
+    overflow-wrap: break-word;
+  }
+
+  .user-table tr td:last-of-type {
+      border-bottom: none;
+  }
+
+  .user-table td::before {
+    content: attr(data-label); /* Use data-label for cell headers */
+    position: absolute;
+    left: 12px;
+    width: 40%;
+    padding-right: 10px;
+    white-space: nowrap;
+    text-align: left;
+    font-weight: bold;
+  }
+
+  .user-table td[data-label="Actions"] {
+    padding: 12px; /* Reset padding */
+    text-align: left; /* Override alignment */
+  }
+
+  .user-table td[data-label="Actions"]::before {
+    position: static; /* Remove absolute positioning */
+    display: block; /* Stack label above content */
+    width: auto;
+    padding: 0;
+    margin-bottom: 10px; /* Space between label and buttons */
+  }
+
+    .user-table tr.user-row td[data-label="Actions"] .action-buttons {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .user-table tr.user-row td[data-label="Actions"] .action-buttons > * {
+    flex-basis: auto; /* Reset flex-basis */
+    width: 100%;
+  }
+
+  .search-input {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Responsive styles for tool access forms */
+  .tool-access td {
+    display: flex !important; /* Override display: block */
+    justify-content: center !important; /* Center content */
+    padding: 1rem 0 !important; /* Override padding */
+
+
+  }
+
+  .tool-access-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center; /* Center the form groups */
+  }
+
+  .tool-form-group {
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--container-bg);
+    text-align: center; /* Center the title text */
+    width: 90%; /* Control the width of the form groups */
+    max-width: 400px;
+  }
+
+  .tool-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .tool-form .form-select,
+  .tool-form .btn {
+    width: 100%;
+    box-sizing: border-box;
   }
 }
 
 /* Dark theme */
-body.dark-theme {
+html.dark {
   background-color: #1e1e1e;
   color: #e0e0e0;
 }
 
-body.dark-theme .dashboard-container {
-  background-color: #2c2c2c;
-  box-shadow: 0 0 10px 0 rgba(0, 128, 0, 0.5);
+html.dark .dashboard-container {
+  background-color: var(--tool-form-bg);
+  box-shadow: var(--shadow-dark);
 }
 
-body.dark-theme .user-table th,
-body.dark-theme .user-table td {
-  border-color: #444;
+html.dark .user-table th,
+html.dark .user-table td {
+  border-color: var(--border-color);
 }
 
-body.dark-theme .user-table th {
-  background-color: #3c3c3c;
+html.dark .user-table th {
+  background-color: var(--tool-form-bg);
 }
 
-body.dark-theme .btn.btn-primary {
+html.dark .btn.btn-primary {
   background-color: #45a049;
 }
 
-body.dark-theme .btn.btn-secondary {
+html.dark .btn.btn-secondary {
   background-color: #0073a1;
 }
 
-body.dark-theme .btn.btn-danger {
+html.dark .btn.btn-danger {
   background-color: #d32f2f;
 }
 
-body.dark-theme .btn.btn-warning {
+html.dark .btn.btn-warning {
   background-color: #f57c00;
 }
 
-body.dark-theme .search-input,
-body.dark-theme .form-input,
-body.dark-theme .form-select {
-  background-color: #3c3c3c;
-  color: #e0e0e0;
-  border-color: #555;
+html.dark .search-input,
+html.dark .form-input,
+html.dark .form-select {
+  background-color: var(--dark-input-bg);
+  color: var(--text-light);
+  border-color: var(--dark-border-color);
 }
 
-body.dark-theme .alert-success {
-  color: #c6e6d2;
-  background-color: #1e4620;
-  border-color: #2f6b31;
+html.dark .alert-success {
+  color: var(--text-light);
+  background-color: var(--success-color);
+  border-color: var(--success-color);
 }
 
-body.dark-theme .alert-danger {
-  color: #f8d7da;
-  background-color: #5c1c24;
-  border-color: #842029;
+html.dark .alert-danger {
+  color: var(--text-light);
+  background-color: var(--error-color);
+  border-color: var(--error-color);
 }

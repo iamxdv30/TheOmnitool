@@ -3,6 +3,13 @@
 {% block styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/tax_calculator.css') }}">
 {% endblock %}
+
+{% block scripts %}
+<!-- Load utility JS files -->
+<script src="{{ url_for('static', filename='js/utils/common.js') }}"></script>
+<!-- Load page-specific JS -->
+<script src="{{ url_for('static', filename='js/pages/tax_calculator.js') }}"></script>
+{% endblock %}
 {% block content %}
 
 <div class="tax-calculator">
@@ -11,7 +18,9 @@
     <form id="taxForm" method="POST" action="{{ url_for('tool.tax_calculator_route') }}">
         <div class="calculator-selection">
             <label for="calculator-type">Select Country:</label>
-            <select id="calculator-type" name="calculator_type" onchange="handleCalculatorChange(this)">
+            <select id="calculator-type" name="calculator_type"
+                    data-ca-calculator-url="{{ url_for('tool.canada_tax_calculator') }}"
+                    data-us-calculator-url="{{ url_for('tool.tax_calculator_route') }}">
                 <option value="us">United States</option>
                 <option value="canada">Canada</option>
             </select>
@@ -40,7 +49,7 @@
             </div>
             {% endfor %}
         </div>
-        <button type="button" onclick="addItem()">Add Item</button>
+        <button type="button" id="addItemBtn">Add Item</button>
 
         <div id="discountsContainer">
             <h3>Discounts</h3>
@@ -52,14 +61,14 @@
             </div>
             {% endfor %}
         </div>
-        <button type="button" onclick="addDiscount()">Add Discount</button>
+        <button type="button" id="addDiscountBtn">Add Discount</button>
 
         <div class="shipping-section">
             <h3>Shipping</h3>
             <label for="shipping_cost">Shipping Cost:</label>
             <input type="number" step="0.0001" name="shipping_cost" value="{{ data.shipping_cost|default('') }}">
             <label for="shipping_taxable">Is Shipping Taxable?</label>
-            <select name="shipping_taxable" onchange="toggleShippingTaxRate()">
+            <select name="shipping_taxable">
                 <option value="N" {% if data.shipping_taxable == 'N' %}selected{% endif %}>No</option>
                 <option value="Y" {% if data.shipping_taxable == 'Y' %}selected{% endif %}>Yes</option>
             </select>
@@ -93,339 +102,8 @@
     {% endif %}
 </div>
 
-<script>
-    // Add event listener for button click
-    document.addEventListener('DOMContentLoaded', function() {
-
-
-
-        // Listen for both form submit and button click
-        const taxForm = document.getElementById('taxForm');
-        if (taxForm) {
-            taxForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                calculateTaxes();
-            });
-        }
-        
-        // Add direct listener to calculate button
-        const calculateButton = document.querySelector('#taxForm button[type="submit"]');
-        if (calculateButton) {
-            calculateButton.addEventListener('click', function(e) {
-                e.preventDefault();
-                calculateTaxes();
-            });
-        }
-    });
-    
-    function handleCalculatorChange(selectElement) {
-        if (selectElement.value === 'canada') {
-            document.getElementById('taxForm').action = "{{ url_for('tool.canada_tax_calculator') }}";
-            document.getElementById('taxForm').submit();
-        } else {
-            document.getElementById('taxForm').action = "{{ url_for('tool.tax_calculator_route') }}";
-        }
-    }
-    
-    let itemCount = {{ (data.item_count|default(1))|int }};
-    let discountCount = {{ (data.discount_count|default(0))|int }};
-    
-    function addItem() {
-        itemCount++;
-        const itemsContainer = document.getElementById('itemsContainer');
-        const newItem = document.createElement('div');
-        newItem.classList.add('item');
-        newItem.innerHTML = `
-            <label for="item_price_${itemCount}">Item ${itemCount} Price:</label>
-            <input type="number" step="0.0001" name="item_price_${itemCount}" required>
-            <label for="item_tax_rate_${itemCount}">Tax Rate (%):</label>
-            <input type="number" step="0.0001" name="item_tax_rate_${itemCount}" required>
-        `;
-        itemsContainer.appendChild(newItem);
-    }
-    
-    function addDiscount() {
-        discountCount++;
-        const discountsContainer = document.getElementById('discountsContainer');
-        const newDiscount = document.createElement('div');
-        newDiscount.classList.add('discount');
-        newDiscount.innerHTML = `
-            <label for="discount_amount_${discountCount}">Discount ${discountCount} Amount:</label>
-            <input type="number" step="0.0001" name="discount_amount_${discountCount}">
-            
-            <label for="discount_item_${discountCount}">Apply to Item:</label>
-            <select name="discount_item_${discountCount}">
-                ${Array.from({length: itemCount}, (_, i) => 
-                    `<option value="${i+1}">Item ${i+1}</option>`
-                ).join('')}
-            </select>
-        `;
-        discountsContainer.appendChild(newDiscount);
-    }
-    
-    function toggleShippingTaxRate() {
-        const shippingTaxable = document.querySelector('select[name="shipping_taxable"]').value;
-        const shippingTaxRateSection = document.getElementById('shipping_tax_rate_section');
-        shippingTaxRateSection.style.display = shippingTaxable === 'Y' ? 'block' : 'none';
-    }
-    
-    function calculateTaxes() {
-        console.log("Calculating taxes...");
-        // Get form data
-        const items = [];
-        let currentItemCount = 0;
-        
-        // Gather all item inputs
-        while (document.querySelector(`input[name="item_price_${currentItemCount + 1}"]`)) {
-            currentItemCount++;
-            const priceInput = document.querySelector(`input[name="item_price_${currentItemCount}"]`);
-            const taxRateInput = document.querySelector(`input[name="item_tax_rate_${currentItemCount}"]`);
-            
-            if (priceInput && taxRateInput) {
-                items.push({
-                    price: parseFloat(priceInput.value) || 0,
-                    tax_rate: parseFloat(taxRateInput.value) || 0
-                });
-            }
-        }
-        
-        // Gather all discount inputs
-        const discounts = [];
-        let currentDiscountCount = 0;
-        
-        while (document.querySelector(`input[name="discount_amount_${currentDiscountCount + 1}"]`)) {
-            currentDiscountCount++;
-            const discountInput = document.querySelector(`input[name="discount_amount_${currentDiscountCount}"]`);
-            const itemIndexInput = document.querySelector(`select[name="discount_item_${currentDiscountCount}"]`);
-            
-            if (discountInput) {
-                discounts.push({
-                    amount: parseFloat(discountInput.value) || 0,
-                    item_index: itemIndexInput ? parseInt(itemIndexInput.value) : 1
-                });
-            }
-        }
-        
-        // Store the current form state in hidden fields to preserve it
-        let formStateField = document.querySelector('input[name="item_count"]');
-        if (!formStateField) {
-            formStateField = document.createElement('input');
-            formStateField.type = 'hidden';
-            formStateField.name = 'item_count';
-            document.getElementById('taxForm').appendChild(formStateField);
-        }
-        formStateField.value = currentItemCount;
-    
-        let discountCountField = document.querySelector('input[name="discount_count"]');
-        if (!discountCountField) {
-            discountCountField = document.createElement('input');
-            discountCountField.type = 'hidden';
-            discountCountField.name = 'discount_count';
-            document.getElementById('taxForm').appendChild(discountCountField);
-        }
-        discountCountField.value = currentDiscountCount;
-        
-        // Get shipping inputs
-        const shippingCost = parseFloat(document.querySelector('input[name="shipping_cost"]').value) || 0;
-        const shippingTaxable = document.querySelector('select[name="shipping_taxable"]').value === 'Y';
-        const shippingTaxRate = parseFloat(document.querySelector('input[name="shipping_tax_rate"]').value) || 0;
-        
-        // Get global settings
-        const isSalesBeforeTax = document.querySelector('input[name="is_sales_before_tax"]').checked;
-        const discountIsTaxable = document.querySelector('input[name="discount_is_taxable"]').checked;
-        
-        console.log("Items:", items);
-        console.log("Discounts:", discounts);
-        console.log("Settings:", { isSalesBeforeTax, discountIsTaxable, shippingCost, shippingTaxable, shippingTaxRate });
-        
-        // Calculate tax
-        const result = calculateTax({
-            items,
-            discounts,
-            shipping_cost: shippingCost,
-            shipping_taxable: shippingTaxable,
-            shipping_tax_rate: shippingTaxRate,
-            is_sales_before_tax: isSalesBeforeTax,
-            discount_is_taxable: discountIsTaxable
-        });
-        
-        console.log("Result:", result);
-        
-        // Display results
-        displayResults(result);
-    }
-    
-    function calculateTax(data) {
-        const items = data.items || [];
-        const discounts = data.discounts || [];
-        const shippingCost = data.shipping_cost || 0;
-        const shippingTaxable = data.shipping_taxable || false;
-        const shippingTaxRate = data.shipping_tax_rate || 0;
-        const isSalesBeforeTax = data.is_sales_before_tax || false;
-        const discountIsTaxable = data.discount_is_taxable || false;
-        
-        let totalTax = 0;
-        let totalAmount = 0;
-        let itemTotal = 0;
-        let discountTotal = 0;
-        let shippingTax = 0;
-        let taxBreakdown = [];
-        
-        // Calculate item totals
-        for (const item of items) {
-            itemTotal += item.price;
-        }
-        
-        // Calculate discount totals
-        for (const discount of discounts) {
-            discountTotal += discount.amount;
-        }
-        
-        // Adjust item_total for display in conditions 4 and 5
-        let adjustedItemTotal = itemTotal;
-        if (isSalesBeforeTax && !discountIsTaxable) {
-            adjustedItemTotal = itemTotal - discountTotal;
-        }
-        
-        // Process taxes based on conditions
-        if (isSalesBeforeTax) {
-            // Conditions 2 or 4
-            if (discountIsTaxable) {
-                // Condition 2
-                for (let i = 0; i < items.length; i++) {
-                    const item = items[i];
-                    const itemDiscounts = discounts.filter(d => d.item_index === i + 1);
-                    const itemDiscount = itemDiscounts.reduce((sum, d) => sum + d.amount, 0);
-                    
-                    const itemTax = (item.price - itemDiscount) * (item.tax_rate / 100);
-                    const discountTax = itemDiscount * (item.tax_rate / 100);
-                    
-                    totalTax += itemTax + discountTax;
-                    taxBreakdown.push({
-                        item: `Item ${i + 1}`,
-                        tax: Math.round(itemTax * 100) / 100
-                    });
-                    
-                    if (itemDiscount > 0) {
-                        taxBreakdown.push({
-                            item: `Item ${i + 1} Discount`,
-                            tax: Math.round(discountTax * 100) / 100
-                        });
-                    }
-                }
-            } else {
-                // Adapted the Condition 4 from test_tools
-                for (let i = 0; i < items.length; i++) {
-                    const item = items[i];
-                    const itemDiscounts = discounts.filter(d => d.item_index === i + 1);
-                    const itemDiscount = itemDiscounts.reduce((sum, d) => sum + d.amount, 0);
-                    
-                    const itemTax = (item.price - itemDiscount) * (item.tax_rate / 100);
-                    
-                    totalTax += itemTax;
-                    taxBreakdown.push({
-                        item: `Item ${i + 1}`,
-                        tax: Math.round(itemTax * 100) / 100
-                    });
-                }
-            }
-        } else {
-            // Adapted the Conditions 1 or 3 from test_tools
-            for (let i = 0; i < items.length; i++) {
-                const item = items[i];
-                const itemTax = item.price * (item.tax_rate / 100);
-                totalTax += itemTax;
-                taxBreakdown.push({
-                    item: `Item ${i + 1}`,
-                    tax: Math.round(itemTax * 100) / 100
-                });
-                
-                if (discountIsTaxable) {
-                    // Adapted the Condition 1 from test_tools
-                    const itemDiscounts = discounts.filter(d => d.item_index === i + 1);
-                    for (const discount of itemDiscounts) {
-                        const discountTax = discount.amount * (item.tax_rate / 100);
-                        totalTax += discountTax;
-                        taxBreakdown.push({
-                            item: `Item ${i + 1} Discount`,
-                            tax: Math.round(discountTax * 100) / 100
-                        });
-                    }
-                }
-            }
-        }
-        
-        // Process shipping
-        if (shippingCost > 0 && shippingTaxable) {
-            shippingTax = shippingCost * (shippingTaxRate / 100);
-            totalTax += shippingTax;
-            taxBreakdown.push({
-                item: 'Shipping',
-                tax: Math.round(shippingTax * 100) / 100
-            });
-        }
-        
-        // Calculate final amount using the correct formula based on conditions
-        if (isSalesBeforeTax && !discountIsTaxable) {
-            // For conditions 4 and 5
-            totalAmount = adjustedItemTotal + totalTax + shippingCost;
-        } else {
-            // For other conditions
-            totalAmount = itemTotal + totalTax + shippingCost - discountTotal;
-        }
-        
-        // Filter out discount breakdowns for non-taxable discounts
-        if (!discountIsTaxable) {
-            taxBreakdown = taxBreakdown.filter(tb => !tb.item.includes('Discount'));
-        }
-        
-        return {
-            item_total: Math.round(adjustedItemTotal * 100) / 100,
-            discount_total: Math.round(discountTotal * 100) / 100,
-            shipping_cost: Math.round(shippingCost * 100) / 100,
-            shipping_tax: Math.round(shippingTax * 100) / 100,
-            total_tax: Math.round(totalTax * 100) / 100,
-            total_amount: Math.round(totalAmount * 100) / 100,
-            tax_breakdown: taxBreakdown
-        };
-    }
-    
-    function displayResults(result) {
-        // Find or create the result container
-        let resultContainer = document.querySelector('.result-container');
-        
-        // If no container exists, create one
-        if (!resultContainer) {
-            console.log("Creating result container");
-            resultContainer = document.createElement('div');
-            resultContainer.className = 'result-container';
-            document.getElementById('taxForm').appendChild(resultContainer);
-        }
-        
-        // Generate result HTML
-        let html = `
-            <h2>Results</h2>
-            <p><strong>Item Total:</strong> $${result.item_total.toFixed(2)}</p>
-            <p><strong>Discount Total:</strong> $${result.discount_total.toFixed(2)}</p>
-            <p><strong>Shipping Cost:</strong> $${result.shipping_cost.toFixed(2)}</p>
-            <p><strong>Total Tax:</strong> $${result.total_tax.toFixed(2)}</p>
-            <p><strong>Total Amount:</strong> $${result.total_amount.toFixed(2)}</p>
-            
-            <div class="tax-breakdown">
-                <h3>Tax Breakdown:</h3>
-                <ul>
-        `;
-        
-        for (const tax of result.tax_breakdown) {
-            html += `<li>${tax.item}: $${tax.tax.toFixed(2)}</li>`;
-        }
-        
-        html += `
-                </ul>
-            </div>
-        `;
-        
-        resultContainer.innerHTML = html;
-    }
-    </script>
+<!-- JavaScript has been moved to modular files:
+     - common.js: General utilities
+     - tax_calculator.js: Page-specific functionality
+-->
 {% endblock %}
