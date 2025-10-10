@@ -126,7 +126,7 @@
 
     <script>
       function checkToolAccess(toolName, url) {
-        fetch(`/check_tool_access/${encodeURIComponent(toolName)}`, {
+        fetch(`/tools/check_tool_access/${encodeURIComponent(toolName)}`, {
           headers: {
             'X-Requested-With': 'XMLHttpRequest',
           },
