@@ -2,11 +2,7 @@
   "permissions": {
     "allow": [
       "Bash(git add:*)",
-      "Bash(git push:*)",
-      "Bash(git commit -m \"$(cat <<''EOF''\nchore(config): enhance Claude Code setup with KGM and smart-commit\n\nConfigure Claude Code with Knowledge Graph Memory server integration\nand automated commit workflow for improved development experience.\n\n- Add git push permission to .claude/settings.local.json\n- Document KGM (Knowledge Graph Memory) server usage in CLAUDE.md\n- Create /smart-commit slash command for automated commit analysis\n- Enable persistent long-term context via KGM integration\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
-      "mcp__sequential-thinking__sequentialthinking",
-      "mcp__playwright__browser_type",
-      "mcp__playwright__browser_navigate"
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []
