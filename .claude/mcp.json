@@ -1,22 +1,3 @@
 {
-  "mcpServers": {
-    "playwright": {
-      "type": "stdio",
-      "command": "cmd",
-      "args": ["/c", "npx", "@playwright/mcp@latest"],
-      "env": {}
-    },
-    "sentry": {
-      "type": "http",
-      "url": "https://mcp.sentry.dev/mcp"
-    },
-    "apidog-project": {
-      "type": "stdio",
-      "command": "cmd",
-      "args": ["/c", "npx", "-y", "apidog-mcp-server@latest", "--project-id=1089534"],
-      "env": {
-        "APIDOG_ACCESS_TOKEN": "${APIDOG_PERSONAL_ACCESS_TOKEN}"
-      }
-    }
-  }
+  "mcpServers": {}
 }

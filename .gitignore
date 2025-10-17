@@ -16,6 +16,7 @@ instance/
 # Environment and Secrets
 .env
 .env.*
+.envbackup
 
 # Logs
 logs/
