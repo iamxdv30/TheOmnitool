@@ -1,16 +1,3 @@
 {
-  "mcpServers": {
-    "knowledge_graph_memory_server": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-memory"]
-    },
-    "sequential-thinking": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
-    },
-    "sentry": {
-      "type": "http",
-      "url": "https://mcp.sentry.dev/mcp"
-    }    
-  }
+  "mcpServers": {}
 }
