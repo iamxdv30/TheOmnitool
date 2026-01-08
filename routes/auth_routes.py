@@ -658,7 +658,7 @@ def forgot_password():
     
     if request.method == "GET":
         logger.info(f"Forgot password page accessed from IP: {client_ip}")
-        return render_template("forgot_password.html")
+        return render_template("forgot_password_request.html")
 
     logger.info(f"Password reset request initiated from IP: {client_ip}")
     
@@ -696,7 +696,7 @@ def forgot_password():
             <p><a href="{reset_link}">Reset Password</a></p>
             <p>This link will expire in 1 hour for security.</p>
             <p>If you didn't request this reset, please ignore this email.</p>
-            <p>© 2024 OmniTools. All rights reserved.</p>
+            <p>© 2026 OmniTools. All rights reserved.</p>
             """
             
             mail.send(msg)
