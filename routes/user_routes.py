@@ -3,6 +3,9 @@ from model import User, db, ToolAccess
 from werkzeug.security import generate_password_hash
 import logging
 
+# Use centralized logging configured in main.py
+logger = logging.getLogger(__name__)
+
 user = Blueprint('user', __name__)
 
 @user.route("/")

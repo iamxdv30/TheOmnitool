@@ -38,12 +38,7 @@ contact = Blueprint("contact", __name__)
 # Configure Flask-Mail
 mail = Mail()
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[logging.FileHandler("app.log"), logging.StreamHandler()],
-)
+# Use centralized logging configured in main.py
 logger = logging.getLogger(__name__)
 
 

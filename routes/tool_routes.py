@@ -19,6 +19,9 @@ from Tools.char_counter import count_characters
 from Tools.tax_calculator import tax_calculator as calculate_tax
 import logging
 
+# Use centralized logging configured in main.py
+logger = logging.getLogger(__name__)
+
 tool = Blueprint("tool", __name__)
 
 # This function is a decorator that checks if a user has access to a specific tool.
