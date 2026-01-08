@@ -104,8 +104,11 @@
                 <input type="number" step="0.0001" name="item_tax_rate_${this.itemCount}" required>
                 <button type="button" class="delete-item-btn" data-item-id="${this.itemCount}">Delete</button>
             `;
-            this.elements.itemsContainer.appendChild(newItem);
-            
+
+            // Find the Add Item button and insert the new item before it
+            const addItemBtn = this.elements.addItemButton;
+            addItemBtn.parentNode.insertBefore(newItem, addItemBtn);
+
             // Bind delete button event
             const deleteBtn = newItem.querySelector('.delete-item-btn');
             deleteBtn.addEventListener('click', () => this.deleteItem(newItem));
@@ -121,17 +124,20 @@
             newDiscount.innerHTML = `
                 <label for="discount_amount_${this.discountCount}">Discount ${this.discountCount} Amount:</label>
                 <input type="number" step="0.0001" name="discount_amount_${this.discountCount}">
-                
+
                 <label for="discount_item_${this.discountCount}">Apply to Item:</label>
                 <select name="discount_item_${this.discountCount}">
-                    ${Array.from({length: this.itemCount}, (_, i) => 
+                    ${Array.from({length: this.itemCount}, (_, i) =>
                         `<option value="${i+1}">Item ${i+1}</option>`
                     ).join('')}
                 </select>
                 <button type="button" class="delete-discount-btn" data-discount-id="${this.discountCount}">Delete</button>
             `;
-            this.elements.discountsContainer.appendChild(newDiscount);
-            
+
+            // Find the Add Discount button and insert the new discount before it
+            const addDiscountBtn = this.elements.addDiscountButton;
+            addDiscountBtn.parentNode.insertBefore(newDiscount, addDiscountBtn);
+
             // Bind delete button event
             const deleteBtn = newDiscount.querySelector('.delete-discount-btn');
             deleteBtn.addEventListener('click', () => this.deleteDiscount(newDiscount));
