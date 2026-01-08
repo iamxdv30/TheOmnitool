@@ -30,8 +30,8 @@
                 discountsContainer: document.getElementById('discountsContainer'),
                 shippingTaxable: document.querySelector('select[name="shipping_taxable"]'),
                 shippingTaxRateSection: document.getElementById('shipping_tax_rate_section'),
-                addItemButton: document.querySelector('button[onclick="addItem()"]'),
-                addDiscountButton: document.querySelector('button[onclick="addDiscount()"]'),
+                addItemButton: document.getElementById('addItemBtn'),
+                addDiscountButton: document.getElementById('addDiscountBtn'),
                 calculateButton: document.querySelector('#taxForm button[type="submit"]')
             };
         },
