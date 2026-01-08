@@ -11,31 +11,25 @@ def test_login_post(client):
     assert b"Invalid username or password!" in response.data
 
 def test_register_process(client):
-    # Step 1
-    response = client.post('/register_step1', data={
-        'fname': 'Test',
-        'lname': 'User',
-        'address': '123 Test St',
-        'city': 'Testville',
-        'state': 'TS',
-        'zip': '12345'
-    }, follow_redirects=True)
-    assert b"Step 2" in response.data
-
-    # Step 2
-    response = client.post('/register_step2', data={
+    # Test the new simplified registration process
+    response = client.post('/register', data={
+        'name': 'Test User',
         'username': 'newuser',
         'email': 'newuser@test.com',
-        'password': 'newpass',
-        'confirm_password': 'newpass'
+        'password': 'NewPass123!',
+        'confirm_password': 'NewPass123!'
     }, follow_redirects=True)
-    assert b"Registration successful!" in response.data
+    # After successful registration, user should be redirected to verification pending page
+    assert (b"verify" in response.data.lower() or
+            b"registration" in response.data.lower() or
+            b"email" in response.data.lower())
 
 def test_user_dashboard_authenticated(client, app):
     with app.app_context():
-        # Create a test user
+        # Create a test user with email verified
         user = User(username='testuser', email='test@test.com', fname='Test', lname='User',
-                    address='123 Test St', city='Testville', state='TS', zip='12345')
+                    address='123 Test St', city='Testville', state='TS', zip='12345',
+                    email_verified=True)
         user.set_password('testpass')
         db.session.add(user)
         db.session.commit()

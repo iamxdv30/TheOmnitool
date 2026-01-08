@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+
+## [1.4.2] - 2026-01-09
+### Highlights
+
+### 🎨 Enhanced
+
+- Delete button is now available in both US and CA tax calculators for added rows
+
+### 🐛 Fixed
+
+- Forgot Password now redirects to the forgot_password page instead of Error page
+- Add Item and Add Discount buttons in US Tax Calculator are now able to function correctly
+
+### 🔧 Technical Improvements
+- **Activity logging**: Implement centralized logging with 30-day rotation
+
+
+
 ## [1.4.1] - 2025-08-31
 ### Highlights
 

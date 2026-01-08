@@ -32,6 +32,7 @@ def logged_in_user(client, app, init_database):
                 city="Testville",
                 state="TS",
                 zip="12345",
+                email_verified=True  # Test users are pre-verified
             )
             user.set_password("testpass")
             db.session.add(user)
@@ -89,7 +90,7 @@ def test_add_email_template(client, init_database, app, logged_in_user, email_te
         
         assert email_template_access(user.id), "User should have access to Email Templates"
         
-        response = client.post('/email_templates', data=dict(
+        response = client.post('/tools/email_templates', data=dict(
             title='Test Template',
             content='This is a test template content'
         ))
@@ -110,7 +111,7 @@ def test_update_email_template(client, init_database, app, logged_in_user, email
         
         # First, add a template
         response = client.post(
-            "/email_templates",
+            "/tools/email_templates",
             data=dict(title="Template to Update", content="Original content"),
         )
         assert response.status_code == 200
@@ -122,7 +123,7 @@ def test_update_email_template(client, init_database, app, logged_in_user, email
 
         # Update the template
         response = client.put(
-            f"/email_templates/{template_id}",
+            f"/tools/email_templates/{template_id}",
             json=dict(title="Updated Template", content="Updated content"),
         )
         assert response.status_code == 200
@@ -142,7 +143,7 @@ def test_delete_email_template(client, init_database, app, logged_in_user, email
         
         # First, add a template
         response = client.post(
-            "/email_templates",
+            "/tools/email_templates",
             data=dict(title="Template to Delete", content="Content to delete"),
         )
         assert response.status_code == 200
@@ -153,7 +154,7 @@ def test_delete_email_template(client, init_database, app, logged_in_user, email
         template_id = template.id
 
         # Delete the template
-        response = client.delete(f"/email_templates/{template_id}")
+        response = client.delete(f"/tools/email_templates/{template_id}")
         assert response.status_code == 200
         data = response.get_json()
         assert "message" in data
@@ -169,16 +170,16 @@ def test_get_email_templates(client, init_database, app, logged_in_user, email_t
         
         # Add a couple of templates
         response1 = client.post(
-            "/email_templates", data=dict(title="Template 1", content="Content 1")
+            "/tools/email_templates", data=dict(title="Template 1", content="Content 1")
         )
         assert response1.status_code == 200
         response2 = client.post(
-            "/email_templates", data=dict(title="Template 2", content="Content 2")
+            "/tools/email_templates", data=dict(title="Template 2", content="Content 2")
         )
         assert response2.status_code == 200
 
         # Get all templates
-        response = client.get("/email_templates")
+        response = client.get("/tools/email_templates")
         assert response.status_code == 200
         assert b"Template 1" in response.data
         assert b"Template 2" in response.data
