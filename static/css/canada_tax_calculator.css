@@ -153,6 +153,7 @@
   margin-bottom: 10px;
   border-radius: 4px;
   border: 1px solid var(--border-color);
+  position: relative;
 }
 
 .item .form-group {
@@ -161,6 +162,27 @@
 
 .item .form-group label {
   color: var(--text-primary);
+}
+
+/* Delete Button Styles */
+.delete-ca-item-btn {
+  display: inline-block;
+  width: auto;
+  padding: 6px 12px;
+  margin-top: 10px;
+  background-color: var(--danger-color, #dc3545);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: var(--font-family);
+  transition: background-color 0.3s ease, transform 0.1s ease;
+}
+
+.delete-ca-item-btn:hover {
+  background-color: var(--danger-hover, #c82333);
+  transform: translateY(-1px);
 }
 
 #results {
