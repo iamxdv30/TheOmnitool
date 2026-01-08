@@ -3,6 +3,9 @@ from model import User, Admin, SuperAdmin, Tool, ToolAccess, db
 from sqlalchemy.exc import SQLAlchemyError
 import logging
 
+# Use centralized logging configured in main.py
+logger = logging.getLogger(__name__)
+
 admin = Blueprint('admin', __name__)
 
 @admin.route("/admin_dashboard", methods=["GET"])
