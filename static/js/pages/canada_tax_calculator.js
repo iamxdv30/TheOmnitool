@@ -65,7 +65,7 @@
         
         initializeForm() {
             this.updateTaxRates();
-            this.addItem();
+            this.addItem(false); // First item should not have delete button
         },
         
         updateTaxRates() {
@@ -107,9 +107,15 @@
             }
         },
         
-        addItem() {
+        addItem(includeDeleteButton = true) {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'item';
+            
+            let deleteButtonHtml = '';
+            if (includeDeleteButton) {
+                deleteButtonHtml = '<button type="button" class="delete-ca-item-btn">Delete</button>';
+            }
+            
             itemDiv.innerHTML = `
                 <div class="form-group">
                     <label>Item Price ($):</label>
@@ -119,8 +125,31 @@
                     <label>Discount Amount ($):</label>
                     <input type="number" class="discountAmount" step="0.01" min="0" value="0.00" required>
                 </div>
+                ${deleteButtonHtml}
             `;
             this.elements.itemsContainer.appendChild(itemDiv);
+            
+            // Bind delete button event only if button exists
+            if (includeDeleteButton) {
+                const deleteBtn = itemDiv.querySelector('.delete-ca-item-btn');
+                deleteBtn.addEventListener('click', () => this.deleteItem(itemDiv));
+            }
+        },
+        
+        /**
+         * Delete an item row (must keep at least 1 item)
+         * @param {HTMLElement} itemElement - The item element to delete
+         */
+        deleteItem(itemElement) {
+            const itemElements = document.querySelectorAll('.item');
+            
+            // Cannot delete if only 1 item remains
+            if (itemElements.length <= 1) {
+                alert('You must have at least one item.');
+                return;
+            }
+            
+            itemElement.remove();
         },
         
         calculateTax() {
