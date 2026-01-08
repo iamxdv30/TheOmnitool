@@ -57,6 +57,27 @@
     margin-top: 15px;
     border: 1px solid var(--border-color);
     border-radius: 4px;
+    position: relative;
+}
+
+/* Delete Button Styles */
+.tax-calculator .delete-item-btn,
+.tax-calculator .delete-discount-btn {
+    display: inline-block;
+    width: auto;
+    padding: 6px 12px;
+    margin-top: 10px;
+    background-color: var(--danger-color, #dc3545);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.tax-calculator .delete-item-btn:hover,
+.tax-calculator .delete-discount-btn:hover {
+    background-color: var(--danger-hover, #c82333);
 }
 
 /* Button Styles */
@@ -140,10 +161,21 @@
 }
 
 /* Dark Theme - only specific overrides needed */
-html.dark .tax-calculator button {
+html.dark .tax-calculator button:not(.delete-item-btn):not(.delete-discount-btn) {
     background-color: var(--secondary-color);
 }
 
-html.dark .tax-calculator button:hover {
+html.dark .tax-calculator button:not(.delete-item-btn):not(.delete-discount-btn):hover {
     background-color: var(--secondary-hover);
+}
+
+/* Keep delete buttons red in dark mode */
+html.dark .tax-calculator .delete-item-btn,
+html.dark .tax-calculator .delete-discount-btn {
+    background-color: var(--danger-color, #dc3545);
+}
+
+html.dark .tax-calculator .delete-item-btn:hover,
+html.dark .tax-calculator .delete-discount-btn:hover {
+    background-color: var(--danger-hover, #c82333);
 }
