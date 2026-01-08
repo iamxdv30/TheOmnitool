@@ -30,8 +30,8 @@
                 discountsContainer: document.getElementById('discountsContainer'),
                 shippingTaxable: document.querySelector('select[name="shipping_taxable"]'),
                 shippingTaxRateSection: document.getElementById('shipping_tax_rate_section'),
-                addItemButton: document.querySelector('button[onclick="addItem()"]'),
-                addDiscountButton: document.querySelector('button[onclick="addDiscount()"]'),
+                addItemButton: document.getElementById('addItemBtn'),
+                addDiscountButton: document.getElementById('addDiscountBtn'),
                 calculateButton: document.querySelector('#taxForm button[type="submit"]')
             };
         },
@@ -102,8 +102,13 @@
                 <input type="number" step="0.0001" name="item_price_${this.itemCount}" required>
                 <label for="item_tax_rate_${this.itemCount}">Tax Rate (%):</label>
                 <input type="number" step="0.0001" name="item_tax_rate_${this.itemCount}" required>
+                <button type="button" class="delete-item-btn" data-item-id="${this.itemCount}">Delete</button>
             `;
             this.elements.itemsContainer.appendChild(newItem);
+            
+            // Bind delete button event
+            const deleteBtn = newItem.querySelector('.delete-item-btn');
+            deleteBtn.addEventListener('click', () => this.deleteItem(newItem));
         },
         
         /**
@@ -123,8 +128,37 @@
                         `<option value="${i+1}">Item ${i+1}</option>`
                     ).join('')}
                 </select>
+                <button type="button" class="delete-discount-btn" data-discount-id="${this.discountCount}">Delete</button>
             `;
             this.elements.discountsContainer.appendChild(newDiscount);
+            
+            // Bind delete button event
+            const deleteBtn = newDiscount.querySelector('.delete-discount-btn');
+            deleteBtn.addEventListener('click', () => this.deleteDiscount(newDiscount));
+        },
+        
+        /**
+         * Delete an item row (must keep at least 1 item)
+         * @param {HTMLElement} itemElement - The item element to delete
+         */
+        deleteItem(itemElement) {
+            const itemElements = document.querySelectorAll('.item');
+            
+            // Cannot delete if only 1 item remains
+            if (itemElements.length <= 1) {
+                alert('You must have at least one item.');
+                return;
+            }
+            
+            itemElement.remove();
+        },
+        
+        /**
+         * Delete a discount row (can delete all)
+         * @param {HTMLElement} discountElement - The discount element to delete
+         */
+        deleteDiscount(discountElement) {
+            discountElement.remove();
         },
         
         /**
