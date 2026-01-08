@@ -3,31 +3,81 @@ from urllib.parse import urlparse
 from flask import Flask, request, get_flashed_messages, redirect, abort
 from flask_migrate import Migrate
 from jinja2 import FileSystemLoader, ChoiceLoader
+import re
+import logging
+from logging.handlers import TimedRotatingFileHandler
+from datetime import timedelta
+from dotenv import load_dotenv
+
+# Load environment variables FIRST (before any module imports that might need them)
+load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
+
+
+class NoiseFilter(logging.Filter):
+    """Filter out noisy logs from file handler only (werkzeug HTTP requests, etc.)"""
+    
+    NOISY_LOGGERS = {'werkzeug', 'urllib3', 'sqlalchemy.engine'}
+    
+    def filter(self, record):
+        # Allow WARNING and above from noisy loggers, block INFO/DEBUG
+        if record.name in self.NOISY_LOGGERS:
+            return record.levelno >= logging.WARNING
+        return True
+
+
+def setup_logging():
+    """Setup centralized logging with automatic 30-day rotation"""
+    log_formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s [in %(filename)s:%(lineno)d]"
+    )
+    
+    # Create logs directory if it doesn't exist
+    if not os.path.exists('logs'):
+        os.makedirs('logs')
+    
+    # TimedRotatingFileHandler - rotates daily, keeps 30 days of logs
+    file_handler = TimedRotatingFileHandler(
+        'logs/app.log',
+        when='midnight',      # Rotate at midnight
+        interval=1,           # Every 1 day
+        backupCount=30,       # Keep 30 days of logs
+        encoding='utf-8'
+    )
+    file_handler.setFormatter(log_formatter)
+    file_handler.setLevel(logging.INFO)
+    file_handler.addFilter(NoiseFilter())  # Filter noisy logs from FILE only
+    
+    # Console handler for development - NO filter, shows everything including server URL
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(log_formatter)
+    console_handler.setLevel(logging.INFO)
+    
+    # Get root logger and configure it
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+    
+    # Clear any existing handlers to avoid duplicates
+    root_logger.handlers.clear()
+    
+    root_logger.addHandler(file_handler)
+    root_logger.addHandler(console_handler)
+    
+    logging.info("Centralized logging initialized - logs will rotate daily, keeping 30 days")
+
+
+# Initialize logging BEFORE importing blueprints
+setup_logging()
+
+# Now import blueprints (they will use the centralized logging)
 from routes.auth_routes import auth
 from routes.user_routes import user
 from routes.admin_routes import admin
 from routes.tool_routes import tool
 from routes.contact_routes import contact, configure_mail
 from model import db
-import re
-import logging
-from datetime import timedelta
-from dotenv import load_dotenv
 
 
 
-#New imports as of October 12, 2024
-
-
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
-
-# Load environment variables from .env (only for local development)
-# Heroku uses environment variables set via `heroku config:set`
-load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 
 # Debug: Print environment variables
 print("DEBUG: FLASK_ENV =", os.getenv('FLASK_ENV', 'development'))
@@ -85,19 +135,6 @@ def create_app():
 
     # Configure Flask-Mail
     configure_mail(app)
-
-    # Configure logging
-    if not app.debug:
-        if not os.path.exists('logs'):
-            os.mkdir('logs')
-        file_handler = logging.FileHandler('logs/app.log')
-        file_handler.setFormatter(logging.Formatter(
-            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-        ))
-        file_handler.setLevel(logging.ERROR)
-        app.logger.addHandler(file_handler)
-        app.logger.setLevel(logging.ERROR)
-        app.logger.info('Application startup')
 
     # Set the secret key based on the environment
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default_secret_key_for_development')
