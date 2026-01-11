@@ -58,8 +58,8 @@ def init_database(app):
         superadmin.set_password('superpass')
         
         # Create test tools
-        tool1 = Tool(name='Test Tool 1', description='A test tool', is_default=True)
-        tool2 = Tool(name='Test Tool 2', description='Another test tool', is_default=False)
+        tool1 = Tool(name='Test Tool 1', description='A test tool', route='/test_tool_1', is_default=True)
+        tool2 = Tool(name='Test Tool 2', description='Another test tool', route='/test_tool_2', is_default=False)
         
         db.session.add_all([user, admin, superadmin, tool1, tool2])
         db.session.commit()
