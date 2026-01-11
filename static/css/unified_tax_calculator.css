@@ -1,0 +1,628 @@
+/* ====================================
+   UNIFIED TAX CALCULATOR STYLES
+   Standardized Design Language
+   ==================================== */
+
+/* Main Container */
+.unified-tax-calculator {
+    font-family: 'Noto Sans Mono', monospace;
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 0;
+    background-color: var(--calc-form-bg);
+    border-radius: 12px;
+    box-shadow: var(--calc-shadow);
+    border: 1px solid var(--calc-border);
+    overflow: hidden;
+}
+
+/* Header */
+.calculator-header {
+    background: linear-gradient(135deg, var(--calc-primary), var(--calc-secondary));
+    padding: 30px;
+    text-align: center;
+    color: white;
+}
+
+.calculator-header h1 {
+    margin: 0 0 10px 0;
+    font-size: 32px;
+    font-weight: bold;
+}
+
+.calculator-subtitle {
+    margin: 0;
+    font-size: 16px;
+    opacity: 0.9;
+}
+
+/* Tab Navigation */
+.tab-navigation {
+    display: flex;
+    background-color: var(--calc-nav-bg);
+    border-bottom: 2px solid var(--calc-border);
+    overflow-x: auto;
+}
+
+.tab-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 20px 15px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: var(--calc-text-secondary);
+    font-family: 'Noto Sans Mono', monospace;
+    font-size: 14px;
+    min-width: 140px;
+}
+
+.tab-btn:hover {
+    background-color: var(--calc-hover-bg);
+    color: var(--calc-text-primary);
+}
+
+.tab-btn.active {
+    border-bottom-color: var(--calc-secondary);
+    background-color: var(--calc-active-tab-bg);
+    color: var(--calc-secondary);
+    font-weight: bold;
+}
+
+.tab-icon {
+    font-size: 28px;
+}
+
+.tab-label {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* Tab Content */
+.tab-content-wrapper {
+    padding: 0;
+}
+
+.tab-content {
+    display: none;
+    padding: 30px;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Form Sections */
+.calculator-form {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+.section-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 15px 0;
+    color: var(--calc-text-primary);
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--calc-border);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.section-header .section-title {
+    margin: 0;
+    border: none;
+    padding: 0;
+}
+
+/* Options Section */
+.options-section,
+.province-section,
+.vat-rate-section,
+.tax-rates-section {
+    background-color: var(--calc-section-bg);
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--calc-border);
+}
+
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 15px;
+    color: var(--calc-text-primary);
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--calc-secondary);
+}
+
+.checkbox-text {
+    user-select: none;
+}
+
+/* Form Fields - Standardized */
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.field-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--calc-text-secondary);
+    margin-bottom: 4px;
+}
+
+.field-input,
+.field-select {
+    padding: 12px 15px;
+    border: 1px solid var(--calc-input-border);
+    border-radius: 6px;
+    font-size: 15px;
+    font-family: 'Noto Sans Mono', monospace;
+    background-color: var(--calc-input-bg);
+    color: var(--calc-text-primary);
+    transition: all 0.2s ease;
+}
+
+.field-input:focus,
+.field-select:focus {
+    outline: none;
+    border-color: var(--calc-secondary);
+    box-shadow: 0 0 0 3px rgba(56, 176, 0, 0.2);
+}
+
+.field-input::placeholder {
+    color: var(--calc-placeholder);
+}
+
+.field-help {
+    font-size: 12px;
+    color: var(--calc-text-muted);
+    font-style: italic;
+}
+
+/* Items and Discounts */
+.items-section,
+.discounts-section {
+    background-color: var(--calc-section-bg);
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--calc-border);
+}
+
+.items-container,
+.discounts-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.item-row,
+.discount-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 15px;
+    padding: 15px;
+    background-color: var(--calc-item-bg);
+    border: 1px solid var(--calc-border);
+    border-radius: 6px;
+    align-items: end;
+}
+
+.item-row.vat-item {
+    grid-template-columns: 1fr auto;
+}
+
+.discount-row {
+    grid-template-columns: 1fr auto;
+}
+
+/* Buttons - Standardized */
+.btn-add {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    background-color: var(--calc-secondary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: 'Noto Sans Mono', monospace;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-add:hover {
+    background-color: var(--calc-secondary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-icon {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.btn-delete {
+    padding: 8px 16px;
+    background-color: var(--calc-danger);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'Noto Sans Mono', monospace;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-delete:hover {
+    background-color: var(--calc-danger-hover);
+    transform: scale(1.05);
+}
+
+/* Shipping Section */
+.shipping-section {
+    background-color: var(--calc-section-bg);
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--calc-border);
+}
+
+/* Form Actions */
+.form-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.btn-calculate,
+.btn-reset {
+    padding: 15px 40px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'Noto Sans Mono', monospace;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-calculate {
+    background: linear-gradient(135deg, var(--calc-primary), var(--calc-secondary));
+    color: white;
+    flex: 2;
+}
+
+.btn-calculate:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.btn-reset {
+    background-color: var(--calc-reset-bg);
+    color: var(--calc-text-secondary);
+    flex: 1;
+}
+
+.btn-reset:hover {
+    background-color: var(--calc-reset-hover);
+    color: var(--calc-text-primary);
+}
+
+/* Results Section */
+.results-section {
+    margin-top: 30px;
+    padding: 25px;
+    background: linear-gradient(135deg, var(--calc-result-bg-start), var(--calc-result-bg-end));
+    border-radius: 8px;
+    border: 2px solid var(--calc-secondary);
+    animation: slideIn 0.4s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--calc-border);
+}
+
+.results-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--calc-secondary);
+    margin: 0;
+}
+
+.results-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.result-item {
+    padding: 15px;
+    background-color: var(--calc-result-item-bg);
+    border-radius: 6px;
+    border: 1px solid var(--calc-border);
+}
+
+.result-label {
+    font-size: 13px;
+    color: var(--calc-text-muted);
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.result-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--calc-text-primary);
+}
+
+.result-value.highlight {
+    color: var(--calc-secondary);
+    font-size: 24px;
+}
+
+.result-breakdown {
+    background-color: var(--calc-breakdown-bg);
+    padding: 20px;
+    border-radius: 6px;
+    border: 1px solid var(--calc-border);
+}
+
+.breakdown-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--calc-text-primary);
+    margin-bottom: 15px;
+}
+
+.breakdown-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.breakdown-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--calc-border);
+}
+
+.breakdown-item:last-child {
+    border-bottom: none;
+}
+
+.breakdown-item-label {
+    color: var(--calc-text-secondary);
+    font-size: 14px;
+}
+
+.breakdown-item-value {
+    color: var(--calc-text-primary);
+    font-weight: 600;
+    font-size: 14px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .unified-tax-calculator {
+        margin: 10px;
+        border-radius: 8px;
+    }
+
+    .calculator-header {
+        padding: 20px;
+    }
+
+    .calculator-header h1 {
+        font-size: 24px;
+    }
+
+    .tab-btn {
+        padding: 15px 10px;
+        min-width: 100px;
+    }
+
+    .tab-icon {
+        font-size: 24px;
+    }
+
+    .tab-label {
+        font-size: 11px;
+    }
+
+    .tab-content {
+        padding: 20px 15px;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .item-row,
+    .discount-row {
+        grid-template-columns: 1fr;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .btn-calculate,
+    .btn-reset {
+        width: 100%;
+    }
+
+    .results-summary {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ====================================
+   UNIFIED TAX CALCULATOR - THEME OVERRIDE
+   Uses base.css colors with calculator-specific additions
+   ==================================== */
+
+/* Light Mode - Calculator-specific overrides */
+.unified-tax-calculator {
+    --calc-primary: #588157;
+    --calc-primary-hover: #80af81;
+    --calc-secondary: #38b000;
+    --calc-secondary-hover: #008000;
+    --calc-danger: #f44336;
+    --calc-danger-hover: #d32f2f;
+
+    --calc-text-primary: #000000;
+    --calc-text-secondary: #333333;
+    --calc-text-muted: #6c757d;
+
+    --calc-form-bg: #ffffff;
+    --calc-nav-bg: #f8f9fa;
+    --calc-section-bg: #f6fff8;
+    --calc-item-bg: #ffffff;
+    --calc-input-bg: #ffffff;
+    --calc-result-item-bg: #ffffff;
+    --calc-breakdown-bg: #f6fff8;
+
+    --calc-hover-bg: #e8f5e9;
+    --calc-active-tab-bg: #ffffff;
+    --calc-reset-bg: #e5e7eb;
+    --calc-reset-hover: #d1d5db;
+
+    --calc-border: #ddd;
+    --calc-input-border: #ccc;
+    --calc-placeholder: #6c757d;
+
+    --calc-result-bg-start: #D6EFD8;
+    --calc-result-bg-end: #e8f5e9;
+
+    --calc-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark Mode - Calculator-specific overrides */
+html.dark .unified-tax-calculator {
+    --calc-primary: #343a40;
+    --calc-primary-hover: #495057;
+    --calc-secondary: #38b000;
+    --calc-secondary-hover: #008000;
+    --calc-danger: #f44336;
+    --calc-danger-hover: #d32f2f;
+
+    --calc-text-primary: #ffffff;
+    --calc-text-secondary: #e8e8e8;
+    --calc-text-muted: #b8b8b8;
+
+    --calc-form-bg: #0e1722;
+    --calc-nav-bg: #1a1a1a;
+    --calc-section-bg: #2d2d2d;
+    --calc-item-bg: #3a3a3a;
+    --calc-input-bg: #4a4a4a;
+    --calc-result-item-bg: #2d2d2d;
+    --calc-breakdown-bg: #2d2d2d;
+
+    --calc-hover-bg: #495057;
+    --calc-active-tab-bg: #2d2d2d;
+    --calc-reset-bg: #4a4a4a;
+    --calc-reset-hover: #5a5a5a;
+
+    --calc-border: #666666;
+    --calc-input-border: #888888;
+    --calc-placeholder: #b8b8b8;
+
+    --calc-result-bg-start: #1a472a;
+    --calc-result-bg-end: #2d5a3d;
+
+    --calc-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Accessibility */
+.field-input:focus-visible,
+.field-select:focus-visible,
+.btn-calculate:focus-visible,
+.btn-reset:focus-visible,
+.btn-add:focus-visible,
+.btn-delete:focus-visible {
+    outline: 3px solid var(--calc-secondary);
+    outline-offset: 2px;
+}
+
+/* Print Styles */
+@media print {
+    .tab-navigation,
+    .calculator-form,
+    .form-actions {
+        display: none;
+    }
+
+    .results-section {
+        display: block !important;
+        page-break-inside: avoid;
+    }
+}

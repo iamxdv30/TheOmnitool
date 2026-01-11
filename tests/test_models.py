@@ -64,7 +64,7 @@ def test_tool_access(app):
         db.session.add(user)
         db.session.commit()
 
-        tool = Tool(name="Test Tool", description="A test tool", is_default=False)
+        tool = Tool(name="Test Tool", description="A test tool", route="/test_tool", is_default=False)
         db.session.add(tool)
         db.session.commit()
 
