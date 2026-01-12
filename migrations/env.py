@@ -100,7 +100,6 @@ def run_migrations_online():
         context.configure(
             connection=connection,
             target_metadata=get_metadata(),
-            render_as_batch=connection.dialect.name == 'sqlite',
             **conf_args
         )
 

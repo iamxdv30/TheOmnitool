@@ -13,7 +13,7 @@ from sqlalchemy import String, Boolean, DateTime, Integer
 
 # revision identifiers
 revision = 'simplify_user_model'
-down_revision = 'previous_revision_id'  # Replace with your actual previous revision
+down_revision = None  # First migration
 branch_labels = None
 depends_on = None
 
