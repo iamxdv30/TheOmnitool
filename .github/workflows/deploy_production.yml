@@ -254,7 +254,7 @@ jobs:
       # Run smoke tests on production
       - name: Run Production Smoke Tests
         env:
-          PRODUCTION_URL: https://omnitool-by-xdv.herokuapp.com
+          PRODUCTION_URL: https://omnitool-by-xdv-85a1bde25ad1.herokuapp.com
         run: |
           echo "=========================================="
           echo "🧪 RUNNING PRODUCTION SMOKE TESTS"
@@ -301,7 +301,7 @@ jobs:
           echo "=========================================="
           echo "✅ PRODUCTION DEPLOYMENT SUCCESSFUL"
           echo "=========================================="
-          echo "🔗 Production URL: https://omnitool-by-xdv.herokuapp.com"
+          echo "🔗 Production URL: https://omnitool-by-xdv-85a1bde25ad1.herokuapp.com"
           echo "📊 Deployment Time: $(date -u)"
           echo "🔖 Commit: ${{ github.sha }}"
           echo ""

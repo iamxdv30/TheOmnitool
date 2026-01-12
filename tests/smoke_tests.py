@@ -149,9 +149,9 @@ def test_static_assets_load(base_url: str, session: requests.Session) -> Tuple[b
     """
     logger.info("Testing static assets load...")
 
-    # Common static file paths
+    # Common static file paths (files that actually exist)
     static_files = [
-        "/static/css/style.css",
+        "/static/css/base.css",
         "/static/js/utils/theme.js"
     ]
 

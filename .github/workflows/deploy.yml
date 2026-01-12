@@ -184,7 +184,7 @@ jobs:
 
       - name: Run Staging Smoke Tests
         env:
-          STAGING_URL: https://omnitool-by-xdv-staging.herokuapp.com
+          STAGING_URL: https://omnitool-by-xdv-staging-bc1844b846d6.herokuapp.com
         run: |
           echo "=========================================="
           echo "🧪 RUNNING STAGING SMOKE TESTS"
@@ -203,7 +203,7 @@ jobs:
           echo "=========================================="
           echo "✅ STAGING DEPLOYMENT COMPLETE"
           echo "=========================================="
-          echo "🔗 Staging URL: https://omnitool-by-xdv-staging.herokuapp.com"
+          echo "🔗 Staging URL: https://omnitool-by-xdv-staging-bc1844b846d6.herokuapp.com"
           echo ""
           echo "📋 Next Steps:"
           echo "  1. Verify staging environment manually"
