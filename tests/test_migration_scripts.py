@@ -185,16 +185,18 @@ class TestImportToolAccess:
             with open(export_path, 'w') as f:
                 json.dump(export_data, f)
 
-            # Create the tool (so it exists)
-            test_tool = Tool(
-                name="Test Tool 1",
-                description="Test",
-                route="/test",
-                is_default=False,
-                is_active=True
-            )
-            db.session.add(test_tool)
-            db.session.commit()
+            # Create the tool if it doesn't exist (init_database fixture may have created it)
+            existing_tool = Tool.query.filter_by(name="Test Tool 1").first()
+            if not existing_tool:
+                test_tool = Tool(
+                    name="Test Tool 1",
+                    description="Test",
+                    route="/test",
+                    is_default=False,
+                    is_active=True
+                )
+                db.session.add(test_tool)
+                db.session.commit()
 
             original_count = ToolAccess.query.count()
 

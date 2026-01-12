@@ -53,29 +53,31 @@ def get_app_version():
         return "1.4.3"
 
 
-def export_tool_access(environment='local', output_path=None):
+def export_tool_access(environment='local', output_path=None, app=None):
     """
     Export tool_access permissions to JSON file
 
     Args:
         environment: 'local', 'staging', or 'production'
         output_path: Custom output path (optional)
+        app: Flask app instance (optional, uses current_app or creates new one)
 
     Returns:
         Path to the created export file
     """
-    # Set environment variables based on target
-    if environment == 'local':
-        os.environ['IS_LOCAL'] = 'true'
-        os.environ['FLASK_ENV'] = 'development'
-    elif environment == 'staging':
-        os.environ['IS_LOCAL'] = 'false'
-        os.environ['FLASK_ENV'] = 'staging'
-    elif environment == 'production':
-        os.environ['IS_LOCAL'] = 'false'
-        os.environ['FLASK_ENV'] = 'production'
-    else:
-        raise ValueError(f"Invalid environment: {environment}. Must be 'local', 'staging', or 'production'")
+    # Set environment variables based on target (only if not using provided app)
+    if app is None:
+        if environment == 'local':
+            os.environ['IS_LOCAL'] = 'true'
+            os.environ['FLASK_ENV'] = 'development'
+        elif environment == 'staging':
+            os.environ['IS_LOCAL'] = 'false'
+            os.environ['FLASK_ENV'] = 'staging'
+        elif environment == 'production':
+            os.environ['IS_LOCAL'] = 'false'
+            os.environ['FLASK_ENV'] = 'production'
+        else:
+            raise ValueError(f"Invalid environment: {environment}. Must be 'local', 'staging', or 'production'")
 
     # Determine output path
     if output_path is None:
@@ -85,7 +87,13 @@ def export_tool_access(environment='local', output_path=None):
 
     logger.info(f"Exporting tool access from {environment} environment...")
 
-    app = create_app()
+    # Use provided app or create new one
+    if app is None:
+        from flask import has_app_context, current_app
+        if has_app_context():
+            app = current_app._get_current_object()
+        else:
+            app = create_app()
 
     with app.app_context():
         try:
