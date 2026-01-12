@@ -1,0 +1,144 @@
+{
+  "export_metadata": {
+    "environment": "local",
+    "timestamp": "2026-01-11T16:56:25.625310+00:00",
+    "total_grants": 17,
+    "total_tools": 4,
+    "total_users": 5,
+    "version": "1.4.0"
+  },
+  "tool_access": [
+    {
+      "email": "admin@example.com",
+      "tool_name": "Character Counter",
+      "user_id": 2,
+      "username": "admin"
+    },
+    {
+      "email": "admin@example.com",
+      "tool_name": "Email Templates",
+      "user_id": 2,
+      "username": "admin"
+    },
+    {
+      "email": "admin@example.com",
+      "tool_name": "Tax Calculator",
+      "user_id": 2,
+      "username": "admin"
+    },
+    {
+      "email": "girlyshimene@gmail.com",
+      "tool_name": "Character Counter",
+      "user_id": 5,
+      "username": "ggpriels"
+    },
+    {
+      "email": "girlyshimene@gmail.com",
+      "tool_name": "Email Templates",
+      "user_id": 5,
+      "username": "ggpriels"
+    },
+    {
+      "email": "girlyshimene@gmail.com",
+      "tool_name": "Tax Calculator",
+      "user_id": 5,
+      "username": "ggpriels"
+    },
+    {
+      "email": "girlyshimene@gmail.com",
+      "tool_name": "Unix Timestamp Converter",
+      "user_id": 5,
+      "username": "ggpriels"
+    },
+    {
+      "email": "mr.xyydevera@gmail.com",
+      "tool_name": "Character Counter",
+      "user_id": 4,
+      "username": "iamxdv"
+    },
+    {
+      "email": "mr.xyydevera@gmail.com",
+      "tool_name": "Email Templates",
+      "user_id": 4,
+      "username": "iamxdv"
+    },
+    {
+      "email": "mr.xyydevera@gmail.com",
+      "tool_name": "Tax Calculator",
+      "user_id": 4,
+      "username": "iamxdv"
+    },
+    {
+      "email": "mr.xyydevera@gmail.com",
+      "tool_name": "Unix Timestamp Converter",
+      "user_id": 4,
+      "username": "iamxdv"
+    },
+    {
+      "email": "super@admin.com",
+      "tool_name": "Character Counter",
+      "user_id": 1,
+      "username": "superadmin"
+    },
+    {
+      "email": "super@admin.com",
+      "tool_name": "Email Templates",
+      "user_id": 1,
+      "username": "superadmin"
+    },
+    {
+      "email": "super@admin.com",
+      "tool_name": "Tax Calculator",
+      "user_id": 1,
+      "username": "superadmin"
+    },
+    {
+      "email": "test@nomail.com",
+      "tool_name": "Character Counter",
+      "user_id": 3,
+      "username": "testuser"
+    },
+    {
+      "email": "test@nomail.com",
+      "tool_name": "Email Templates",
+      "user_id": 3,
+      "username": "testuser"
+    },
+    {
+      "email": "test@nomail.com",
+      "tool_name": "Tax Calculator",
+      "user_id": 3,
+      "username": "testuser"
+    }
+  ],
+  "tools": [
+    {
+      "description": "Count characters in text",
+      "is_active": true,
+      "is_default": true,
+      "name": "Character Counter",
+      "route": "/char_counter"
+    },
+    {
+      "description": "Create and manage email templates",
+      "is_active": true,
+      "is_default": true,
+      "name": "Email Templates management",
+      "route": "/email_templates"
+    },
+    {
+      "description": "Calculate US, Canada, and international VAT taxes",
+      "is_active": true,
+      "is_default": true,
+      "name": "Tax Calculator",
+      "route": "/unified_tax_calculator"
+    },
+    {
+      "description": "Convert Unix timestamps",
+      "is_active": true,
+      "is_default": true,
+      "name": "Unix Timestamp Converter",
+      "route": "/convert"
+    }
+  ]
+}

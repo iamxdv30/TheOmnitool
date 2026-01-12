@@ -47,6 +47,34 @@ pytest tests/test_routes.py
 pytest tests/test_routes.py::test_function_name
 ```
 
+### Migration Scripts
+
+```bash
+# Sync tool definitions (add/rename/delete tools)
+python sync_tools.py
+
+# Export tool access permissions (after granting/revoking access)
+python scripts/export_tool_access.py --env local
+
+# Import tool access permissions (to staging/production)
+python scripts/import_tool_access.py --source data/tool_access_exports/local_tool_access.json --mode merge
+
+# Verify migration success
+python scripts/verify_migration.py --env local
+
+# Emergency rollback from backup
+python scripts/rollback_migration.py --env staging
+python scripts/rollback_migration.py --env production --backup b123
+
+# Post-deployment smoke tests
+python tests/smoke_tests.py --url https://omnitool-by-xdv-staging.herokuapp.com
+
+# Sync production data to staging (requires Heroku Standard tier)
+python scripts/sync_data_prod_to_staging.py
+```
+
+**📚 Complete Workflow Guide**: See [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md) for detailed step-by-step instructions
+
 ## Architecture
 
 ### Application Factory Pattern
