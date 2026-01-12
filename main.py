@@ -74,6 +74,7 @@ from routes.user_routes import user
 from routes.admin_routes import admin
 from routes.tool_routes import tool
 from routes.contact_routes import contact, configure_mail
+from routes.health_routes import health
 from model import db
 
 
@@ -167,12 +168,17 @@ def create_app():
     db.init_app(app)
     migrate = Migrate(app, db, render_as_batch=True)  # Enable batch mode for SQLite
 
+    # SAFETY: Validate database on startup
+    from utils.db_safety import validate_database_on_startup
+    validate_database_on_startup(app)
+
     # Register blueprints
     app.register_blueprint(auth)
     app.register_blueprint(user)
     app.register_blueprint(admin)
     app.register_blueprint(tool, url_prefix='/tools')
     app.register_blueprint(contact)
+    app.register_blueprint(health)  # Health check endpoints
 
     @app.route("/environment")
     def show_environment():
