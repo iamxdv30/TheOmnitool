@@ -19,18 +19,70 @@ gunicorn main:app
 
 ### Database Management
 ```bash
-# Run database migrations
-flask db upgrade
+# Run database migrations (WITH AUTOMATIC BACKUP)
+python migrate_db.py
 
 # Create a new migration after model changes
 flask db migrate -m "migration message"
 
+# Restore database from backup
+python restore_backup.py
+
+# Check database health
+curl http://localhost:5000/health
+
 # Initialize tools in database
 python tool_management.py
-
-# Manual database migration script
-python migrate_db.py
 ```
+
+### Database Safety Features 🛡️
+
+**Automatic Protection:**
+- ✅ Pre-migration backups (automatic)
+- ✅ Schema validation on startup
+- ✅ Health check endpoints
+- ✅ Recovery utilities
+
+**Backup Locations:**
+- Primary: `zzDumpfiles/SQLite Database Backup/users.db`
+- Pre-migration: `zzDumpfiles/SQLite Database Backup/users.db.backup_pre_migration_*`
+- Pre-restore: `instance/users.db.before_restore_*`
+
+**Health Check Endpoints:**
+```bash
+# Comprehensive health check
+curl http://localhost:5000/health
+
+# Simple ping
+curl http://localhost:5000/health/ping
+
+# Detailed database status
+curl http://localhost:5000/health/database
+```
+
+**Troubleshooting Database Issues:**
+
+1. **Database not initialized:**
+   ```bash
+   python migrate_db.py
+   ```
+
+2. **Data lost or corrupted:**
+   ```bash
+   python restore_backup.py
+   ```
+
+3. **Check what's wrong:**
+   ```bash
+   curl http://localhost:5000/health
+   # Or check logs: logs/app.log
+   ```
+
+4. **Migration failed:**
+   - Backup is automatically created before migration
+   - Check error message in console
+   - Restore from backup if needed
+   - Fix migration issue and try again
 
 ### Testing
 ```bash
