@@ -133,10 +133,81 @@ jobs:
           heroku config:set SECURITY_PASSWORD_SALT="${{ secrets.SECURITY_PASSWORD_SALT }}" -a omnitool-by-xdv-staging
           heroku config:set SESSION_TYPE="filesystem" -a omnitool-by-xdv-staging
 
+      # OPTIONAL: Sync production data to staging for realistic testing
+      # Requires Heroku Postgres Standard tier ($50+/month) for follower support
+      # Uncomment the following step to enable prod->staging data sync:
+      #
+      # - name: Sync Production Data to Staging
+      #   env:
+      #     HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+      #   run: |
+      #     python scripts/sync_data_prod_to_staging.py
+      #   continue-on-error: false
+
+      - name: Backup Staging Database
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          echo "Creating staging database backup..."
+          heroku pg:backups:capture -a omnitool-by-xdv-staging
+          echo "✅ Staging backup created"
+
       - name: Run Database Migrations
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
           FLASK_ENV: staging
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
         run: |
           heroku run python migrate_db.py -a omnitool-by-xdv-staging
+
+      - name: Import Tool Access Permissions
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          echo "Importing tool_access permissions from dev export..."
+          if [ -f "data/tool_access_exports/dev_tool_access.json" ]; then
+            heroku run python scripts/import_tool_access.py \
+              --source data/tool_access_exports/dev_tool_access.json \
+              --mode merge \
+              -a omnitool-by-xdv-staging
+            echo "✅ Tool access permissions imported"
+          else
+            echo "⚠️  No dev_tool_access.json found. Skipping tool access import."
+            echo "   Export tool access using: python scripts/export_tool_access.py --env local"
+          fi
+
+      - name: Verify Migration
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          echo "Running post-deployment verification..."
+          heroku run python scripts/verify_migration.py --env staging -a omnitool-by-xdv-staging || echo "[WARNING] Verification had failures - check output above"
+
+      - name: Run Staging Smoke Tests
+        env:
+          STAGING_URL: https://omnitool-by-xdv-staging.herokuapp.com
+        run: |
+          echo "=========================================="
+          echo "🧪 RUNNING STAGING SMOKE TESTS"
+          echo "=========================================="
+          python tests/smoke_tests.py --url $STAGING_URL || {
+            echo "⚠️  WARNING: Smoke tests failed in staging"
+            echo "Check staging logs: heroku logs --tail -a omnitool-by-xdv-staging"
+            exit 1
+          }
+          echo "✅ Smoke tests passed"
+          echo "=========================================="
+
+      - name: Deployment Summary
+        run: |
+          echo ""
+          echo "=========================================="
+          echo "✅ STAGING DEPLOYMENT COMPLETE"
+          echo "=========================================="
+          echo "🔗 Staging URL: https://omnitool-by-xdv-staging.herokuapp.com"
+          echo ""
+          echo "📋 Next Steps:"
+          echo "  1. Verify staging environment manually"
+          echo "  2. Test tool functionality"
+          echo "  3. Verify tool access permissions"
+          echo "  4. If all tests pass, create PR to main for production deployment"
+          echo "=========================================="
