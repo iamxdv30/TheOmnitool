@@ -63,50 +63,18 @@ def sync_tools():
     """
     logger.info("Starting Tool Synchronization...")
     
-    # 1. Sync Defined Tools
-    for tool_def in DEFINED_TOOLS:
-        tool = Tool.query.filter_by(name=tool_def["name"]).first()
-        
-        if tool:
-            # Check if updates are actually needed to avoid unnecessary DB writes
-            updates = []
-            if tool.description != tool_def["description"]:
-                tool.description = tool_def["description"]
-                updates.append("description")
-            
-            if tool.route != tool_def["route"]:
-                tool.route = tool_def["route"]
-                updates.append("route")
-                
-            if tool.is_default != tool_def["is_default"]:
-                tool.is_default = tool_def["is_default"]
-                updates.append("is_default")
-            
-            # Check is_active safely
-            target_active = tool_def.get("is_active", True)
-            if hasattr(tool, "is_active") and tool.is_active != target_active:
-                tool.is_active = target_active
-                updates.append("is_active")
+    # DEBUG: Check DB Connection
+    try:
+        current_db = db.engine.url.render_as_string(hide_password=True)
+        logger.info(f"Connected to Database: {current_db}")
+        tool_count = Tool.query.count()
+        logger.info(f"Current Tool Count in DB: {tool_count}")
+    except Exception as e:
+        logger.error(f"Failed to check DB state: {e}")
+        raise
 
-            if updates:
-                logger.info(f"Updating tool '{tool.name}': {', '.join(updates)}")
-            else:
-                logger.info(f"Tool '{tool.name}' is up to date.")
-        else:
-            # Create new
-            logger.info(f"Creating new tool: {tool_def['name']}")
-            new_tool = Tool(
-                name=tool_def["name"],
-                description=tool_def["description"],
-                route=tool_def["route"],
-                is_default=tool_def["is_default"],
-                is_active=tool_def.get("is_active", True)
-            )
-            db.session.add(new_tool)
-    
-    db.session.commit()
-
-    # 2. Handle Deprecation & Migration
+    # 1. Handle Deprecation & Migration FIRST (before creating new tools)
+    # This prevents UNIQUE constraint violations when old and new tools share routes
     for old_name, new_name in DEPRECATED_TOOLS.items():
         old_tool = Tool.query.filter_by(name=old_name).first()
         if not old_tool:
@@ -135,7 +103,58 @@ def sync_tools():
         logger.info(f"Removed deprecated tool: {old_name}")
 
     db.session.commit()
-    logger.info("Tool Synchronization Completed.")
+    logger.info("Deprecated tools removed successfully.")
+
+    # 2. Sync Defined Tools (after deprecation to avoid route conflicts)
+    for tool_def in DEFINED_TOOLS:
+        logger.info(f"Checking definition for: {tool_def['name']}")
+        tool = Tool.query.filter_by(name=tool_def["name"]).first()
+
+        if tool:
+            # Check if updates are actually needed to avoid unnecessary DB writes
+            updates = []
+            if tool.description != tool_def["description"]:
+                tool.description = tool_def["description"]
+                updates.append("description")
+
+            if tool.route != tool_def["route"]:
+                tool.route = tool_def["route"]
+                updates.append("route")
+
+            if tool.is_default != tool_def["is_default"]:
+                tool.is_default = tool_def["is_default"]
+                updates.append("is_default")
+
+            # Check is_active safely
+            target_active = tool_def.get("is_active", True)
+            if hasattr(tool, "is_active") and tool.is_active != target_active:
+                tool.is_active = target_active
+                updates.append("is_active")
+
+            if updates:
+                logger.info(f"Updating tool '{tool.name}': {', '.join(updates)}")
+            else:
+                logger.info(f"Tool '{tool.name}' is up to date.")
+        else:
+            # Create new
+            logger.info(f"Creating new tool: {tool_def['name']}")
+            new_tool = Tool(
+                name=tool_def["name"],
+                description=tool_def["description"],
+                route=tool_def["route"],
+                is_default=tool_def["is_default"],
+                is_active=tool_def.get("is_active", True)
+            )
+            db.session.add(new_tool)
+            logger.info(f"Staged creation of {tool_def['name']}")
+
+    try:
+        db.session.commit()
+        logger.info("Tool Synchronization Completed.")
+    except Exception as e:
+        logger.error(f"Failed to commit tool definitions: {e}")
+        db.session.rollback()
+        raise
 
 if __name__ == "__main__":
     app = create_app()
