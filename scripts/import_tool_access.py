@@ -67,7 +67,7 @@ def load_export_file(source_path):
     return data
 
 
-def import_tool_access(source_path, mode='merge', dry_run=False, confirmed=False):
+def import_tool_access(source_path, mode='merge', dry_run=False, confirmed=False, app=None):
     """
     Import tool_access permissions from JSON export
 
@@ -76,6 +76,7 @@ def import_tool_access(source_path, mode='merge', dry_run=False, confirmed=False
         mode: 'merge' (additive, safe) or 'overwrite' (destructive)
         dry_run: Preview changes without committing
         confirmed: Required for overwrite mode
+        app: Flask app instance (optional, uses current_app or creates new one)
 
     Returns:
         Dict with import statistics
@@ -92,7 +93,14 @@ def import_tool_access(source_path, mode='merge', dry_run=False, confirmed=False
     # Load export data
     import_data = load_export_file(source_path)
 
-    app = create_app()
+    # Use provided app or create new one
+    if app is None:
+        from flask import has_app_context, current_app
+        if has_app_context():
+            app = current_app._get_current_object()
+        else:
+            app = create_app()
+
     stats = {
         'grants_created': 0,
         'grants_skipped': 0,
