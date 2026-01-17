@@ -1,6 +1,5 @@
 # IDE and Editor
 .vscode/
-.windsurf
 .windsurf/
 
 # Python
@@ -8,6 +7,7 @@
 __pycache__/
 .venv/
 venv/
+env/
 
 # Flask
 instance/
@@ -15,15 +15,16 @@ app.log
 
 # Environment and Secrets
 .env
+.env.*
 .env.backup
-#.env*
+.envbackup
 
 # Database
 *.db
 
 # Logs
-logs
 logs/
+logs
 
 # Data and Backups
 data/backups/
@@ -34,3 +35,6 @@ setup_route_for_admin.md
 
 # Dump Files
 zzDumpfiles/
+
+# macOS
+.DS_Store
