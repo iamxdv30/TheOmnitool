@@ -132,6 +132,8 @@ jobs:
           heroku config:set TOKEN_SECRET_KEY="${{ secrets.TOKEN_SECRET_KEY }}" -a omnitool-by-xdv-staging
           heroku config:set SECURITY_PASSWORD_SALT="${{ secrets.SECURITY_PASSWORD_SALT }}" -a omnitool-by-xdv-staging
           heroku config:set SESSION_TYPE="filesystem" -a omnitool-by-xdv-staging
+          heroku config:set RECAPTCHA_SITE_KEY="${{ secrets.RECAPTCHA_SITE_KEY }}" -a omnitool-by-xdv
+          heroku config:set RECAPTCHA_SECRET_KEY="${{ secrets.RECAPTCHA_SECRET_KEY }}" -a omnitool-by-xdv
 
       # OPTIONAL: Sync production data to staging for realistic testing
       # Requires Heroku Postgres Standard tier ($50+/month) for follower support
