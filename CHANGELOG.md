@@ -3,6 +3,53 @@
 All notable changes to this project will be documented in this file.
 
 
+## [1.4.3] - 2026-01-11
+### Highlights
+
+### 🎨 Enhanced
+
+- Redesigned the Tax Calculator and Implemented VAT Calculator. It is now a single, interactive dashboard widget that handles tax calculations for three different regions within one cohesive interface:
+
+    1. **United States** - Complex sales tax with configurable discount behavior
+    2. **Canada** - Province-based tax calculations
+    3. **VAT (International)** - Value Added Tax for international markets
+    
+    ## Key Features
+
+    ### ✅ Single Dashboard Tile
+    - All three calculators contained within one widget
+    - No separate pages or navigation required
+    - Seamless integration with existing dashboard
+
+    ### ✅ Tabbed Navigation
+    - Easy switching between US, Canada, and VAT calculators
+    - Visual indicators for active tab
+    - URL hash support for bookmarking specific calculators
+
+    ### ✅ State Persistence
+    - Tab switching saves current form state
+    - Data preserved in browser session storage
+    - Clean state management
+
+    ### ✅ Responsive Design
+    - Works on desktop, tablet, and mobile devices
+    - Adaptive grid layout
+    - Touch-friendly interface
+
+### 🐛 Fixed
+
+- Tax Calculator now works correctly - fixed an issue where clicking "Calculate" on any tab (US, Canada, or VAT) would show an error message instead of displaying results
+- **VAT Calculator**: Fixed critical bug where "Discounts Are Taxable" checkbox setting was completely ignored, causing discounts to never be taxed regardless of checkbox state
+- **US Calculator**: Fixed form validation issue preventing calculate button from working when discount fields were added but left empty
+- **Tax Calculation Logic**: Implemented all 4 discount taxation conditions in VAT calculator to match US and Canada calculator behavior
+
+### 🔧 Technical Improvements
+- **Tax Calculator Backend Logic** Implemented VAT calculator for international markets and improved tax calculation consistency across all calculator types (US, Canada, VAT)
+- **Calculator Configurations** - Different rules passed as configurations
+- **Pluggable Tax Systems** - Easy to add new calculator types
+
+
+
 ## [1.4.2] - 2026-01-09
 ### Highlights
 

@@ -9,22 +9,32 @@ __pycache__/
 venv/
 env/
 
-# Database
+# Flask
 instance/
-*.db
+app.log
 
 # Environment and Secrets
 .env
 .env.*
+.env.backup
 .envbackup
+
+# Database
+*.db
 
 # Logs
 logs/
-app.log
+logs
+
+# Data and Backups
+data/backups/
 
 # Temporary and Test Files
 templates/test.html
 setup_route_for_admin.md
+
+# Dump Files
+zzDumpfiles/
 
 # macOS
 .DS_Store

@@ -16,7 +16,7 @@ import pytz
 from datetime import datetime
 from typing import Union
 from Tools.char_counter import count_characters
-from Tools.tax_calculator import tax_calculator as calculate_tax
+from Tools.tax_calculator import tax_calculator as calculate_tax, calculate_vat
 import logging
 
 # Use centralized logging configured in main.py
@@ -111,105 +111,121 @@ def char_counter():
     return render_template("char_counter.html", char_limit=3532)
 
 
-@tool.route("/tax_calculator", methods=["GET", "POST"])
+@tool.route("/tax_calculator", methods=["GET"])
 @tool_access_required("Tax Calculator")
 def tax_calculator_route():
-    if request.method == "POST":
-        calculator_type = request.form.get("calculator_type")
-        if calculator_type == "canada":
-            return redirect(url_for("tool.canada_tax_calculator"))
-
-        logging.debug("Received POST request for US tax calculation")
-        data = request.form.to_dict()
-        logging.debug(f"Received form data: {data}")
-
-        try:
-            # Process items
-            items = []
-            i = 1
-            while f"item_price_{i}" in data and f"item_tax_rate_{i}" in data:
-                price = data[f"item_price_{i}"].strip()
-                tax_rate = data[f"item_tax_rate_{i}"].strip()
-                if price and tax_rate:
-                    items.append({"price": float(price), "tax_rate": float(tax_rate)})
-                i += 1
-
-            # Process discounts
-            discounts = []
-            i = 1
-            while f"discount_amount_{i}" in data:
-                amount = data[f"discount_amount_{i}"].strip()
-                if amount:
-                    item_index = int(data.get(f"discount_item_{i}", 1))
-                    discounts.append({
-                        "amount": float(amount),
-                        "item_index": item_index
-                    })
-                i += 1
-
-            # Global flags
-            is_sales_before_tax = "is_sales_before_tax" in data
-            discount_is_taxable = "discount_is_taxable" in data
-            shipping_taxable = "shipping_taxable" in data
-
-            calc_data = {
-                "items": items,
-                "discounts": discounts,
-                "shipping_cost": float(data.get("shipping_cost", 0) or 0),
-                "shipping_taxable": shipping_taxable,
-                "shipping_tax_rate": float(data.get("shipping_tax_rate", 0) or 0),
-                "is_sales_before_tax": is_sales_before_tax,
-                "discount_is_taxable": discount_is_taxable
-            }
-
-            # Process shipping
-            shipping_cost = data.get("shipping_cost", "").strip()
-            shipping_cost = float(shipping_cost) if shipping_cost else 0
-            shipping_taxable = data.get("shipping_taxable") == "Y"
-            shipping_tax_rate = data.get("shipping_tax_rate", "").strip()
-            shipping_tax_rate = float(shipping_tax_rate) if shipping_tax_rate else 0
-
-            calc_data = {
-                "items": items,
-                "discounts": discounts,
-                "shipping_cost": shipping_cost,
-                "shipping_taxable": shipping_taxable,
-                "shipping_tax_rate": shipping_tax_rate,
-            }
-
-            logging.debug(f"Processed data for calculation: {calc_data}")
-
-            result = calculate_tax(calc_data)
-            logging.debug(f"Calculation result: {result}")
-        except ValueError as e:
-            logging.error(f"Error during tax calculation: {str(e)}")
-            result = None
-            flash(
-                f"Invalid input: Please ensure all numeric fields contain valid numbers.",
-                "error",
-            )
-        except Exception as e:
-            logging.error(f"Unexpected error during tax calculation: {str(e)}")
-            result = None
-            flash("An unexpected error occurred. Please try again.", "error")
-
-        return render_template("tax_calculator.html", result=result, data=data)
-    else:
-        logging.debug("Received GET request for tax calculator")
-        data = {}
-        return render_template("tax_calculator.html", data=data)
+    """Legacy route - redirects to unified tax calculator"""
+    return redirect(url_for("tool.unified_tax_calculator"))
 
 
-@tool.route("/canada_tax_calculator", methods=["GET", "POST"])
-@tool_access_required("Canada Tax Calculator")
+@tool.route("/canada_tax_calculator", methods=["GET"])
+@tool_access_required("Tax Calculator")
 def canada_tax_calculator():
+    """Legacy route - redirects to unified tax calculator (Canada tab)"""
+    return redirect(url_for("tool.unified_tax_calculator") + "#canada")
+
+
+@tool.route("/unified_tax_calculator", methods=["GET", "POST"])
+@tool_access_required("Tax Calculator")
+def unified_tax_calculator():
+    """
+    Unified tax calculator route handling US, Canada, and VAT calculations.
+    Returns JSON for AJAX requests or renders template for direct access.
+    """
     if request.method == "POST":
-        data = request.form.to_dict()
-        result = calculate_tax(data)
-        return render_template("canada_tax_calculator.html", result=result, data=data)
+        try:
+            # Handle JSON requests from AJAX
+            if request.is_json:
+                data = request.json
+                calculator_type = data.get("calculator_type", "us")
+
+                logging.debug(f"Unified calculator request for type: {calculator_type}")
+                logging.debug(f"Received data: {data}")
+
+                # Route to appropriate calculator based on type
+                if calculator_type == "vat":
+                    # Prepare data for VAT calculation
+                    vat_data = {
+                        "vat_rate": data.get("vat_rate", 0),
+                        "items": data.get("items", []),
+                        "discounts": data.get("discounts", []),
+                        "shipping_cost": data.get("shipping_cost", 0),
+                        "shipping_taxable": data.get("shipping_taxable", True),
+                        "is_sales_before_tax": data.get("options", {}).get("is_sales_before_tax", False),
+                        "discount_is_taxable": data.get("options", {}).get("discount_is_taxable", True)
+                    }
+                    result = calculate_vat(vat_data)
+
+                elif calculator_type == "canada":
+                    # Prepare data for Canada sales tax calculation (GST/PST)
+                    gst_rate = data.get("gst_rate", 0)
+                    pst_rate = data.get("pst_rate", 0)
+                    total_tax_rate = float(gst_rate) + float(pst_rate)
+
+                    sales_tax_data = {
+                        "items": [],
+                        "discounts": data.get("discounts", []),
+                        "shipping_cost": data.get("shipping_cost", 0),
+                        "shipping_taxable": data.get("shipping_taxable", False),
+                        "shipping_tax_rate": total_tax_rate,
+                        "is_sales_before_tax": data.get("options", {}).get("is_sales_before_tax", False),
+                        "discount_is_taxable": data.get("options", {}).get("discount_is_taxable", True)
+                    }
+
+                    # For Canada, all items use the same combined GST/PST rate
+                    for item in data.get("items", []):
+                        sales_tax_data["items"].append({
+                            "price": item.get("price", 0),
+                            "tax_rate": total_tax_rate
+                        })
+
+                    result = calculate_tax(sales_tax_data)
+
+                elif calculator_type == "us":
+                    # Prepare data for US sales tax calculation
+                    sales_tax_data = {
+                        "items": [],
+                        "discounts": data.get("discounts", []),
+                        "shipping_cost": data.get("shipping_cost", 0),
+                        "shipping_taxable": data.get("shipping_taxable", False),
+                        "shipping_tax_rate": data.get("shipping_tax_rate", 0),
+                        "is_sales_before_tax": data.get("options", {}).get("is_sales_before_tax", False),
+                        "discount_is_taxable": data.get("options", {}).get("discount_is_taxable", True)
+                    }
+
+                    # Add tax_rate to items for US (each item has its own rate)
+                    for item in data.get("items", []):
+                        sales_tax_data["items"].append({
+                            "price": item.get("price", 0),
+                            "tax_rate": item.get("tax_rate", 0)
+                        })
+
+                    result = calculate_tax(sales_tax_data)
+
+                else:
+                    raise ValueError(f"Invalid calculator type: {calculator_type}")
+
+                logging.debug(f"Calculation result: {result}")
+                return jsonify({"success": True, "data": result})
+
+            else:
+                # Handle form submission (fallback)
+                return jsonify({"success": False, "error": "JSON data expected"}), 400
+
+        except ValueError as e:
+            logging.error(f"Validation error in unified calculator: {str(e)}")
+            logging.error(f"Request data was: {request.json}")
+            return jsonify({"success": False, "error": str(e)}), 400
+
+        except Exception as e:
+            logging.error(f"Unexpected error in unified calculator: {str(e)}")
+            logging.error(f"Request data was: {request.json}")
+            logging.exception("Full traceback:")
+            return jsonify({"success": False, "error": f"An unexpected error occurred: {str(e)}"}), 500
+
     else:
-        data = {}
-        return render_template("canada_tax_calculator.html", data=data)
+        # GET request - render the unified calculator template
+        return render_template("unified_tax_calculator.html")
 
 
 @tool.route("/email_templates", methods=["GET", "POST"])
@@ -404,9 +420,10 @@ def check_tool_access(tool_name):
         if has_access:
             logging.debug(f"Access granted for tool: {tool_name}")
             tool_urls = {
-                "Tax Calculator": "tool.tax_calculator_route",
+                "Tax Calculator": "tool.unified_tax_calculator",
+                "Unified Tax Calculator": "tool.unified_tax_calculator",  # Legacy name
+                "Canada Tax Calculator": "tool.unified_tax_calculator",  # Legacy name - redirects to Canada tab
                 "Character Counter": "tool.char_counter",
-                "Canada Tax Calculator": "tool.canada_tax_calculator",
                 "Unix Timestamp Converter": "tool.convert",
                 "Email Templates": "tool.email_templates",
             }

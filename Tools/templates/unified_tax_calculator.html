@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+{% block title %}Tax Calculator{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/unified_tax_calculator.css') }}">
+{% endblock %}
+
+{% block scripts %}
+<!-- Load utility JS files -->
+<script src="{{ url_for('static', filename='js/utils/common.js') }}"></script>
+<!-- Load modular calculator engine -->
+<script src="{{ url_for('static', filename='js/modules/calculator_engine.js') }}"></script>
+<!-- Load page-specific JS -->
+<script src="{{ url_for('static', filename='js/pages/unified_tax_calculator.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="unified-tax-calculator">
+    <div class="calculator-header">
+        <h1>Tax Calculator</h1>
+        <p class="calculator-subtitle">Calculate taxes for different regions</p>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="tab-navigation">
+        <button class="tab-btn active" data-tab="us">
+            <span class="tab-icon">🇺🇸</span>
+            <span class="tab-label">United States</span>
+        </button>
+        <button class="tab-btn" data-tab="canada">
+            <span class="tab-icon">🇨🇦</span>
+            <span class="tab-label">Canada</span>
+        </button>
+        <button class="tab-btn" data-tab="vat">
+            <span class="tab-icon">🌍</span>
+            <span class="tab-label">VAT (International)</span>
+        </button>
+    </div>
+
+    <!-- Tab Content Container -->
+    <div class="tab-content-wrapper">
+
+        <!-- US Tax Calculator Tab -->
+        <div class="tab-content active" id="tab-us">
+            <form class="calculator-form" id="us-tax-form" data-calculator-type="us">
+
+                <!-- Tax Behavior Options -->
+                <div class="options-section">
+                    <h3 class="section-title">Tax Behavior</h3>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="is_sales_before_tax" checked>
+                            <span class="checkbox-text">Apply Discounts Before Tax</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="discount_is_taxable" checked>
+                            <span class="checkbox-text">Discounts Are Taxable</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Items Section -->
+                <div class="items-section">
+                    <div class="section-header">
+                        <h3 class="section-title">Items</h3>
+                        <button type="button" class="btn-add" data-action="add-item">
+                            <span class="btn-icon">+</span> Add Item
+                        </button>
+                    </div>
+                    <div class="items-container" id="us-items-container">
+                        <!-- Dynamic items will be added here -->
+                    </div>
+                </div>
+
+                <!-- Discounts Section -->
+                <div class="discounts-section">
+                    <div class="section-header">
+                        <h3 class="section-title">Discounts</h3>
+                        <button type="button" class="btn-add" data-action="add-discount">
+                            <span class="btn-icon">+</span> Add Discount
+                        </button>
+                    </div>
+                    <div class="discounts-container" id="us-discounts-container">
+                        <!-- Dynamic discounts will be added here -->
+                    </div>
+                </div>
+
+                <!-- Shipping Section -->
+                <div class="shipping-section">
+                    <h3 class="section-title">Shipping</h3>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label class="field-label">Shipping Cost</label>
+                            <input type="number" class="field-input" name="shipping_cost" step="0.01" min="0" placeholder="0.00">
+                        </div>
+                        <div class="form-field">
+                            <label class="field-label">Is Shipping Taxable?</label>
+                            <select class="field-select" name="shipping_taxable">
+                                <option value="false">No</option>
+                                <option value="true">Yes</option>
+                            </select>
+                        </div>
+                        <div class="form-field" id="us-shipping-tax-rate" style="display: none;">
+                            <label class="field-label">Shipping Tax Rate (%)</label>
+                            <input type="number" class="field-input" name="shipping_tax_rate" step="0.01" min="0" placeholder="0.00">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calculate Button -->
+                <div class="form-actions">
+                    <button type="submit" class="btn-calculate">Calculate Tax</button>
+                    <button type="button" class="btn-reset" data-action="reset">Clear All</button>
+                </div>
+            </form>
+
+            <!-- Results Section -->
+            <div class="results-section" id="us-results" style="display: none;">
+                <!-- Results will be dynamically populated -->
+            </div>
+        </div>
+
+        <!-- Canada Tax Calculator Tab -->
+        <div class="tab-content" id="tab-canada">
+            <form class="calculator-form" id="canada-tax-form" data-calculator-type="canada">
+
+                <!-- Tax Behavior Options -->
+                <div class="options-section">
+                    <h3 class="section-title">Tax Behavior</h3>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="is_sales_before_tax" checked>
+                            <span class="checkbox-text">Apply Discounts Before Tax</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="discount_is_taxable" checked>
+                            <span class="checkbox-text">Discounts Are Taxable</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Province Selection -->
+                <div class="province-section">
+                    <h3 class="section-title">Location</h3>
+                    <div class="form-field">
+                        <label class="field-label">Province/Territory</label>
+                        <select class="field-select" name="province" id="canada-province-select" required>
+                            <option value="">Select Province</option>
+                            <option value="AB">Alberta (AB)</option>
+                            <option value="BC">British Columbia (BC)</option>
+                            <option value="MB">Manitoba (MB)</option>
+                            <option value="NB">New Brunswick (NB)</option>
+                            <option value="NL">Newfoundland and Labrador (NL)</option>
+                            <option value="NT">Northwest Territories (NT)</option>
+                            <option value="NS">Nova Scotia (NS)</option>
+                            <option value="NU">Nunavut (NU)</option>
+                            <option value="ON">Ontario (ON)</option>
+                            <option value="PE">Prince Edward Island (PE)</option>
+                            <option value="QC">Quebec (QC)</option>
+                            <option value="SK">Saskatchewan (SK)</option>
+                            <option value="YT">Yukon (YT)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Tax Rates Section (Auto-populated based on province) -->
+                <div class="tax-rates-section" id="canada-tax-rates-section" style="display: none;">
+                    <h3 class="section-title">Tax Rates</h3>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label class="field-label">GST/HST Rate (%)</label>
+                            <input type="number" class="field-input" id="canada-gst-rate" name="gst_rate" step="0.01" min="0" placeholder="0.00">
+                            <small class="field-help">Goods and Services Tax / Harmonized Sales Tax</small>
+                        </div>
+                        <div class="form-field">
+                            <label class="field-label">PST/QST Rate (%)</label>
+                            <input type="number" class="field-input" id="canada-pst-rate" name="pst_rate" step="0.01" min="0" placeholder="0.00">
+                            <small class="field-help">Provincial Sales Tax / Quebec Sales Tax</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Items Section -->
+                <div class="items-section">
+                    <div class="section-header">
+                        <h3 class="section-title">Items</h3>
+                        <button type="button" class="btn-add" data-action="add-item">
+                            <span class="btn-icon">+</span> Add Item
+                        </button>
+                    </div>
+                    <div class="items-container" id="canada-items-container">
+                        <!-- Dynamic items will be added here -->
+                    </div>
+                </div>
+
+                <!-- Discounts Section -->
+                <div class="discounts-section">
+                    <div class="section-header">
+                        <h3 class="section-title">Discounts</h3>
+                        <button type="button" class="btn-add" data-action="add-discount">
+                            <span class="btn-icon">+</span> Add Discount
+                        </button>
+                    </div>
+                    <div class="discounts-container" id="canada-discounts-container">
+                        <!-- Dynamic discounts will be added here -->
+                    </div>
+                </div>
+
+                <!-- Shipping Section -->
+                <div class="shipping-section">
+                    <h3 class="section-title">Shipping</h3>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label class="field-label">Shipping Cost</label>
+                            <input type="number" class="field-input" name="shipping_cost" step="0.01" min="0" placeholder="0.00">
+                        </div>
+                        <div class="form-field">
+                            <label class="field-label">Is Shipping Taxable?</label>
+                            <select class="field-select" name="shipping_taxable">
+                                <option value="false">No</option>
+                                <option value="true">Yes</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calculate Button -->
+                <div class="form-actions">
+                    <button type="submit" class="btn-calculate">Calculate Tax</button>
+                    <button type="button" class="btn-reset" data-action="reset">Clear All</button>
+                </div>
+            </form>
+
+            <!-- Results Section -->
+            <div class="results-section" id="canada-results" style="display: none;">
+                <!-- Results will be dynamically populated -->
+            </div>
+        </div>
+
+        <!-- VAT Calculator Tab -->
+        <div class="tab-content" id="tab-vat">
+            <form class="calculator-form" id="vat-tax-form" data-calculator-type="vat">
+
+                <!-- Tax Behavior Options -->
+                <div class="options-section">
+                    <h3 class="section-title">Tax Behavior</h3>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="is_sales_before_tax" checked>
+                            <span class="checkbox-text">Apply Discounts Before Tax</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="discount_is_taxable" checked>
+                            <span class="checkbox-text">Discounts Are Taxable</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- VAT Rate Section -->
+                <div class="vat-rate-section">
+                    <h3 class="section-title">VAT Configuration</h3>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label class="field-label">VAT Rate (%)</label>
+                            <input type="number" class="field-input" name="vat_rate" step="0.01" min="0" max="100" placeholder="e.g., 12.00" required>
+                            <small class="field-help">Common rates: Philippines (12%), UK (20%), Germany (19%)</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Items Section -->
+                <div class="items-section">
+                    <div class="section-header">
+                        <h3 class="section-title">Items</h3>
+                        <button type="button" class="btn-add" data-action="add-item">
+                            <span class="btn-icon">+</span> Add Item
+                        </button>
+                    </div>
+                    <div class="items-container" id="vat-items-container">
+                        <!-- Dynamic items will be added here -->
+                    </div>
+                </div>
+
+                <!-- Discounts Section -->
+                <div class="discounts-section">
+                    <div class="section-header">
+                        <h3 class="section-title">Discounts</h3>
+                        <button type="button" class="btn-add" data-action="add-discount">
+                            <span class="btn-icon">+</span> Add Discount
+                        </button>
+                    </div>
+                    <div class="discounts-container" id="vat-discounts-container">
+                        <!-- Dynamic discounts will be added here -->
+                    </div>
+                </div>
+
+                <!-- Shipping Section -->
+                <div class="shipping-section">
+                    <h3 class="section-title">Shipping</h3>
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label class="field-label">Shipping Cost</label>
+                            <input type="number" class="field-input" name="shipping_cost" step="0.01" min="0" placeholder="0.00">
+                        </div>
+                        <div class="form-field">
+                            <label class="field-label">Is Shipping Taxable?</label>
+                            <select class="field-select" name="shipping_taxable">
+                                <option value="false">No</option>
+                                <option value="true" selected>Yes</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calculate Button -->
+                <div class="form-actions">
+                    <button type="submit" class="btn-calculate">Calculate VAT</button>
+                    <button type="button" class="btn-reset" data-action="reset">Clear All</button>
+                </div>
+            </form>
+
+            <!-- Results Section -->
+            <div class="results-section" id="vat-results" style="display: none;">
+                <!-- Results will be dynamically populated -->
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% include '_flash_messages.html' %}
+
+{% endblock %}
