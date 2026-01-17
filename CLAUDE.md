@@ -282,7 +282,24 @@ Using Flask-Migrate (Alembic):
 3. Review migration in `migrations/versions/`
 4. Apply: `flask db upgrade`
 
-For production: Database backup/restore is part of the CI/CD pipeline.
+### Production Migration Safety
+
+The CI/CD pipeline (`.github/workflows/deploy.yml`) implements automatic rollback on migration failure:
+
+1. **Backup Phase**: Full PostgreSQL backup created before any changes
+2. **Migration Phase**: `flask db upgrade` runs with error tracking
+3. **Success Path**: Migration verified, data counts reported to Discord
+4. **Failure Path**: Automatic rollback from backup dump file
+   - Zero manual intervention required
+   - Database restored to pre-migration state
+   - Discord notifications at every step
+
+**Key Safety Features**:
+- Migrations only ADD columns with defaults (never delete data)
+- Full database dump (.dump) used for rollback, not CSV
+- Automatic restoration triggered immediately on failure
+- Backup artifacts retained for 30 days
+- Users experience zero downtime during rollback
 
 ## Common Gotchas
 
