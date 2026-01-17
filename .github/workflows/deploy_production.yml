@@ -184,7 +184,8 @@ jobs:
           heroku config:set TOKEN_SECRET_KEY="${{ secrets.TOKEN_SECRET_KEY }}" -a omnitool-by-xdv
           heroku config:set SECURITY_PASSWORD_SALT="${{ secrets.SECURITY_PASSWORD_SALT }}" -a omnitool-by-xdv
           heroku config:set SESSION_TYPE="filesystem" -a omnitool-by-xdv
-
+          heroku config:set RECAPTCHA_SITE_KEY="${{ secrets.RECAPTCHA_SITE_KEY }}" -a omnitool-by-xdv
+          heroku config:set RECAPTCHA_SECRET_KEY="${{ secrets.RECAPTCHA_SECRET_KEY }}" -a omnitool-by-xdv
           echo "✅ Environment variables updated"
 
       # Run database migrations
