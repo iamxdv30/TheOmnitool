@@ -1,5 +1,5 @@
 ## Current Version
 
-[![Version](https://img.shields.io/badge/version-1.4.2-blue.svg)](https://github.com/iamxdv30/TheOmnitool/releases)
+[![Version](https://img.shields.io/badge/version-1.4.3-blue.svg)](https://github.com/iamxdv30/TheOmnitool/releases)
 
 See full [Changelog](CHANGELOG.md)

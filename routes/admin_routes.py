@@ -128,6 +128,7 @@ def manage_tools():
         tool_name = request.form.get('tool_name')
         is_default = 'is_default' in request.form
         description = request.form.get('description', '')
+        route = request.form.get('route', '')
 
         if tool_id:
             # This is an update operation
@@ -136,6 +137,7 @@ def manage_tools():
                 tool.name = tool_name
                 tool.is_default = is_default
                 tool.description = description
+                tool.route = request.form.get('route', tool.route)
                 db.session.commit()
                 flash("Tool updated successfully", "success")
             else:
@@ -146,7 +148,7 @@ def manage_tools():
             if existing_tool:
                 flash("A tool with this name already exists.", "error")
             else:
-                new_tool = Tool(name=tool_name, description=description, is_default=is_default)
+                new_tool = Tool(name=tool_name, description=description, route=route, is_default=is_default)
                 db.session.add(new_tool)
                 db.session.commit()
                 flash("Tool created successfully", "success")

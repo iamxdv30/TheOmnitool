@@ -64,12 +64,17 @@ class Tool(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
     description = db.Column(db.String(255))
+    route = db.Column(db.String(255), nullable=False)
     is_default = db.Column(db.Boolean, default=False)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    def __init__(self, name, description, is_default=False):
+    def __init__(self, name, description, route, is_default=False, is_active=True):
         self.name = name
         self.description = description
+        self.route = route
         self.is_default = is_default
+        self.is_active = is_active
 
     @classmethod
     def get_default_tools(cls):

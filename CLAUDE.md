@@ -19,18 +19,70 @@ gunicorn main:app
 
 ### Database Management
 ```bash
-# Run database migrations
-flask db upgrade
+# Run database migrations (WITH AUTOMATIC BACKUP)
+python migrate_db.py
 
 # Create a new migration after model changes
 flask db migrate -m "migration message"
 
+# Restore database from backup
+python restore_backup.py
+
+# Check database health
+curl http://localhost:5000/health
+
 # Initialize tools in database
 python tool_management.py
-
-# Manual database migration script
-python migrate_db.py
 ```
+
+### Database Safety Features 🛡️
+
+**Automatic Protection:**
+- ✅ Pre-migration backups (automatic)
+- ✅ Schema validation on startup
+- ✅ Health check endpoints
+- ✅ Recovery utilities
+
+**Backup Locations:**
+- Primary: `zzDumpfiles/SQLite Database Backup/users.db`
+- Pre-migration: `zzDumpfiles/SQLite Database Backup/users.db.backup_pre_migration_*`
+- Pre-restore: `instance/users.db.before_restore_*`
+
+**Health Check Endpoints:**
+```bash
+# Comprehensive health check
+curl http://localhost:5000/health
+
+# Simple ping
+curl http://localhost:5000/health/ping
+
+# Detailed database status
+curl http://localhost:5000/health/database
+```
+
+**Troubleshooting Database Issues:**
+
+1. **Database not initialized:**
+   ```bash
+   python migrate_db.py
+   ```
+
+2. **Data lost or corrupted:**
+   ```bash
+   python restore_backup.py
+   ```
+
+3. **Check what's wrong:**
+   ```bash
+   curl http://localhost:5000/health
+   # Or check logs: logs/app.log
+   ```
+
+4. **Migration failed:**
+   - Backup is automatically created before migration
+   - Check error message in console
+   - Restore from backup if needed
+   - Fix migration issue and try again
 
 ### Testing
 ```bash
@@ -46,6 +98,34 @@ pytest tests/test_routes.py
 # Run specific test
 pytest tests/test_routes.py::test_function_name
 ```
+
+### Migration Scripts
+
+```bash
+# Sync tool definitions (add/rename/delete tools)
+python sync_tools.py
+
+# Export tool access permissions (after granting/revoking access)
+python scripts/export_tool_access.py --env local
+
+# Import tool access permissions (to staging/production)
+python scripts/import_tool_access.py --source data/tool_access_exports/local_tool_access.json --mode merge
+
+# Verify migration success
+python scripts/verify_migration.py --env local
+
+# Emergency rollback from backup
+python scripts/rollback_migration.py --env staging
+python scripts/rollback_migration.py --env production --backup b123
+
+# Post-deployment smoke tests
+python tests/smoke_tests.py --url https://omnitool-by-xdv-staging.herokuapp.com
+
+# Sync production data to staging (requires Heroku Standard tier)
+python scripts/sync_data_prod_to_staging.py
+```
+
+**📚 Complete Workflow Guide**: See [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md) for detailed step-by-step instructions
 
 ## Architecture
 

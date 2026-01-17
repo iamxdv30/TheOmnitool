@@ -41,7 +41,7 @@ def logged_in_user(client, app, init_database):
         # Ensure Email Templates tool exists and user has access
         tool = Tool.query.filter_by(name="Email Templates").first()
         if not tool:
-            tool = Tool(name="Email Templates", description="Email template tool", is_default=True)
+            tool = Tool(name="Email Templates", description="Email template tool", route="/email_templates", is_default=True)
             db.session.add(tool)
             db.session.commit()
 
