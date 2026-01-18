@@ -1,0 +1,116 @@
+@import "tailwindcss";
+
+/* Sage Tech Dark Mode Color System */
+@theme inline {
+  /* Primary - Sage Green */
+  --color-primary: #588157;
+  --color-primary-hover: #4A6E49;
+  --color-primary-glow: #A3B18A;
+
+  /* Secondary - Tech Mint */
+  --color-secondary: #9CDFB9;
+  --color-secondary-hover: #7BCFA0;
+
+  /* Accent - Deep Teal */
+  --color-accent: #577A81;
+  --color-accent-hover: #456268;
+
+  /* Surface - Tinted Dark */
+  --color-surface-900: #080B09;
+  --color-surface-800: #1D2E1C;
+  --color-surface-700: #2A3F29;
+
+  /* State Colors */
+  --color-success: #9CDFB9;
+  --color-warning: #E9C46A;
+  --color-danger: #815758;
+  --color-info: #577A81;
+
+  /* Text */
+  --color-text-high: #EDF2ED;
+  --color-text-muted: #88A687;
+
+  /* Fonts */
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+}
+
+/* Base Styles */
+body {
+  background-color: var(--color-surface-900);
+  color: var(--color-text-high);
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display), system-ui, sans-serif;
+}
+
+/* Glassmorphism Utilities */
+.glass {
+  background: rgba(29, 46, 28, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(88, 129, 87, 0.2);
+}
+
+.glass-strong {
+  background: rgba(29, 46, 28, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(88, 129, 87, 0.3);
+}
+
+/* Glow Effects */
+.glow-primary {
+  box-shadow: 0 0 20px rgba(163, 177, 138, 0.3),
+              0 0 40px rgba(88, 129, 87, 0.2);
+}
+
+.glow-secondary {
+  box-shadow: 0 0 20px rgba(156, 223, 185, 0.3),
+              0 0 40px rgba(156, 223, 185, 0.1);
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-surface-900);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-700);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
+
+/* Selection */
+::selection {
+  background: rgba(88, 129, 87, 0.4);
+  color: var(--color-text-high);
+}
+
+/* Focus Styles for Accessibility */
+:focus-visible {
+  outline: 2px solid var(--color-primary-glow);
+  outline-offset: 2px;
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

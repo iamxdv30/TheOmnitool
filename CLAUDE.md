@@ -183,7 +183,7 @@ Organized as Flask blueprints in `routes/`:
 - `tool_routes.py` - Tool-specific routes (tax calculators, email templates, etc.)
 - `contact_routes.py` - Contact form with Flask-Mail integration
 
-### Frontend Architecture
+### Frontend Architecture (Legacy)
 JavaScript organized by purpose in `static/js/`:
 
 - **`modules/`** - Reusable functionality
@@ -199,6 +199,112 @@ JavaScript organized by purpose in `static/js/`:
   - `search.js` - Reusable search with pagination
   - `email.js` - Email template functionality
   - `common.js` - Common utilities
+
+### Modern Frontend (Next.js 16 + React Three Fiber)
+
+Located in `frontend/` directory - a high-performance 3D application using the "Solarpunk High-Tech" design system.
+
+#### Tech Stack
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| Framework | Next.js 16 (App Router) | Server Components, Turbopack |
+| 3D Engine | React Three Fiber v9 | Declarative Three.js |
+| 3D Helpers | @react-three/drei | View tunneling, GLB loading |
+| Physics | @react-three/rapier | WASM-based physics |
+| State | Zustand | Transient 60FPS state management |
+| Styling | Tailwind CSS v4 | Zero-runtime CSS |
+| Icons | Lucide React | Tree-shakeable icons |
+
+#### Development Commands
+```bash
+# Navigate to frontend
+cd frontend
+
+# Development server
+npm run dev
+
+# Production build
+npm run build
+
+# Start production server
+npm start
+
+# Type checking
+npm run lint
+```
+
+#### Directory Structure
+```
+frontend/
+├── src/
+│   ├── app/                    # Next.js App Router
+│   │   ├── layout.tsx          # Root layout with Canvas provider
+│   │   ├── page.tsx            # Home page
+│   │   └── globals.css         # Sage Tech color system
+│   ├── components/
+│   │   ├── ui/                 # Atomic UI components
+│   │   │   ├── Button.tsx      # Primary, Glow, Outline variants
+│   │   │   └── Card.tsx        # Glass, Interactive variants
+│   │   ├── canvas/             # 3D components
+│   │   │   ├── Canvas.tsx      # Global WebGL context
+│   │   │   ├── Scene.tsx       # 3D scene content
+│   │   │   └── SceneView.tsx   # View tunneling wrapper
+│   │   ├── layout/             # Layout components
+│   │   │   ├── Header.tsx      # Navigation header
+│   │   │   └── Footer.tsx      # Page footer
+│   │   └── providers/          # React providers
+│   │       └── CanvasProvider.tsx  # Dynamic Canvas import
+│   ├── store/
+│   │   └── useStore.ts         # Zustand global state
+│   └── lib/
+│       └── utils.ts            # cn() utility for class merging
+├── next.config.ts              # Turbopack + 3D package config
+└── package.json
+```
+
+#### Design System - "Sage Tech" Dark Mode
+
+**Colors (Tailwind classes):**
+- `primary` / `primary-hover` / `primary-glow`: Sage green (#588157)
+- `secondary` / `secondary-hover`: Tech mint (#9CDFB9)
+- `accent` / `accent-hover`: Deep teal (#577A81)
+- `surface-900` / `surface-800` / `surface-700`: Tinted dark backgrounds
+- `text-high` / `text-muted`: Text colors
+- `success` / `warning` / `danger` / `info`: State colors
+
+**Typography:**
+- Display font (headers): Space Grotesk via `font-display`
+- Body font (UI): Inter via `font-body`
+
+**Glassmorphism:**
+- `.glass`: Standard glass effect
+- `.glass-strong`: Higher opacity glass
+- `.glow-primary` / `.glow-secondary`: Glow effects
+
+#### View Tunneling Architecture (3D)
+
+The 3D system uses "View Tunneling" for DOM/WebGL integration:
+
+1. **Global Canvas**: Single `<Canvas>` at root layout
+2. **View Components**: Render 3D into specific DOM positions
+3. **Benefits**: Perfect scroll sync, correct z-indexing, single WebGL context
+
+```tsx
+// Place 3D content anywhere in HTML flow
+import { SceneView } from "@/components/canvas";
+
+<div className="relative h-[400px]">
+  <SceneView className="absolute inset-0" />
+  <div className="relative z-10">Overlay content</div>
+</div>
+```
+
+#### Performance Features
+
+- **Dynamic imports**: Canvas/3D components loaded with `ssr: false`
+- **Performance monitor**: Auto-adjusts DPR based on FPS
+- **On-demand rendering**: `frameloop="demand"` for static scenes
+- **Optimized imports**: Lucide and drei tree-shaking
 
 ### Templates
 Jinja2 templates in two locations (ChoiceLoader setup):

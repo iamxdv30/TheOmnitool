@@ -29,6 +29,9 @@ logs
 # Data and Backups
 data/backups/
 
+# Documentation
+docs/
+
 # Temporary and Test Files
 templates/test.html
 setup_route_for_admin.md
