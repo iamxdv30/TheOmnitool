@@ -73,9 +73,11 @@ from routes.auth_routes import auth
 from routes.user_routes import user
 from routes.admin_routes import admin
 from routes.tool_routes import tool
-from routes.contact_routes import contact, configure_mail
+from routes.contact_routes import contact, configure_mail, mail
 from routes.health_routes import health
+from routes.api import api_bp, register_api_routes
 from model import db
+from services import init_email_service
 
 
 
@@ -137,6 +139,9 @@ def create_app():
     # Configure Flask-Mail
     configure_mail(app)
 
+    # Initialize the email service with Flask-Mail instance
+    init_email_service(mail)
+
     # Set the secret key based on the environment
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default_secret_key_for_development')
     logging.info(f"Using secret key: {app.config['SECRET_KEY']}")
@@ -179,6 +184,10 @@ def create_app():
     app.register_blueprint(tool, url_prefix='/tools')
     app.register_blueprint(contact)
     app.register_blueprint(health)  # Health check endpoints
+
+    # Register API blueprint (JSON endpoints for Next.js frontend)
+    register_api_routes()  # Register sub-routes first
+    app.register_blueprint(api_bp)  # Register main API blueprint at /api/v1
 
     @app.route("/environment")
     def show_environment():
