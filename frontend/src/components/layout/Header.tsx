@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { Menu, X, User, LogOut } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui";
 import { ThemeToggle } from "./ThemeToggle";
+import { useAuth } from "@/hooks";
 
 interface NavLink {
   href: string;
@@ -19,6 +20,7 @@ const navLinks: NavLink[] = [
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 glass-strong">
@@ -44,16 +46,33 @@ export function Header() {
               </Link>
             ))}
             <ThemeToggle />
-            <Link href="/login">
-              <Button variant="outline" size="sm">
-                Login
-              </Button>
-            </Link>
-            <Link href="/register">
-              <Button variant="glow" size="sm">
-                Sign Up
-              </Button>
-            </Link>
+            {user ? (
+              <>
+                <Link href="/dashboard">
+                  <Button variant="outline" size="sm">
+                    <User size={16} className="mr-1" />
+                    Dashboard
+                  </Button>
+                </Link>
+                <Button variant="ghost" size="sm" onClick={logout}>
+                  <LogOut size={16} className="mr-1" />
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button variant="outline" size="sm">
+                    Login
+                  </Button>
+                </Link>
+                <Link href="/register">
+                  <Button variant="glow" size="sm">
+                    Sign Up
+                  </Button>
+                </Link>
+              </>
+            )}
           </nav>
 
           {/* Mobile Menu Button */}
@@ -85,16 +104,33 @@ export function Header() {
                 <ThemeToggle />
               </div>
               <div className="flex flex-col gap-2 mt-2">
-                <Link href="/login" onClick={() => setIsMenuOpen(false)}>
-                  <Button variant="outline" size="sm" className="w-full">
-                    Login
-                  </Button>
-                </Link>
-                <Link href="/register" onClick={() => setIsMenuOpen(false)}>
-                  <Button variant="glow" size="sm" className="w-full">
-                    Sign Up
-                  </Button>
-                </Link>
+                {user ? (
+                  <>
+                    <Link href="/dashboard" onClick={() => setIsMenuOpen(false)}>
+                      <Button variant="outline" size="sm" className="w-full">
+                        <User size={16} className="mr-1" />
+                        Dashboard
+                      </Button>
+                    </Link>
+                    <Button variant="ghost" size="sm" className="w-full" onClick={() => { logout(); setIsMenuOpen(false); }}>
+                      <LogOut size={16} className="mr-1" />
+                      Logout
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/login" onClick={() => setIsMenuOpen(false)}>
+                      <Button variant="outline" size="sm" className="w-full">
+                        Login
+                      </Button>
+                    </Link>
+                    <Link href="/register" onClick={() => setIsMenuOpen(false)}>
+                      <Button variant="glow" size="sm" className="w-full">
+                        Sign Up
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </nav>

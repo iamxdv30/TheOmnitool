@@ -1,6 +1,7 @@
 "use client";
 
 import { Toaster as SonnerToaster } from "sonner";
+export { toast } from "sonner";
 
 export function Toaster() {
   return (
@@ -91,5 +92,3 @@ export function Toaster() {
     />
   );
 }
-
-export { toast } from "sonner";

@@ -16,7 +16,7 @@ import {
   Pagination,
 } from "@/components/features/email-templates";
 import { api, isSuccess } from "@/lib/api";
-import { toast } from "@/components/feedback/Toaster";
+import { toast } from "@/store/uiStore";
 import type { EmailTemplate } from "@/types";
 import type { EmailTemplateFormData } from "@/lib/validations";
 import { Mail, Plus, Search, Loader2, X } from "lucide-react";
@@ -76,7 +76,10 @@ export default function EmailTemplatesPage() {
       setShowForm(false);
       fetchTemplates();
     } else {
-      toast.error(response.message || "Failed to create template");
+      const errorMessage = typeof response.message === 'string' 
+        ? response.message 
+        : (response.message as unknown as { message?: string })?.message || "Failed to create template";
+      toast.error(errorMessage);
     }
     setIsSaving(false);
   };
@@ -92,7 +95,10 @@ export default function EmailTemplatesPage() {
       setEditingTemplate(null);
       fetchTemplates();
     } else {
-      toast.error(response.message || "Failed to update template");
+      const errorMessage = typeof response.message === 'string' 
+        ? response.message 
+        : (response.message as unknown as { message?: string })?.message || "Failed to update template";
+      toast.error(errorMessage);
     }
     setIsSaving(false);
   };
@@ -106,7 +112,10 @@ export default function EmailTemplatesPage() {
       toast.success("Template deleted successfully");
       fetchTemplates();
     } else {
-      toast.error(response.message || "Failed to delete template");
+      const errorMessage = typeof response.message === 'string' 
+        ? response.message 
+        : (response.message as unknown as { message?: string })?.message || "Failed to delete template";
+      toast.error(errorMessage);
     }
   };
 

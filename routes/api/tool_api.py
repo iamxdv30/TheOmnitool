@@ -278,7 +278,7 @@ def list_email_templates():
         401: Not authenticated
         403: No tool access or email not verified
     """
-    has_access, error = check_tool_access("Email Templates")
+    has_access, error = check_tool_access("email-templates")
     if not has_access:
         return error
 
@@ -317,7 +317,7 @@ def create_email_template():
         401: Not authenticated
         403: No tool access or email not verified
     """
-    has_access, error = check_tool_access("Email Templates")
+    has_access, error = check_tool_access("email-templates")
     if not has_access:
         return error
 
@@ -366,7 +366,7 @@ def update_email_template(template_id):
         403: No tool access, email not verified, or not template owner
         404: Template not found
     """
-    has_access, error = check_tool_access("Email Templates")
+    has_access, error = check_tool_access("email-templates")
     if not has_access:
         return error
 
@@ -408,7 +408,7 @@ def delete_email_template(template_id):
         403: No tool access, email not verified, or not template owner
         404: Template not found
     """
-    has_access, error = check_tool_access("Email Templates")
+    has_access, error = check_tool_access("email-templates")
     if not has_access:
         return error
 

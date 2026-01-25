@@ -1,255 +1,187 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import type { User, ApiResponse, LoginCredentials, RegisterCredentials } from "@/types";
+import { useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/authStore";
+import authApi from "@/lib/api/auth";
+import { toast } from "@/store/uiStore";
+import type { User, LoginCredentials, RegisterCredentials } from "@/types";
 
 interface UseAuthReturn {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isInitialized: boolean;
   error: string | null;
+  permissions: string[];
   login: (credentials: LoginCredentials) => Promise<boolean>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   register: (credentials: RegisterCredentials) => Promise<{ success: boolean; requiresVerification?: boolean }>;
-  forgotPassword: (email: string) => Promise<boolean>;
+  forgotPassword: (email: string, recaptchaToken?: string) => Promise<boolean>;
   resetPassword: (token: string, password: string) => Promise<boolean>;
-  resendVerification: (email: string) => Promise<boolean>;
+  resendVerification: (email: string, recaptchaToken?: string) => Promise<boolean>;
   clearError: () => void;
 }
 
+/**
+ * Authentication hook that integrates with Zustand store and API client
+ * Provides auth actions and state for React components
+ */
 export function useAuth(): UseAuthReturn {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
-  const checkAuth = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const res = await fetch("/api/auth/me", {
-        credentials: "include",
-      });
+  // Select state from Zustand store
+  const user = useAuthStore((state) => state.user);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isLoading = useAuthStore((state) => state.isLoading);
+  const isInitialized = useAuthStore((state) => state.isInitialized);
+  const error = useAuthStore((state) => state.error);
+  const permissions = useAuthStore((state) => state.permissions);
+  const setError = useAuthStore((state) => state.setError);
+  const setLoading = useAuthStore((state) => state.setLoading);
 
-      if (res.ok) {
-        const data: ApiResponse<{ user: User }> = await res.json();
-        if (data.status === "success" && data.data?.user) {
-          setUser(data.data.user);
-        } else {
-          setUser(null);
-        }
-      } else {
-        setUser(null);
-      }
-    } catch {
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
+  // Initialize auth on first mount
   useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
+    if (!isInitialized) {
+      authApi.initialize();
+    }
+  }, [isInitialized]);
 
   const login = useCallback(
     async (credentials: LoginCredentials): Promise<boolean> => {
-      try {
-        setIsLoading(true);
-        setError(null);
+      setLoading(true);
+      setError(null);
 
-        const res = await fetch("/api/auth/login", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify(credentials),
-        });
+      const result = await authApi.login(credentials);
 
-        const data: ApiResponse<{ user: User }> = await res.json();
+      setLoading(false);
 
-        if (data.status === "success" && data.data?.user) {
-          setUser(data.data.user);
-          return true;
-        } else {
-          setError(data.message || "Login failed");
-          return false;
-        }
-      } catch {
-        setError("Network error. Please try again.");
-        return false;
-      } finally {
-        setIsLoading(false);
+      if (result.success) {
+        toast.success("Welcome back!");
+        return true;
       }
+
+      // Handle AUTH_UNVERIFIED
+      if (result.errorCode === "AUTH_UNVERIFIED") {
+        router.push("/verification-pending");
+        return false;
+      }
+
+      setError(result.error || "Login failed");
+      return false;
     },
-    []
+    [router, setError, setLoading]
   );
 
   const logout = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include",
-      });
-      setUser(null);
-    } catch {
-      // Still clear user on error
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
+    setLoading(true);
+    await authApi.logout();
+    setLoading(false);
+    toast.info("You have been logged out");
+    router.push("/login");
+  }, [router, setLoading]);
+
+  const checkAuth = useCallback(async () => {
+    await authApi.initialize();
   }, []);
 
   const register = useCallback(
     async (
       credentials: RegisterCredentials
     ): Promise<{ success: boolean; requiresVerification?: boolean }> => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const res = await fetch("/api/auth/register", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({
-            name: credentials.name,
-            username: credentials.username,
-            email: credentials.email,
-            password: credentials.password,
-          }),
-        });
-
-        const data: ApiResponse<{ requires_verification?: boolean }> =
-          await res.json();
-
-        if (data.status === "success") {
-          return {
-            success: true,
-            requiresVerification: data.data?.requires_verification ?? true,
-          };
-        } else {
-          setError(data.message || "Registration failed");
-          return { success: false };
-        }
-      } catch {
-        setError("Network error. Please try again.");
-        return { success: false };
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    []
-  );
-
-  const forgotPassword = useCallback(async (email: string): Promise<boolean> => {
-    try {
-      setIsLoading(true);
+      setLoading(true);
       setError(null);
 
-      const res = await fetch("/api/auth/forgot-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ email }),
-      });
+      const result = await authApi.register(credentials);
 
-      const data: ApiResponse = await res.json();
+      setLoading(false);
 
-      if (data.status === "success") {
-        return true;
-      } else {
-        setError(data.message || "Failed to send reset email");
-        return false;
+      if (result.success) {
+        toast.success("Account created! Please check your email to verify.");
+        return {
+          success: true,
+          requiresVerification: result.requiresVerification,
+        };
       }
-    } catch {
-      setError("Network error. Please try again.");
+
+      setError(result.error || "Registration failed");
+      return { success: false };
+    },
+    [setError, setLoading]
+  );
+
+  const forgotPassword = useCallback(
+    async (email: string, recaptchaToken?: string): Promise<boolean> => {
+      setLoading(true);
+      setError(null);
+
+      const result = await authApi.forgotPassword(email, recaptchaToken);
+
+      setLoading(false);
+
+      if (result.success) {
+        toast.success("Password reset email sent. Please check your inbox.");
+        return true;
+      }
+
+      setError(result.error || "Failed to send reset email");
       return false;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+    },
+    [setError, setLoading]
+  );
 
   const resetPassword = useCallback(
     async (token: string, password: string): Promise<boolean> => {
-      try {
-        setIsLoading(true);
-        setError(null);
+      setLoading(true);
+      setError(null);
 
-        const res = await fetch(`/api/auth/reset-password/${token}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({ password }),
-        });
+      const result = await authApi.resetPassword(token, password);
 
-        const data: ApiResponse = await res.json();
+      setLoading(false);
 
-        if (data.status === "success") {
-          return true;
-        } else {
-          setError(data.message || "Failed to reset password");
-          return false;
-        }
-      } catch {
-        setError("Network error. Please try again.");
-        return false;
-      } finally {
-        setIsLoading(false);
+      if (result.success) {
+        toast.success("Password reset successfully. Please log in.");
+        return true;
       }
+
+      setError(result.error || "Failed to reset password");
+      return false;
     },
-    []
+    [setError, setLoading]
   );
 
   const resendVerification = useCallback(
-    async (email: string): Promise<boolean> => {
-      try {
-        setIsLoading(true);
-        setError(null);
+    async (email: string, recaptchaToken?: string): Promise<boolean> => {
+      setLoading(true);
+      setError(null);
 
-        const res = await fetch("/api/auth/resend-verification", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({ email }),
-        });
+      const result = await authApi.resendVerification(email, recaptchaToken);
 
-        const data: ApiResponse = await res.json();
+      setLoading(false);
 
-        if (data.status === "success") {
-          return true;
-        } else {
-          setError(data.message || "Failed to resend verification email");
-          return false;
-        }
-      } catch {
-        setError("Network error. Please try again.");
-        return false;
-      } finally {
-        setIsLoading(false);
+      if (result.success) {
+        toast.success("Verification email sent. Please check your inbox.");
+        return true;
       }
+
+      setError(result.error || "Failed to resend verification email");
+      return false;
     },
-    []
+    [setError, setLoading]
   );
 
   const clearError = useCallback(() => {
     setError(null);
-  }, []);
+  }, [setError]);
 
   return {
     user,
-    isAuthenticated: !!user,
+    isAuthenticated,
     isLoading,
+    isInitialized,
     error,
+    permissions,
     login,
     logout,
     checkAuth,

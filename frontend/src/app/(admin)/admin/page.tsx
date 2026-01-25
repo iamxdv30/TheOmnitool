@@ -10,7 +10,7 @@ import {
   ToolAccessDialog,
 } from "@/components/features/admin";
 import { api, isSuccess } from "@/lib/api";
-import { toast } from "@/components/feedback/Toaster";
+import { toast } from "@/store/uiStore";
 import type { AdminUser } from "@/types";
 import { Users, UserPlus, Loader2 } from "lucide-react";
 

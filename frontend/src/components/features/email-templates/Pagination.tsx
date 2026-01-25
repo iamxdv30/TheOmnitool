@@ -51,7 +51,7 @@ export function Pagination({ currentPage, totalPages, onPageChange }: Pagination
           </span>
         ) : (
           <Button
-            key={page}
+            key={`page-${page}-${index}`}
             variant={currentPage === page ? "primary" : "ghost"}
             size="sm"
             onClick={() => onPageChange(page)}
