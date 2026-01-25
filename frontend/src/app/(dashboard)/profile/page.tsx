@@ -20,7 +20,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { FormField } from "@/components/forms";
 import { PasswordStrength } from "@/components/forms/PasswordStrength";
-import { toast } from "@/components/feedback/Toaster";
+import { toast } from "@/store/uiStore";
 import { Loader2, User, Lock, Save } from "lucide-react";
 
 export default function ProfilePage() {

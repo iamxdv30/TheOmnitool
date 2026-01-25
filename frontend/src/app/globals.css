@@ -1,34 +1,87 @@
 @import "tailwindcss";
 
-/* Sage Tech Dark Mode Color System */
-@theme inline {
-  /* Primary - Sage Green */
-  --color-primary: #588157;
-  --color-primary-hover: #4A6E49;
-  --color-primary-glow: #A3B18A;
+/* Theme Variables Configuration */
+:root {
+  /* Light Theme Values (Default) */
+  --color-primary-val: #4A6E49;        /* Darker green for light mode */
+  --color-primary-hover-val: #385237;
+  --color-primary-glow-val: #588157;   /* Sage green */
 
-  /* Secondary - Tech Mint */
-  --color-secondary: #9CDFB9;
-  --color-secondary-hover: #7BCFA0;
+  --color-secondary-val: #58A67B;      /* Darker mint */
+  --color-secondary-hover-val: #418C63;
 
-  /* Accent - Deep Teal */
-  --color-accent: #577A81;
-  --color-accent-hover: #456268;
+  --color-accent-val: #456268;         /* Darker teal */
+  --color-accent-hover-val: #2F4448;
 
-  /* Surface - Tinted Dark */
-  --color-surface-900: #080B09;
-  --color-surface-800: #1D2E1C;
-  --color-surface-700: #2A3F29;
+  --color-surface-900-val: #F5F7F5;    /* Off-white background */
+  --color-surface-800-val: #FFFFFF;    /* White cards */
+  --color-surface-700-val: #E0E8E0;    /* Light border/divider */
 
-  /* State Colors */
-  --color-success: #9CDFB9;
-  --color-warning: #E9C46A;
-  --color-danger: #815758;
-  --color-info: #577A81;
+  /* State Colors - Darker for visibility on light bg */
+  --color-success-val: #2D8A5E;
+  --color-warning-val: #B08D25;
+  --color-danger-val: #A8383B;
+  --color-info-val: #3C6E79;
 
   /* Text */
-  --color-text-high: #EDF2ED;
-  --color-text-muted: #88A687;
+  --color-text-high-val: #1A1D1A;      /* Near black */
+  --color-text-muted-val: #588157;     /* Sage green text */
+}
+
+.dark {
+  /* Dark Theme Values (Overrides) */
+  --color-primary-val: #588157;
+  --color-primary-hover-val: #4A6E49;
+  --color-primary-glow-val: #A3B18A;
+
+  --color-secondary-val: #9CDFB9;
+  --color-secondary-hover-val: #7BCFA0;
+
+  --color-accent-val: #577A81;
+  --color-accent-hover-val: #456268;
+
+  --color-surface-900-val: #080B09;
+  --color-surface-800-val: #1D2E1C;
+  --color-surface-700-val: #2A3F29;
+
+  --color-success-val: #9CDFB9;
+  --color-warning-val: #E9C46A;
+  --color-danger-val: #815758;
+  --color-info-val: #577A81;
+
+  --color-text-high-val: #EDF2ED;
+  --color-text-muted-val: #88A687;
+}
+
+/* Sage Tech Color System Mapping */
+@theme inline {
+  /* Primary - Sage Green */
+  --color-primary: var(--color-primary-val);
+  --color-primary-hover: var(--color-primary-hover-val);
+  --color-primary-glow: var(--color-primary-glow-val);
+
+  /* Secondary - Tech Mint */
+  --color-secondary: var(--color-secondary-val);
+  --color-secondary-hover: var(--color-secondary-hover-val);
+
+  /* Accent - Deep Teal */
+  --color-accent: var(--color-accent-val);
+  --color-accent-hover: var(--color-accent-hover-val);
+
+  /* Surface - Tinted Dark */
+  --color-surface-900: var(--color-surface-900-val);
+  --color-surface-800: var(--color-surface-800-val);
+  --color-surface-700: var(--color-surface-700-val);
+
+  /* State Colors */
+  --color-success: var(--color-success-val);
+  --color-warning: var(--color-warning-val);
+  --color-danger: var(--color-danger-val);
+  --color-info: var(--color-info-val);
+
+  /* Text */
+  --color-text-high: var(--color-text-high-val);
+  --color-text-muted: var(--color-text-muted-val);
 
   /* Fonts */
   --font-display: var(--font-display);
@@ -40,6 +93,7 @@ body {
   background-color: var(--color-surface-900);
   color: var(--color-text-high);
   font-family: var(--font-body), system-ui, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transition */
 }
 
 /* Typography */
@@ -49,28 +103,28 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Glassmorphism Utilities */
 .glass {
-  background: rgba(29, 46, 28, 0.5);
+  background: color-mix(in srgb, var(--color-surface-800) 50%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(88, 129, 87, 0.2);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
 .glass-strong {
-  background: rgba(29, 46, 28, 0.7);
+  background: color-mix(in srgb, var(--color-surface-800) 70%, transparent);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(88, 129, 87, 0.3);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
 }
 
 /* Glow Effects */
 .glow-primary {
-  box-shadow: 0 0 20px rgba(163, 177, 138, 0.3),
-              0 0 40px rgba(88, 129, 87, 0.2);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--color-primary-glow) 30%, transparent),
+              0 0 40px color-mix(in srgb, var(--color-primary) 20%, transparent);
 }
 
 .glow-secondary {
-  box-shadow: 0 0 20px rgba(156, 223, 185, 0.3),
-              0 0 40px rgba(156, 223, 185, 0.1);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--color-secondary) 30%, transparent),
+              0 0 40px color-mix(in srgb, var(--color-secondary) 10%, transparent);
 }
 
 /* Scrollbar Styling */
@@ -94,7 +148,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Selection */
 ::selection {
-  background: rgba(88, 129, 87, 0.4);
+  background: color-mix(in srgb, var(--color-primary) 40%, transparent);
   color: var(--color-text-high);
 }
 

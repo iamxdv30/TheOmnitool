@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, type FormEvent, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Button,
@@ -16,19 +16,54 @@ import {
   Alert,
 } from "@/components/ui";
 import { useAuth } from "@/hooks";
+import { useTheme } from "@/store/useStore";
+import { toast } from "@/store/uiStore";
 import { Lock, User } from "lucide-react";
 import ReCAPTCHA from "react-google-recaptcha";
 import { useRef } from "react";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
-  const { login, isLoading, error } = useAuth();
+  const searchParams = useSearchParams();
+  const { login, isLoading, error, clearError } = useAuth();
+  const theme = useTheme();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [successMessage] = useState<string | null>(() => {
+    // Initialize success message from URL params (runs once on mount)
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("password_reset") === "true") {
+        return "Password reset successfully. Please log in with your new password.";
+      }
+      if (params.get("verified") === "true") {
+        return "Email verified successfully! You can now log in.";
+      }
+    }
+    return null;
+  });
   const recaptchaRef = useRef<ReCAPTCHA>(null);
   const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+
+  // Handle URL query params for session expiration, password reset, etc.
+  useEffect(() => {
+    const sessionExpired = searchParams.get("session_expired");
+    const redirect = searchParams.get("redirect");
+
+    if (sessionExpired === "true") {
+      toast.warning("Your session has expired. Please log in again.");
+    }
+
+    // Store redirect URL for after login
+    if (redirect) {
+      sessionStorage.setItem("loginRedirect", redirect);
+    }
+
+    // Clear error state on mount
+    clearError();
+  }, [searchParams, clearError]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -68,6 +103,10 @@ export default function LoginPage() {
 
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
+          {successMessage && (
+            <Alert variant="success">{successMessage}</Alert>
+          )}
+
           {displayError && (
             <Alert variant="error">{displayError}</Alert>
           )}
@@ -115,7 +154,7 @@ export default function LoginPage() {
               <ReCAPTCHA
                 ref={recaptchaRef}
                 sitekey={recaptchaSiteKey}
-                theme="dark"
+                theme={theme}
               />
             </div>
           )}
@@ -162,5 +201,13 @@ export default function LoginPage() {
         </CardFooter>
       </form>
     </Card>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center p-8">Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

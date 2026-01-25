@@ -36,10 +36,10 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center pt-16">
         {/* 3D Background via View Tunneling */}
-        <SceneView className="absolute inset-0 w-full h-full" />
+        <SceneView className="absolute inset-0 w-full h-full -z-10" />
 
         {/* Hero Content */}
-        <div className="relative z-10 container mx-auto px-4 text-center">
+        <div className="relative z-20 container mx-auto px-4 text-center">
           <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold mb-6">
             <span className="text-text-high">The </span>
             <span className="text-primary-glow">Omnitool</span>

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { subscribeWithSelector } from "zustand/middleware";
+import { subscribeWithSelector, persist } from "zustand/middleware";
 
 interface AppState {
   // Performance state
@@ -24,27 +24,35 @@ interface AppState {
 }
 
 export const useStore = create<AppState>()(
-  subscribeWithSelector((set) => ({
-    // Performance state - start with lower DPR for mobile
-    dpr: 1.5,
-    setDpr: (dpr) => set({ dpr }),
+  subscribeWithSelector(
+    persist(
+      (set) => ({
+        // Performance state - start with lower DPR for mobile
+        dpr: 1.5,
+        setDpr: (dpr) => set({ dpr }),
 
-    // UI state
-    isMobile: false,
-    setIsMobile: (isMobile) => set({ isMobile }),
+        // UI state
+        isMobile: false,
+        setIsMobile: (isMobile) => set({ isMobile }),
 
-    // 3D scene state
-    isSceneReady: false,
-    setSceneReady: (isSceneReady) => set({ isSceneReady }),
+        // 3D scene state
+        isSceneReady: false,
+        setSceneReady: (isSceneReady) => set({ isSceneReady }),
 
-    // Performance monitoring
-    fps: 60,
-    setFps: (fps) => set({ fps }),
+        // Performance monitoring
+        fps: 60,
+        setFps: (fps) => set({ fps }),
 
-    // Theme (always dark for this design)
-    theme: "dark",
-    setTheme: (theme) => set({ theme }),
-  }))
+        // Theme (always dark for this design)
+        theme: "dark",
+        setTheme: (theme) => set({ theme }),
+      }),
+      {
+        name: "omnitool-ui",
+        partialize: (state) => ({ theme: state.theme }),
+      }
+    )
+  )
 );
 
 // Selector hooks for performance

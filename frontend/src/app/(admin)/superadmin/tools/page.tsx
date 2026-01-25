@@ -9,7 +9,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Button } from "@/components/ui/Button";
 import { FormField } from "@/components/forms";
 import { api, isSuccess } from "@/lib/api";
-import { toast } from "@/components/feedback/Toaster";
+import { toast } from "@/store/uiStore";
 import { useAuth } from "@/hooks";
 import type { Tool } from "@/types";
 import {

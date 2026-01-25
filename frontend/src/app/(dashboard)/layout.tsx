@@ -5,10 +5,13 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Sidebar } from "@/components/layout";
 import { useAuth } from "@/hooks";
+import { useUIStore } from "@/store/uiStore";
 import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { user, isAuthenticated, isLoading } = useAuth();
+  const { isSidebarCollapsed } = useUIStore();
   const router = useRouter();
 
   useEffect(() => {
@@ -34,7 +37,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-surface-900">
       <Sidebar isAdmin={isAdmin} />
-      <main className="min-h-screen p-4 pt-20 md:ml-64 md:p-8 md:pt-8">{children}</main>
+      <main 
+        className={cn(
+          "min-h-screen p-4 pt-20 md:p-8 md:pt-8 transition-all duration-300",
+          isSidebarCollapsed ? "md:ml-20" : "md:ml-64"
+        )}
+      >
+        {children}
+      </main>
     </div>
   );
 }

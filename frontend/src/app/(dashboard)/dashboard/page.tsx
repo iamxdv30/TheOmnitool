@@ -34,6 +34,7 @@ const toolIconMap: Record<string, LucideIcon> = {
   "char-counter": FileText,
   "character-counter": FileText,
   "email-templates": Mail,
+  "unix-timestamp": FileText,
 };
 
 const toolColorMap: Record<string, string> = {
@@ -42,6 +43,16 @@ const toolColorMap: Record<string, string> = {
   "char-counter": "text-secondary",
   "character-counter": "text-secondary",
   "email-templates": "text-accent",
+  "unix-timestamp": "text-warning",
+};
+
+const toolRouteMap: Record<string, string> = {
+  "tax-calculator": "/dashboard/tools/tax-calculator",
+  "unified-tax-calculator": "/dashboard/tools/tax-calculator",
+  "char-counter": "/dashboard/tools/char-counter",
+  "character-counter": "/dashboard/tools/char-counter",
+  "email-templates": "/dashboard/tools/email-templates",
+  "unix-timestamp": "/dashboard/tools/unix-timestamp",
 };
 
 export default function DashboardPage() {
@@ -66,6 +77,10 @@ export default function DashboardPage() {
 
   const getToolColor = (toolName: string): string => {
     return toolColorMap[toolName] || "text-primary";
+  };
+
+  const getToolRoute = (toolName: string): string => {
+    return toolRouteMap[toolName] || `/dashboard/tools/${toolName}`;
   };
 
   return (
@@ -100,11 +115,11 @@ export default function DashboardPage() {
           </Card>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {tools.map((tool) => {
+            {tools.map((tool, index) => {
               const Icon = getToolIcon(tool.name);
               const color = getToolColor(tool.name);
               return (
-                <Link key={tool.id} href={tool.route}>
+                <Link key={`${tool.id || 0}-${tool.name}-${index}`} href={getToolRoute(tool.name)}>
                   <Card
                     variant="interactive"
                     className="h-full transition-all hover:border-primary/50"

@@ -11,7 +11,7 @@ import { Textarea } from "@/components/forms/Textarea";
 import { Label } from "@/components/ui/Label";
 import { Controller } from "react-hook-form";
 import { api, isSuccess } from "@/lib/api";
-import { toast } from "@/components/feedback/Toaster";
+import { toast } from "@/store/uiStore";
 import { Mail, Send, Loader2, CheckCircle, MessageSquare } from "lucide-react";
 
 export default function ContactPage() {

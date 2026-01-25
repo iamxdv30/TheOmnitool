@@ -30,11 +30,13 @@ class ToolInfo:
     route: Optional[str]
     is_default: bool
     is_active: bool
+    display_name: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "id": self.id,
             "name": self.name,
+            "display_name": self.display_name or self.name.replace('-', ' ').title(),
             "description": self.description,
             "route": self.route,
             "is_default": self.is_default,
@@ -126,20 +128,29 @@ class ToolService(BaseService):
                 "Failed to retrieve tools."
             )
 
-    def get_user_tools(self, user_id: int) -> ServiceResult[List[str]]:
+    def get_user_tools(self, user_id: int) -> ServiceResult[List[ToolInfo]]:
         """
-        Get list of tool names a user has access to.
+        Get list of tools a user has access to.
 
         Args:
             user_id: The user's ID
 
         Returns:
-            ServiceResult with list of tool names
+            ServiceResult with list of ToolInfo objects
         """
         try:
+            # Get tool access records for the user
             access_list = ToolAccess.query.filter_by(user_id=user_id).all()
             tool_names = [access.tool_name for access in access_list]
-            return ServiceResult.success(tool_names)
+            
+            # Get full tool objects
+            tools = Tool.query.filter(
+                Tool.name.in_(tool_names),
+                Tool.is_active == True
+            ).all()
+            
+            tool_list = [self._tool_to_info(tool) for tool in tools]
+            return ServiceResult.success(tool_list)
 
         except Exception as e:
             self._log_error("get_user_tools", e, user_id=user_id)
@@ -620,6 +631,7 @@ class ToolService(BaseService):
         return ToolInfo(
             id=tool.id,
             name=tool.name,
+            display_name=tool.name.replace('-', ' ').title(),
             description=getattr(tool, 'description', None),
             route=getattr(tool, 'route', None),
             is_default=getattr(tool, 'is_default', False),

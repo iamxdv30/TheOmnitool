@@ -11,7 +11,7 @@ import {
   ToolAccessDialog,
 } from "@/components/features/admin";
 import { api, isSuccess } from "@/lib/api";
-import { toast } from "@/components/feedback/Toaster";
+import { toast } from "@/store/uiStore";
 import { useAuth } from "@/hooks";
 import type { AdminUser } from "@/types";
 import { Shield, Users, UserPlus, Loader2, Wrench } from "lucide-react";
