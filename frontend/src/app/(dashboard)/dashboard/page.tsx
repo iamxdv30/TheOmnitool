@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useAuth, useProfile } from "@/hooks";
 import {
   Card,
@@ -16,9 +17,9 @@ import {
   ArrowRight,
   Loader2,
   Wrench,
+  Clock,
   type LucideIcon,
 } from "lucide-react";
-import Link from "next/link";
 
 interface UserTool {
   id: number;
@@ -34,7 +35,8 @@ const toolIconMap: Record<string, LucideIcon> = {
   "char-counter": FileText,
   "character-counter": FileText,
   "email-templates": Mail,
-  "unix-timestamp": FileText,
+  "unix-timestamp": Clock,
+  "unix-timestamp-converter": Clock,
 };
 
 const toolColorMap: Record<string, string> = {
@@ -44,6 +46,7 @@ const toolColorMap: Record<string, string> = {
   "character-counter": "text-secondary",
   "email-templates": "text-accent",
   "unix-timestamp": "text-warning",
+  "unix-timestamp-converter": "text-warning",
 };
 
 const toolRouteMap: Record<string, string> = {
@@ -53,6 +56,7 @@ const toolRouteMap: Record<string, string> = {
   "character-counter": "/dashboard/tools/char-counter",
   "email-templates": "/dashboard/tools/email-templates",
   "unix-timestamp": "/dashboard/tools/unix-timestamp",
+  "unix-timestamp-converter": "/dashboard/tools/unix-timestamp",
 };
 
 export default function DashboardPage() {
