@@ -1,4 +1,4 @@
-/**
+3/**
  * Next.js Middleware for Route Protection
  * Based on Phase 3 spec (Section 4.3)
  * 

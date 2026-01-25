@@ -17,6 +17,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  Clock,
   type LucideIcon,
 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
@@ -30,9 +31,9 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Tax Calculator", href: "/tools/tax-calculator", icon: Calculator },
   { label: "Character Counter", href: "/tools/char-counter", icon: FileText },
+  { label: "Unix Timestamp", href: "/tools/unix-timestamp", icon: Clock },
   { label: "Email Templates", href: "/tools/email-templates", icon: Mail },
 ];
 
@@ -87,33 +88,59 @@ export function Sidebar({ isAdmin = false }: SidebarProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed left-0 top-0 z-40 h-screen border-r border-surface-700 bg-surface-900/95 backdrop-blur-sm transition-all duration-300",
+          "fixed left-0 top-16 z-40 border-r border-surface-700 bg-surface-900/95 backdrop-blur-sm transition-all duration-300 h-[calc(100vh-4rem)]",
           isSidebarCollapsed ? "w-20" : "w-64",
           "md:translate-x-0",
-          isMobileOpen ? "translate-x-0 w-64" : "-translate-x-full"
+          isMobileOpen ? "translate-x-0 w-64 top-0 h-screen z-50" : "-translate-x-full"
         )}
       >
-      {/* Logo */}
-      <div className={cn("flex h-16 items-center border-b border-surface-700", isSidebarCollapsed ? "justify-center px-0" : "px-6")}>
+      {/* Collapse Toggle Button (Desktop Only) - Inline on Divider */}
+      <button
+        onClick={toggleSidebarCollapsed}
+        className="absolute -right-3 top-6 hidden md:flex h-6 w-6 items-center justify-center rounded-full border border-surface-700 bg-surface-800 text-text-muted hover:bg-surface-700 hover:text-text-high transition-colors shadow-sm z-50"
+        aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+      >
+          {isSidebarCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
+      </button>
+
+      {/* Logo Area (Only visible on mobile) */}
+      <div className={cn("flex h-16 items-center border-b border-surface-700 md:hidden", isSidebarCollapsed ? "justify-center px-0" : "px-6")}>
         <Link href="/dashboard" className="flex items-center gap-2" title="Omnitool Dashboard">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shrink-0">
             <span className="font-display text-lg font-bold text-surface-900">O</span>
           </div>
-          {!isSidebarCollapsed && (
-            <span className="font-display text-xl font-semibold text-text-high truncate">
+           <span className="font-display text-xl font-semibold text-text-high truncate">
               Omnitool
-            </span>
-          )}
+           </span>
         </Link>
       </div>
 
       {/* Navigation */}
-      <nav className="flex flex-col gap-1 p-3">
+      <nav className="flex flex-col gap-1 p-3 pt-6 h-full overflow-y-auto">
+        {/* Dashboard Link (Always at top) */}
+        <Link
+          href="/dashboard"
+          className={cn(
+            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors mb-2",
+            pathname === "/dashboard"
+              ? "bg-primary/20 text-primary"
+              : "text-text-muted hover:bg-surface-800 hover:text-text-high",
+            isSidebarCollapsed && "justify-center px-2"
+          )}
+          title={isSidebarCollapsed ? "Dashboard" : undefined}
+        >
+          <LayoutDashboard className="h-5 w-5 shrink-0" />
+          {!isSidebarCollapsed && <span className="truncate">Dashboard</span>}
+        </Link>
+
         {!isSidebarCollapsed && (
           <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-text-muted truncate">
             Tools
           </p>
         )}
+        {/* Separator for collapsed mode */}
+        {isSidebarCollapsed && <div className="my-2 border-t border-surface-700" />}
+
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
@@ -173,7 +200,7 @@ export function Sidebar({ isAdmin = false }: SidebarProps) {
         )}
 
         {/* Account section at bottom */}
-        <div className="mt-auto pt-6 flex flex-col gap-1">
+        <div className="mt-auto pt-6 flex flex-col gap-1 pb-6">
            {!isSidebarCollapsed && (
             <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-text-muted truncate">
               Account
@@ -209,15 +236,6 @@ export function Sidebar({ isAdmin = false }: SidebarProps) {
             <Settings className="h-5 w-5 shrink-0" />
             {!isSidebarCollapsed && <span className="truncate">Settings</span>}
           </Link>
-
-          {/* Collapse Toggle Button (Desktop Only) */}
-          <button
-            onClick={toggleSidebarCollapsed}
-            className="hidden md:flex mt-2 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-text-muted hover:bg-surface-800 hover:text-text-high transition-colors w-full justify-center"
-            aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-             {isSidebarCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
-          </button>
         </div>
       </nav>
       </aside>

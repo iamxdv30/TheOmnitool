@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Menu, X, User, LogOut } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui";
@@ -21,17 +22,23 @@ const navLinks: NavLink[] = [
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, logout } = useAuth();
+  const pathname = usePathname();
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 glass-strong">
-      <div className="container mx-auto px-4">
+    <header className="fixed top-0 left-0 right-0 z-50 glass-strong border-b border-surface-700/50">
+      <div className="px-4 md:px-6">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link
             href="/"
-            className="font-display text-xl font-bold text-primary-glow hover:text-primary transition-colors"
+            className="flex items-center gap-2 group transition-colors"
           >
-            The Omnitool
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary group-hover:bg-primary-glow transition-colors">
+              <span className="font-display text-lg font-bold text-surface-900">O</span>
+            </div>
+            <span className="font-display text-xl font-bold text-text-high group-hover:text-primary-glow transition-colors">
+              Omnitool
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
