@@ -26,9 +26,12 @@ This file provides context and guidance for Gemini when working with the "MyTool
 - **Location:** `frontend/` directory
 - **Framework:** Next.js 16 (App Router)
 - **Library:** React 19
-- **State:** Zustand
+- **State:** Zustand v5 (with persist middleware)
+- **API Client:** Custom fetch wrapper with CSRF & interceptors
 - **Styling:** Tailwind CSS v4
 - **3D Engine:** React Three Fiber (R3F) + Drei + Rapier (Physics)
+- **Testing:** Jest + React Testing Library (31 tests passing)
+- **Migration Status:** Phase 3 Complete ✅ (Auth & State Management)
 
 ### Database
 - **Local:** SQLite (`users.db`)
@@ -57,8 +60,10 @@ This file provides context and guidance for Gemini when working with the "MyTool
 *   **Restore Backup:** `python restore_backup.py`
 
 ### 3. Testing
-*   **Run All Tests:** `pytest`
+*   **Backend Tests:** `pytest` (from root directory)
+*   **Frontend Tests:** `npm test` (from `frontend/` directory)
 *   **Smoke Tests:** `python tests/smoke_tests.py --url <target_url>`
+*   **Current Coverage:** 31 frontend unit tests (auth, UI, CSRF)
 
 ## Architecture Summary
 
@@ -72,9 +77,22 @@ This file provides context and guidance for Gemini when working with the "MyTool
 *   **Templates:** Managed via `ChoiceLoader` searching in `Tools/templates/` then `templates/`.
 
 ### Frontend (`frontend/`)
-*   **Structure:** Next.js App Router (`src/app`).
+*   **Structure:** Next.js App Router (`src/app`) with route groups:
+    *   `(public)/` - No auth required (landing, contact)
+    *   `(auth)/` - Auth pages (login, register, forgot-password)
+    *   `(dashboard)/` - Protected routes (dashboard, profile, tools)
 *   **UI Components:** Shadcn-like structure in `src/components/ui`.
 *   **View Tunneling:** Uses `<SceneView />` to render 3D R3F content from the DOM into a global shared Canvas.
+*   **State Management:**
+    *   `authStore.ts` - User authentication (login, logout, session)
+    *   `uiStore.ts` - UI state (toasts, modals, sidebar collapse)
+    *   `useStore.ts` - Theme persistence (localStorage)
+*   **API Layer:**
+    *   `lib/api/client.ts` - Base fetch wrapper with interceptors
+    *   `lib/api/auth.ts` - Auth endpoint wrappers
+    *   `lib/api/csrf.ts` - CSRF token management with caching
+*   **Route Protection:** `middleware.ts` validates session cookies server-side
+*   **Session Polling:** `useSessionPolling.ts` checks auth status every 5 minutes
 
 ## Development Conventions
 
@@ -86,10 +104,28 @@ This file provides context and guidance for Gemini when working with the "MyTool
 6.  **Version:** Tracked in the root `VERSION` file, injected into templates via context processor.
 
 ## Key Files Map
+
+### Backend
 *   `main.py`: App factory, logging, and middleware.
 *   `model/users.py`: RBAC and user hierarchy.
-*   `routes/tool_routes.py`: Controller for the Unified Tax Calculator and other utilities.
+*   `routes/api/`: JSON API endpoints (auth_api, user_api, tool_api)
+*   `services/`: Business logic layer (auth_service, user_service, tool_service)
+*   `routes/tool_routes.py`: Legacy HTML routes for tools.
 *   `Tools/tax_calculator.py`: Core math logic for US, Canada, and VAT calculations.
-*   `frontend/src/app/page.tsx`: Main entry point for the modern UI.
 *   `utils/db_safety.py`: Database validation and backup logic.
 *   `.github/workflows/`: CI/CD pipelines for production and staging.
+
+### Frontend (Next.js)
+*   `frontend/src/app/(public)/page.tsx`: Landing page.
+*   `frontend/src/app/(auth)/login/page.tsx`: Login page with query param handling.
+*   `frontend/src/app/(dashboard)/layout.tsx`: Dashboard layout with collapsible sidebar.
+*   `frontend/src/middleware.ts`: Route protection (session validation).
+*   `frontend/src/store/authStore.ts`: Authentication state management.
+*   `frontend/src/store/uiStore.ts`: UI state (toasts, modals, sidebar).
+*   `frontend/src/lib/api/client.ts`: API client with CSRF and interceptors.
+*   `frontend/src/__tests__/`: Jest unit tests (31 passing).
+
+### Documentation
+*   `docs/BACKEND_FRONTEND_INTEGRATION_PLAN.md`: Migration strategy (Phase 3 complete)
+*   `CLAUDE.md`: Context for Claude Code AI agent.
+*   `Gemini.md`: Context for Gemini AI agent (this file).
