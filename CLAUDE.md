@@ -85,8 +85,10 @@ curl http://localhost:5000/health/database
    - Fix migration issue and try again
 
 ### Testing
+
+#### Backend Tests (pytest)
 ```bash
-# Run all tests
+# Run all backend tests
 pytest
 
 # Run with coverage
@@ -98,6 +100,31 @@ pytest tests/test_routes.py
 # Run specific test
 pytest tests/test_routes.py::test_function_name
 ```
+
+#### Frontend Tests (Jest)
+```bash
+# Navigate to frontend
+cd frontend
+
+# Run all frontend tests
+npm test
+
+# Run with coverage
+npm test -- --coverage
+
+# Run in watch mode
+npm test -- --watch
+
+# Run specific test file
+npm test -- authStore.test.ts
+```
+
+**Current Test Coverage:**
+- Backend: pytest tests for routes, models, services
+- Frontend: 31 unit tests passing
+  - `authStore.test.ts` - Auth state management
+  - `uiStore.test.ts` - UI state (toasts, modals, sidebar)
+  - `csrf.test.ts` - CSRF token management
 
 ### Migration Scripts
 
@@ -204,6 +231,9 @@ JavaScript organized by purpose in `static/js/`:
 
 Located in `frontend/` directory - a high-performance 3D application using the "Solarpunk High-Tech" design system.
 
+**Migration Status:** Phase 3 (Frontend Authentication & State Management) ✅ **COMPLETE**
+- See [docs/BACKEND_FRONTEND_INTEGRATION_PLAN.md](docs/BACKEND_FRONTEND_INTEGRATION_PLAN.md) for full migration strategy
+
 #### Tech Stack
 | Component | Technology | Purpose |
 |-----------|------------|---------|
@@ -211,9 +241,11 @@ Located in `frontend/` directory - a high-performance 3D application using the "
 | 3D Engine | React Three Fiber v9 | Declarative Three.js |
 | 3D Helpers | @react-three/drei | View tunneling, GLB loading |
 | Physics | @react-three/rapier | WASM-based physics |
-| State | Zustand | Transient 60FPS state management |
+| State | Zustand (v5) | Auth, UI, theme state management |
+| API Client | Custom fetch wrapper | CSRF protection, 401/403 interceptors |
 | Styling | Tailwind CSS v4 | Zero-runtime CSS |
 | Icons | Lucide React | Tree-shakeable icons |
+| Testing | Jest + React Testing Library | 31 unit tests |
 
 #### Development Commands
 ```bash
@@ -229,6 +261,9 @@ npm run build
 # Start production server
 npm start
 
+# Run tests
+npm test
+
 # Type checking
 npm run lint
 ```
@@ -238,8 +273,22 @@ npm run lint
 frontend/
 ├── src/
 │   ├── app/                    # Next.js App Router
-│   │   ├── layout.tsx          # Root layout with Canvas provider
-│   │   ├── page.tsx            # Home page
+│   │   ├── (public)/           # Public route group (no auth)
+│   │   │   ├── layout.tsx      # Public layout with header
+│   │   │   ├── page.tsx        # Landing page
+│   │   │   └── contact/        # Contact page
+│   │   ├── (auth)/             # Auth route group
+│   │   │   ├── login/          # Login page (with query param handling)
+│   │   │   ├── register/       # Registration page
+│   │   │   ├── forgot-password/
+│   │   │   └── reset-password/
+│   │   ├── (dashboard)/        # Protected route group
+│   │   │   ├── layout.tsx      # Dashboard layout with sidebar
+│   │   │   ├── dashboard/      # User dashboard
+│   │   │   ├── profile/        # User profile
+│   │   │   └── tools/          # Tool pages
+│   │   ├── layout.tsx          # Root layout (FOUC fix, Canvas provider)
+│   │   ├── not-found.tsx       # Custom 404 page
 │   │   └── globals.css         # Sage Tech color system
 │   ├── components/
 │   │   ├── ui/                 # Atomic UI components
@@ -250,16 +299,40 @@ frontend/
 │   │   │   ├── Scene.tsx       # 3D scene content
 │   │   │   └── SceneView.tsx   # View tunneling wrapper
 │   │   ├── layout/             # Layout components
-│   │   │   ├── Header.tsx      # Navigation header
+│   │   │   ├── Header.tsx      # Navigation header (public only)
+│   │   │   ├── Sidebar.tsx     # Collapsible sidebar (dashboard)
+│   │   │   ├── ThemeToggle.tsx # Dark/light mode toggle
 │   │   │   └── Footer.tsx      # Page footer
+│   │   ├── feedback/           # User feedback
+│   │   │   └── Toaster.tsx     # Toast notification system
 │   │   └── providers/          # React providers
 │   │       └── CanvasProvider.tsx  # Dynamic Canvas import
 │   ├── store/
-│   │   └── useStore.ts         # Zustand global state
-│   └── lib/
-│       └── utils.ts            # cn() utility for class merging
-├── next.config.ts              # Turbopack + 3D package config
-└── package.json
+│   │   ├── authStore.ts        # Authentication state (Zustand)
+│   │   ├── uiStore.ts          # UI state (toasts, modals, sidebar)
+│   │   └── useStore.ts         # Theme state with persistence
+│   ├── lib/
+│   │   ├── api/                # API client layer
+│   │   │   ├── client.ts       # Base client with interceptors
+│   │   │   ├── auth.ts         # Auth endpoints
+│   │   │   ├── csrf.ts         # CSRF token management
+│   │   │   └── index.ts        # Centralized exports
+│   │   └── utils.ts            # cn() utility for class merging
+│   ├── hooks/
+│   │   ├── useAuth.ts          # Auth hook (uses authStore)
+│   │   ├── useSessionPolling.ts # Session expiration polling
+│   │   └── index.ts            # Hook exports
+│   ├── middleware.ts           # Route protection
+│   └── __tests__/              # Unit tests (31 passing)
+│       ├── store/
+│       │   ├── authStore.test.ts
+│       │   └── uiStore.test.ts
+│       └── lib/api/
+│           └── csrf.test.ts
+├── next.config.ts              # Turbopack + 3D + API rewrites
+├── jest.config.js              # Jest configuration
+├── jest.setup.js               # Jest setup (next/navigation mocks)
+└── package.json                # Dependencies + test scripts
 ```
 
 #### Design System - "Sage Tech" Dark Mode
@@ -305,6 +378,59 @@ import { SceneView } from "@/components/canvas";
 - **Performance monitor**: Auto-adjusts DPR based on FPS
 - **On-demand rendering**: `frameloop="demand"` for static scenes
 - **Optimized imports**: Lucide and drei tree-shaking
+- **Theme persistence**: Zustand persist middleware prevents re-initialization
+- **FOUC prevention**: Blocking script in root layout applies theme before render
+
+#### Authentication & Security
+
+**Session Management:**
+- HttpOnly cookies for session storage (Flask backend)
+- CSRF token injection on all mutating requests (POST/PUT/PATCH/DELETE)
+- Automatic token caching and refresh
+- 5-minute session polling to detect expiration
+
+**Route Protection:**
+- Next.js middleware validates session cookie
+- Public routes: `/login`, `/register`, `/forgot-password`, `/reset-password`
+- Protected routes: `/dashboard`, `/profile`, `/tools/*`, `/admin/*`
+- 401 → Redirect to `/login?session_expired=true`
+- 403 AUTH_UNVERIFIED → Redirect to `/verify-email-pending`
+
+**API Client Features:**
+- Automatic CSRF token injection via request interceptor
+- Response interceptors for 401/403 handling
+- Centralized error handling with toast notifications
+- Token refresh on 403 CSRF mismatch
+
+**State Management:**
+```typescript
+// authStore: User authentication state
+{
+  user: UserProfile | null,
+  isAuthenticated: boolean,
+  isLoading: boolean,
+  permissions: string[],
+  login(credentials) → Promise<void>,
+  logout() → Promise<void>,
+  checkAuth() → Promise<void>
+}
+
+// uiStore: UI state (toasts, modals, sidebar)
+{
+  toasts: Toast[],
+  isSidebarCollapsed: boolean,
+  isLoading: boolean,
+  showToast(toast) → void,
+  removeToast(id) → void,
+  toggleSidebar() → void
+}
+
+// useStore: Theme persistence
+{
+  theme: 'light' | 'dark',
+  toggleTheme() → void
+}
+```
 
 ### Templates
 Jinja2 templates in two locations (ChoiceLoader setup):

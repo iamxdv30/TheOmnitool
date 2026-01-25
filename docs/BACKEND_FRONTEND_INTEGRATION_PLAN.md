@@ -7,15 +7,15 @@ This document outlines the comprehensive strategy for integrating the existing F
 ## Table of Contents
 
     1. [Architecture Overview](#1-architecture-overview)
-  [X]  2. [Phase 1: Backend Refactoring (Service Layer)](#2-phase-1-backend-refactoring-the-service-layer)
-  [X]  3. [Phase 2: API Definition](#3-phase-2-api-definition)
-  [X]  4. [Phase 3: Frontend Authentication & State](#4-phase-3-frontend-authentication--state-management)
-  []  5. [Phase 4: Tool Migration Strategy](#5-phase-4-tool-migration-strategy)
+  [X]  2. [Phase 1: Backend Refactoring (Service Layer)](#2-phase-1-backend-refactoring-the-service-layer) ✅ **COMPLETE**
+  [X]  3. [Phase 2: API Definition](#3-phase-2-api-definition) ✅ **COMPLETE**
+  [X]  4. [Phase 3: Frontend Authentication & State](#4-phase-3-frontend-authentication--state-management) ✅ **COMPLETE**
+  []  5. [Phase 4: Tool Migration Strategy](#5-phase-4-tool-migration-strategy) ← **NEXT**
   []  6. [Phase 5: Production Deployment](#6-phase-5-production-deployment-heroku)
   []  7. [Security Configuration](#7-security-configuration)
   []  8. [Testing Strategy](#8-testing-strategy)
   []  9. [Implementation Checklist](#9-implementation-checklist)
-  []  10. [CI/CD Workflow Updates](#10-cicd-workflow-updates) ← **NEW: Critical for staging/production**
+  []  10. [CI/CD Workflow Updates](#10-cicd-workflow-updates) ← **Critical for staging/production**
   []  11. [Migration Risks & Mitigations](#11-migration-risks--mitigations)
   []  12. [Success Criteria](#12-success-criteria)
 
@@ -743,26 +743,39 @@ python tests/smoke_tests.py --url https://omnitool-by-xdv.herokuapp.com
 - [ ] Add rate limiting to sensitive endpoints
 - [x] Write API integration tests
 
-### 9.3 Phase 3: Frontend Authentication
+### 9.3 Phase 3: Frontend Authentication ✅ **COMPLETE**
 
 - [x] Setup Zustand store
   - [x] `src/store/authStore.ts`
-  - [x] `src/store/uiStore.ts` (toasts, modals)
+  - [x] `src/store/uiStore.ts` (toasts, modals, sidebar state)
+  - [x] Theme persistence with Zustand persist middleware
 - [x] Create API client
   - [x] `src/lib/api/client.ts` (base client)
   - [x] `src/lib/api/auth.ts` (auth endpoints)
-  - [x] CSRF token management
-  - [x] 401/403 interceptors
+  - [x] `src/lib/api/csrf.ts` (CSRF token management with caching)
+  - [x] `src/lib/api/index.ts` (centralized exports)
+  - [x] 401/403 interceptors with automatic redirects
 - [x] Implement Next.js middleware for route protection
 - [x] Create auth pages
-  - [x] `/login`
+  - [x] `/login` (with session_expired, password_reset, verified params)
   - [x] `/register`
   - [x] `/forgot-password`
   - [x] `/reset-password`
   - [x] `/verify-email-pending`
 - [x] Configure Next.js rewrites for `/api/*`
-- [x] Add session expiration polling
-- [x] Write frontend unit tests
+- [x] Add session expiration polling (`useSessionPolling.ts`)
+- [x] Write frontend unit tests (31 passing tests)
+  - [x] `__tests__/store/authStore.test.ts`
+  - [x] `__tests__/store/uiStore.test.ts`
+  - [x] `__tests__/lib/api/csrf.test.ts`
+
+**Additional UX/DX Improvements:**
+- [x] Fixed Flash of Unstyled Content (FOUC) with blocking theme script
+- [x] Dynamic ReCAPTCHA theming
+- [x] Layout restructuring (removed duplicate header, fixed vertical lines)
+- [x] Collapsible sidebar with toggle state
+- [x] Custom 404 page
+- [x] Responsive dashboard layout
 
 ### 9.4 Phase 4: Tool Migration
 
@@ -1133,10 +1146,13 @@ Before considering each phase complete:
 - [ ] Existing HTML routes still work (backward compatibility)
 - [ ] API tests pass with 90%+ coverage on services
 
-**Phase 3 (Frontend Auth):**
-- [ ] User can register, verify email, login, logout
-- [ ] Unverified users blocked with proper message
-- [ ] Session expiration handled gracefully
+**Phase 3 (Frontend Auth):** ✅ **COMPLETE**
+- [x] User can register, verify email, login, logout
+- [x] Unverified users blocked with proper message
+- [x] Session expiration handled gracefully
+- [x] 31 unit tests passing for auth and UI stores
+- [x] Theme persistence works across page reloads
+- [x] Responsive layouts for mobile/desktop
 
 **Phase 4 (Tools):**
 - [ ] Each migrated tool works identically to legacy version
