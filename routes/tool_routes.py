@@ -58,7 +58,7 @@ def tool_access_required(tool_name):
 
 
 @tool.route("/convert", methods=["GET", "POST"])
-@tool_access_required("Unix Timestamp Converter")
+@tool_access_required("unix-timestamp")
 def convert():
     if request.method == "POST":
         if request.json is None:
@@ -82,7 +82,7 @@ def convert():
 
 
 @tool.route("/char_counter", methods=["GET", "POST"])
-@tool_access_required("Character Counter")
+@tool_access_required("char-counter")
 def char_counter():
     # This block handles the form submission
     if request.method == "POST":
@@ -112,21 +112,21 @@ def char_counter():
 
 
 @tool.route("/tax_calculator", methods=["GET"])
-@tool_access_required("Tax Calculator")
+@tool_access_required("tax-calculator")
 def tax_calculator_route():
     """Legacy route - redirects to unified tax calculator"""
     return redirect(url_for("tool.unified_tax_calculator"))
 
 
 @tool.route("/canada_tax_calculator", methods=["GET"])
-@tool_access_required("Tax Calculator")
+@tool_access_required("tax-calculator")
 def canada_tax_calculator():
     """Legacy route - redirects to unified tax calculator (Canada tab)"""
     return redirect(url_for("tool.unified_tax_calculator") + "#canada")
 
 
 @tool.route("/unified_tax_calculator", methods=["GET", "POST"])
-@tool_access_required("Tax Calculator")
+@tool_access_required("tax-calculator")
 def unified_tax_calculator():
     """
     Unified tax calculator route handling US, Canada, and VAT calculations.
@@ -229,7 +229,7 @@ def unified_tax_calculator():
 
 
 @tool.route("/email_templates", methods=["GET", "POST"])
-@tool_access_required("Email Templates")
+@tool_access_required("email-templates")
 def email_templates() -> Union[Response, str]:
     if "user_id" not in session:
         return make_response(
@@ -272,7 +272,7 @@ def email_templates() -> Union[Response, str]:
 
 
 @tool.route("/email_templates/<int:template_id>", methods=["PUT", "DELETE"])
-@tool_access_required("Email Templates")
+@tool_access_required("email-templates")
 def manage_email_template(template_id: int) -> Response:
     if "user_id" not in session:
         return make_response(
@@ -420,12 +420,12 @@ def check_tool_access(tool_name):
         if has_access:
             logging.debug(f"Access granted for tool: {tool_name}")
             tool_urls = {
-                "Tax Calculator": "tool.unified_tax_calculator",
-                "Unified Tax Calculator": "tool.unified_tax_calculator",  # Legacy name
-                "Canada Tax Calculator": "tool.unified_tax_calculator",  # Legacy name - redirects to Canada tab
-                "Character Counter": "tool.char_counter",
-                "Unix Timestamp Converter": "tool.convert",
-                "Email Templates": "tool.email_templates",
+                "tax-calculator": "tool.unified_tax_calculator",
+                "unified-tax-calculator": "tool.unified_tax_calculator",
+                "canada-tax-calculator": "tool.unified_tax_calculator",
+                "char-counter": "tool.char_counter",
+                "unix-timestamp": "tool.convert",
+                "email-templates": "tool.email_templates",
             }
 
             if tool_name in tool_urls:

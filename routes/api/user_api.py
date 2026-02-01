@@ -236,8 +236,11 @@ def get_user_tools():
             status_code=result.error.http_status
         )
 
+    # Extract tool names from ToolInfo objects
+    tool_names = [tool.name for tool in result.data]
+
     return api_response({
-        "tools": result.data
+        "tools": tool_names
     })
 
 

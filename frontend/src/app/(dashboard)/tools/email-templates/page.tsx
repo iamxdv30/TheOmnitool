@@ -15,7 +15,7 @@ import {
   TemplateCard,
   Pagination,
 } from "@/components/features/email-templates";
-import { api, isSuccess } from "@/lib/api";
+import { apiClient, isSuccess } from "@/lib/api";
 import { toast } from "@/store/uiStore";
 import type { EmailTemplate } from "@/types";
 import type { EmailTemplateFormData } from "@/lib/validations";
@@ -43,7 +43,7 @@ export default function EmailTemplatesPage() {
 
   const fetchTemplates = useCallback(async () => {
     setIsLoading(true);
-    const response = await api.get<TemplatesResponse>("/tools/email-templates", {
+    const response = await apiClient.get<TemplatesResponse>("/tools/email-templates", {
       params: {
         page: currentPage,
         per_page: ITEMS_PER_PAGE,
@@ -69,7 +69,7 @@ export default function EmailTemplatesPage() {
 
   const handleCreate = async (data: EmailTemplateFormData) => {
     setIsSaving(true);
-    const response = await api.post("/tools/email-templates", data);
+    const response = await apiClient.post("/tools/email-templates", data);
 
     if (isSuccess(response)) {
       toast.success("Template created successfully");
@@ -88,7 +88,7 @@ export default function EmailTemplatesPage() {
     if (!editingTemplate) return;
 
     setIsSaving(true);
-    const response = await api.put(`/tools/email-templates/${editingTemplate.id}`, data);
+    const response = await apiClient.put(`/tools/email-templates/${editingTemplate.id}`, data);
 
     if (isSuccess(response)) {
       toast.success("Template updated successfully");
@@ -106,7 +106,7 @@ export default function EmailTemplatesPage() {
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this template?")) return;
 
-    const response = await api.delete(`/tools/email-templates/${id}`);
+    const response = await apiClient.delete(`/tools/email-templates/${id}`);
 
     if (isSuccess(response)) {
       toast.success("Template deleted successfully");

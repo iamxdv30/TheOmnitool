@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui";
 import { X, Loader2, Check, Plus } from "lucide-react";
 import type { AdminUser, Tool } from "@/types";
-import { api, isSuccess } from "@/lib/api";
+import { apiClient, isSuccess } from "@/lib/api";
 
 interface ToolAccessDialogProps {
   isOpen: boolean;
@@ -31,7 +31,7 @@ export function ToolAccessDialog({
   useEffect(() => {
     const fetchTools = async () => {
       setLoadingTools(true);
-      const response = await api.get<{ tools: Tool[] }>("/admin/tools");
+      const response = await apiClient.get<{ tools: Tool[] }>("/admin/tools");
       if (isSuccess(response)) {
         setAllTools(response.data.tools);
       }

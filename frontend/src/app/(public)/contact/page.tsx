@@ -10,7 +10,7 @@ import { FormField } from "@/components/forms";
 import { Textarea } from "@/components/forms/Textarea";
 import { Label } from "@/components/ui/Label";
 import { Controller } from "react-hook-form";
-import { api, isSuccess } from "@/lib/api";
+import { apiClient, isSuccess } from "@/lib/api";
 import { toast } from "@/store/uiStore";
 import { Mail, Send, Loader2, CheckCircle, MessageSquare } from "lucide-react";
 
@@ -31,7 +31,7 @@ export default function ContactPage() {
   const handleSubmit = async (data: ContactFormData) => {
     setIsSubmitting(true);
 
-    const response = await api.post("/contact", {
+    const response = await apiClient.post("/contact", {
       name: data.name,
       email: data.email,
       query_type: data.queryType,

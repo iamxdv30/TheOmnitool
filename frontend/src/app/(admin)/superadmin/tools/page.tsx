@@ -8,7 +8,7 @@ import { z } from "zod";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui";
 import { Button } from "@/components/ui/Button";
 import { FormField } from "@/components/forms";
-import { api, isSuccess } from "@/lib/api";
+import { apiClient, isSuccess } from "@/lib/api";
 import { toast } from "@/store/uiStore";
 import { useAuth } from "@/hooks";
 import type { Tool } from "@/types";
@@ -63,7 +63,7 @@ export default function ManageToolsPage() {
 
   const fetchTools = useCallback(async () => {
     setIsLoading(true);
-    const response = await api.get<{ tools: Tool[] }>("/admin/tools");
+    const response = await apiClient.get<{ tools: Tool[] }>("/admin/tools");
 
     if (isSuccess(response)) {
       setTools(response.data.tools);
@@ -108,7 +108,7 @@ export default function ManageToolsPage() {
     setIsProcessing(true);
 
     if (editingTool) {
-      const response = await api.put(`/admin/tools/${editingTool.id}`, data);
+      const response = await apiClient.put(`/admin/tools/${editingTool.id}`, data);
 
       if (isSuccess(response)) {
         toast.success("Tool updated successfully");
@@ -118,7 +118,7 @@ export default function ManageToolsPage() {
         toast.error(response.message || "Failed to update tool");
       }
     } else {
-      const response = await api.post("/admin/tools", data);
+      const response = await apiClient.post("/admin/tools", data);
 
       if (isSuccess(response)) {
         toast.success("Tool created successfully");
@@ -137,7 +137,7 @@ export default function ManageToolsPage() {
       return;
     }
 
-    const response = await api.delete(`/admin/tools/${toolId}`);
+    const response = await apiClient.delete(`/admin/tools/${toolId}`);
 
     if (isSuccess(response)) {
       toast.success("Tool deleted successfully");
@@ -148,7 +148,7 @@ export default function ManageToolsPage() {
   };
 
   const handleToggleDefault = async (tool: Tool) => {
-    const response = await api.put(`/admin/tools/${tool.id}`, {
+    const response = await apiClient.put(`/admin/tools/${tool.id}`, {
       ...tool,
       is_default: !tool.is_default,
     });

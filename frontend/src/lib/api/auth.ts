@@ -17,6 +17,13 @@ interface AuthStatusResponse {
 }
 
 /**
+ * User tools response
+ */
+interface UserToolsResponse {
+  tools: string[];
+}
+
+/**
  * Login response
  */
 interface LoginResponse {
@@ -52,6 +59,22 @@ export const authApi = {
   },
 
   /**
+   * Fetch user's tool permissions
+   * GET /api/v1/user/tools
+   */
+  async fetchUserTools(): Promise<string[]> {
+    const response = await apiClient.get<UserToolsResponse>("/user/tools", {
+      skipAuth: true, // Handle errors manually
+    });
+
+    if (isSuccess(response)) {
+      return response.data.tools;
+    }
+
+    return [];
+  },
+
+  /**
    * Login with credentials
    * POST /api/v1/auth/login
    */
@@ -67,7 +90,13 @@ export const authApi = {
 
     if (isSuccess(response)) {
       const { user } = response.data;
-      getAuthState().setUser(user);
+      const authState = getAuthState();
+      authState.setUser(user);
+
+      // Fetch and set user's tool permissions
+      const tools = await this.fetchUserTools();
+      authState.setPermissions(tools);
+
       return { success: true, user };
     }
 
@@ -190,6 +219,10 @@ export const authApi = {
 
       if (isAuthenticated && user) {
         authState.setUser(user);
+
+        // Fetch and set user's tool permissions
+        const tools = await this.fetchUserTools();
+        authState.setPermissions(tools);
       } else {
         authState.clearAuth();
       }
