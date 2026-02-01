@@ -231,8 +231,9 @@ JavaScript organized by purpose in `static/js/`:
 
 Located in `frontend/` directory - a high-performance 3D application using the "Solarpunk High-Tech" design system.
 
-**Migration Status:** Phase 3 (Frontend Authentication & State Management) ✅ **COMPLETE**
+**Migration Status:** Phase 4 (Tool Migration Strategy) ✅ **COMPLETE**
 - See [docs/BACKEND_FRONTEND_INTEGRATION_PLAN.md](docs/BACKEND_FRONTEND_INTEGRATION_PLAN.md) for full migration strategy
+- Next: Phase 5 (Production Deployment)
 
 #### Tech Stack
 | Component | Technology | Purpose |
@@ -315,11 +316,13 @@ frontend/
 │   │   ├── api/                # API client layer
 │   │   │   ├── client.ts       # Base client with interceptors
 │   │   │   ├── auth.ts         # Auth endpoints
+│   │   │   ├── tools.ts        # Tools API (tax calc, email templates)
 │   │   │   ├── csrf.ts         # CSRF token management
 │   │   │   └── index.ts        # Centralized exports
 │   │   └── utils.ts            # cn() utility for class merging
 │   ├── hooks/
 │   │   ├── useAuth.ts          # Auth hook (uses authStore)
+│   │   ├── useToolAccess.ts    # Tool permission checking
 │   │   ├── useSessionPolling.ts # Session expiration polling
 │   │   └── index.ts            # Hook exports
 │   ├── middleware.ts           # Route protection
@@ -401,6 +404,8 @@ import { SceneView } from "@/components/canvas";
 - Response interceptors for 401/403 handling
 - Centralized error handling with toast notifications
 - Token refresh on 403 CSRF mismatch
+- `toolsApi` client for tool operations (tax calc, email templates)
+- `useToolAccess` hook for permission-based tool access control
 
 **State Management:**
 ```typescript

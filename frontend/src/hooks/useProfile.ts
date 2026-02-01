@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { api, isSuccess } from "@/lib/api";
+import { apiClient, isSuccess } from "@/lib/api";
 import type { ProfileData, PasswordChangeData } from "@/types";
 
 interface UserTool {
@@ -31,7 +31,7 @@ export function useProfile(): UseProfileReturn {
       setIsLoading(true);
       setError(null);
 
-      const response = await api.get<{ profile: ProfileData }>("/user/profile");
+      const response = await apiClient.get<{ profile: ProfileData }>("/user/profile");
 
       if (isSuccess(response)) {
         return response.data.profile;
@@ -53,7 +53,7 @@ export function useProfile(): UseProfileReturn {
         setIsLoading(true);
         setError(null);
 
-        const response = await api.put("/user/profile", data);
+        const response = await apiClient.put("/user/profile", data);
 
         if (isSuccess(response)) {
           return true;
@@ -77,7 +77,7 @@ export function useProfile(): UseProfileReturn {
         setIsLoading(true);
         setError(null);
 
-        const response = await api.post("/user/change-password", {
+        const response = await apiClient.post("/user/change-password", {
           current_password: data.currentPassword,
           new_password: data.newPassword,
         });
@@ -103,7 +103,7 @@ export function useProfile(): UseProfileReturn {
       setIsLoading(true);
       setError(null);
 
-      const response = await api.get<{ tools: UserTool[] }>("/user/tools");
+      const response = await apiClient.get<{ tools: UserTool[] }>("/user/tools");
 
       if (isSuccess(response)) {
         return response.data.tools;

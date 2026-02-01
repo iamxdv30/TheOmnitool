@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useCallback } from "react";
 import {
   Card,
   CardHeader,
@@ -23,7 +23,10 @@ import {
   type TaxDiscount,
   type TaxSummaryData,
 } from "@/components/features/tax-calculator";
-import { Calculator, RotateCcw, Truck } from "lucide-react";
+import { useToolAccess, TOOL_NAMES } from "@/hooks";
+import { toolsApi, isSuccess } from "@/lib/api";
+import { toast } from "@/store/uiStore";
+import { Calculator, RotateCcw, Truck, Loader2 } from "lucide-react";
 
 interface CalculatorState {
   items: TaxItem[];
@@ -49,9 +52,25 @@ const initialState: CalculatorState = {
   vatRate: 20,
 };
 
+const initialSummary: TaxSummaryData = {
+  itemTotal: 0,
+  discountTotal: 0,
+  shippingTotal: 0,
+  taxBreakdown: [],
+  totalTax: 0,
+  grandTotal: 0,
+};
+
 export default function TaxCalculatorPage() {
+  // Tool access check
+  const { hasAccess, isLoading: isAccessLoading } = useToolAccess(
+    TOOL_NAMES.TAX_CALCULATOR
+  );
+
   const [activeTab, setActiveTab] = useState<CalculatorType>("us");
   const [state, setState] = useState<CalculatorState>(initialState);
+  const [summary, setSummary] = useState<TaxSummaryData>(initialSummary);
+  const [isCalculating, setIsCalculating] = useState(false);
 
   const updateState = <K extends keyof CalculatorState>(
     key: K,
@@ -74,76 +93,137 @@ export default function TaxCalculatorPage() {
       ...initialState,
       items: [{ id: crypto.randomUUID(), price: 0 }],
     });
+    setSummary(initialSummary);
   };
 
-  const summary = useMemo((): TaxSummaryData => {
-    const itemTotal = state.items.reduce((sum, item) => sum + (item.price || 0), 0);
-
-    let discountTotal = 0;
-    for (const discount of state.discounts) {
-      if (discount.type === "percentage") {
-        discountTotal += itemTotal * (discount.value / 100);
-      } else {
-        discountTotal += discount.value;
-      }
+  const calculateTax = useCallback(async () => {
+    // Check if there are any items with prices
+    const hasItems = state.items.some((item) => item.price > 0);
+    if (!hasItems) {
+      toast.error("Please add at least one item with a price.");
+      return;
     }
-    discountTotal = Math.min(discountTotal, itemTotal);
 
-    const subtotalAfterDiscount = itemTotal - discountTotal;
-    const shippingTotal = state.shippingCost || 0;
+    setIsCalculating(true);
 
-    let taxBreakdown: { name: string; rate: number; amount: number }[] = [];
-    let totalTax = 0;
+    // Build request payload based on calculator type
+    const items = state.items
+      .filter((item) => item.price > 0)
+      .map((item) => ({
+        price: item.price,
+        tax_rate: activeTab === "us" ? item.taxRate || state.taxRate : undefined,
+      }));
 
-    const taxableAmount = subtotalAfterDiscount + (state.shippingTaxable ? shippingTotal : 0);
+    const discounts = state.discounts.map((discount) => ({
+      amount: discount.value,
+      type: discount.type as "fixed" | "percentage",
+    }));
 
-    if (activeTab === "us") {
-      if (state.items.some((item) => item.taxRate !== undefined && item.taxRate > 0)) {
-        for (const item of state.items) {
-          if (item.taxRate && item.price > 0) {
-            const itemTax = item.price * (item.taxRate / 100);
-            totalTax += itemTax;
-          }
-        }
-        taxBreakdown = [{ name: "Sales Tax", rate: 0, amount: totalTax }];
-      } else if (state.taxRate > 0) {
-        totalTax = taxableAmount * (state.taxRate / 100);
-        taxBreakdown = [{ name: "Sales Tax", rate: state.taxRate, amount: totalTax }];
-      }
-    } else if (activeTab === "canada") {
-      if (state.gstRate > 0) {
-        const gstAmount = taxableAmount * (state.gstRate / 100);
-        taxBreakdown.push({
-          name: state.pstRate > 0 ? "GST" : "HST",
-          rate: state.gstRate,
-          amount: gstAmount,
-        });
-        totalTax += gstAmount;
-      }
-      if (state.pstRate > 0) {
-        const pstAmount = taxableAmount * (state.pstRate / 100);
-        const pstName = state.province === "QC" ? "QST" : "PST";
-        taxBreakdown.push({ name: pstName, rate: state.pstRate, amount: pstAmount });
-        totalTax += pstAmount;
-      }
+    // Determine tax rates based on calculator type
+    let gstRate: number | undefined;
+    let pstRate: number | undefined;
+    let vatRate: number | undefined;
+    let shippingTaxRate: number | undefined;
+
+    if (activeTab === "canada") {
+      gstRate = state.gstRate;
+      pstRate = state.pstRate;
+      shippingTaxRate = state.gstRate + state.pstRate;
     } else if (activeTab === "vat") {
-      if (state.vatRate > 0) {
-        totalTax = taxableAmount * (state.vatRate / 100);
-        taxBreakdown = [{ name: "VAT", rate: state.vatRate, amount: totalTax }];
-      }
+      vatRate = state.vatRate;
+    } else {
+      // US - use per-item rates or global rate
+      shippingTaxRate = state.taxRate;
     }
 
-    const grandTotal = subtotalAfterDiscount + shippingTotal + totalTax;
+    const response = await toolsApi.calculateTax({
+      calculator_type: activeTab,
+      items,
+      discounts: discounts.length > 0 ? discounts : undefined,
+      shipping_cost: state.shippingCost || undefined,
+      shipping_taxable: state.shippingTaxable,
+      shipping_tax_rate: state.shippingTaxable ? shippingTaxRate : undefined,
+      gst_rate: gstRate,
+      pst_rate: pstRate,
+      vat_rate: vatRate,
+      options: {
+        is_sales_before_tax: false,
+        discount_is_taxable: true,
+      },
+    });
 
-    return {
-      itemTotal,
-      discountTotal,
-      shippingTotal,
-      taxBreakdown,
-      totalTax,
-      grandTotal,
-    };
+    setIsCalculating(false);
+
+    if (isSuccess(response)) {
+      const data = response.data;
+
+      // Build tax breakdown for display
+      const taxBreakdown: { name: string; rate: number; amount: number }[] = [];
+
+      if (activeTab === "us") {
+        if (data.tax_amount > 0) {
+          taxBreakdown.push({
+            name: "Sales Tax",
+            rate: state.taxRate,
+            amount: data.tax_amount,
+          });
+        }
+      } else if (activeTab === "canada") {
+        if (state.gstRate > 0) {
+          const gstAmount = data.taxable_amount * (state.gstRate / 100);
+          taxBreakdown.push({
+            name: state.pstRate > 0 ? "GST" : "HST",
+            rate: state.gstRate,
+            amount: gstAmount,
+          });
+        }
+        if (state.pstRate > 0) {
+          const pstAmount = data.taxable_amount * (state.pstRate / 100);
+          const pstName = state.province === "QC" ? "QST" : "PST";
+          taxBreakdown.push({
+            name: pstName,
+            rate: state.pstRate,
+            amount: pstAmount,
+          });
+        }
+      } else if (activeTab === "vat") {
+        if (data.tax_amount > 0) {
+          taxBreakdown.push({
+            name: "VAT",
+            rate: state.vatRate,
+            amount: data.tax_amount,
+          });
+        }
+      }
+
+      setSummary({
+        itemTotal: data.subtotal,
+        discountTotal: data.discount_total,
+        shippingTotal: data.shipping_cost + data.shipping_tax,
+        taxBreakdown,
+        totalTax: data.tax_amount + data.shipping_tax,
+        grandTotal: data.total,
+      });
+
+      toast.success("Calculation complete!");
+    } else {
+      toast.error(response.message || "Failed to calculate tax.");
+    }
   }, [state, activeTab]);
+
+  // Show loading while checking access
+  if (isAccessLoading) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Access denied will redirect, but just in case
+  if (!hasAccess) {
+    return null;
+  }
 
   return (
     <div className="space-y-8">
@@ -177,7 +257,8 @@ export default function TaxCalculatorPage() {
                 Items
               </CardTitle>
               <CardDescription>
-                Add items with their prices{activeTab === "us" ? " and optional individual tax rates" : ""}.
+                Add items with their prices
+                {activeTab === "us" ? " and optional individual tax rates" : ""}.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -250,7 +331,8 @@ export default function TaxCalculatorPage() {
             <CardHeader>
               <CardTitle>Tax Rate</CardTitle>
               <CardDescription>
-                {activeTab === "us" && "Enter the sales tax rate or set per-item rates above."}
+                {activeTab === "us" &&
+                  "Enter the sales tax rate or set per-item rates above."}
                 {activeTab === "canada" && "Select a province to auto-populate rates."}
                 {activeTab === "vat" && "Enter the VAT rate for your region."}
               </CardDescription>
@@ -284,7 +366,8 @@ export default function TaxCalculatorPage() {
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
                         <Label htmlFor="gstRate">
-                          {CANADA_TAX_RATES[state.province]?.pst > 0 ? "GST" : "HST"} Rate (%)
+                          {CANADA_TAX_RATES[state.province]?.pst > 0 ? "GST" : "HST"}{" "}
+                          Rate (%)
                         </Label>
                         <Input
                           id="gstRate"
@@ -340,6 +423,26 @@ export default function TaxCalculatorPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Calculate Button */}
+          <Button
+            onClick={calculateTax}
+            disabled={isCalculating}
+            className="w-full"
+            size="lg"
+          >
+            {isCalculating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Calculating...
+              </>
+            ) : (
+              <>
+                <Calculator className="mr-2 h-4 w-4" />
+                Calculate Tax
+              </>
+            )}
+          </Button>
         </div>
 
         {/* Summary Sidebar */}

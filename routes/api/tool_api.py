@@ -153,22 +153,11 @@ def calculate_tax():
         401: Not authenticated
         403: No tool access or email not verified
     """
-    # Check tool access - covers multiple tax calculator names
-    tool_names = ["Tax Calculator", "Unified Tax Calculator", "Canada Tax Calculator"]
-    has_access = False
-
-    for tool_name in tool_names:
-        access, error = check_tool_access(tool_name)
-        if access:
-            has_access = True
-            break
+    # Check tool access - use the actual tool name from DB (title case)
+    has_access, error = check_tool_access("Tax Calculator")
 
     if not has_access:
-        return api_error(
-            "PERMISSION_DENIED",
-            "You don't have access to the Tax Calculator.",
-            status_code=403
-        )
+        return error
 
     data, error = get_json_body()
     if error:
@@ -278,7 +267,7 @@ def list_email_templates():
         401: Not authenticated
         403: No tool access or email not verified
     """
-    has_access, error = check_tool_access("email-templates")
+    has_access, error = check_tool_access("Email Templates")
     if not has_access:
         return error
 
@@ -317,7 +306,7 @@ def create_email_template():
         401: Not authenticated
         403: No tool access or email not verified
     """
-    has_access, error = check_tool_access("email-templates")
+    has_access, error = check_tool_access("Email Templates")
     if not has_access:
         return error
 
@@ -366,7 +355,7 @@ def update_email_template(template_id):
         403: No tool access, email not verified, or not template owner
         404: Template not found
     """
-    has_access, error = check_tool_access("email-templates")
+    has_access, error = check_tool_access("Email Templates")
     if not has_access:
         return error
 
@@ -408,7 +397,7 @@ def delete_email_template(template_id):
         403: No tool access, email not verified, or not template owner
         404: Template not found
     """
-    has_access, error = check_tool_access("email-templates")
+    has_access, error = check_tool_access("Email Templates")
     if not has_access:
         return error
 

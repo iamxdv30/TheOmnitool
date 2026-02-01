@@ -9,7 +9,7 @@ import {
   UpdateUserDialog,
   ToolAccessDialog,
 } from "@/components/features/admin";
-import { api, isSuccess } from "@/lib/api";
+import { apiClient, isSuccess } from "@/lib/api";
 import { toast } from "@/store/uiStore";
 import type { AdminUser } from "@/types";
 import { Users, UserPlus, Loader2 } from "lucide-react";
@@ -39,7 +39,7 @@ export default function AdminDashboardPage() {
 
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
-    const response = await api.get<UsersResponse>("/admin/users", {
+    const response = await apiClient.get<UsersResponse>("/admin/users", {
       params: {
         page: currentPage,
         per_page: USERS_PER_PAGE,
@@ -73,7 +73,7 @@ export default function AdminDashboardPage() {
     role: "user" | "admin";
   }) => {
     setIsProcessing(true);
-    const response = await api.post("/admin/users", data);
+    const response = await apiClient.post("/admin/users", data);
 
     if (isSuccess(response)) {
       toast.success("User created successfully");
@@ -98,7 +98,7 @@ export default function AdminDashboardPage() {
     }
   ) => {
     setIsProcessing(true);
-    const response = await api.put(`/admin/users/${userId}`, data);
+    const response = await apiClient.put(`/admin/users/${userId}`, data);
 
     if (isSuccess(response)) {
       toast.success("User updated successfully");
@@ -113,7 +113,7 @@ export default function AdminDashboardPage() {
   const handleDeleteUser = async (userId: number) => {
     if (!confirm("Are you sure you want to delete this user?")) return;
 
-    const response = await api.delete(`/admin/users/${userId}`);
+    const response = await apiClient.delete(`/admin/users/${userId}`);
 
     if (isSuccess(response)) {
       toast.success("User deleted successfully");
@@ -124,7 +124,7 @@ export default function AdminDashboardPage() {
   };
 
   const handleGrantAccess = async (userId: number, toolName: string) => {
-    const response = await api.post("/admin/grant-tool-access", {
+    const response = await apiClient.post("/admin/grant-tool-access", {
       user_id: userId,
       tool_name: toolName,
     });
@@ -144,7 +144,7 @@ export default function AdminDashboardPage() {
   };
 
   const handleRevokeAccess = async (userId: number, toolName: string) => {
-    const response = await api.post("/admin/revoke-tool-access", {
+    const response = await apiClient.post("/admin/revoke-tool-access", {
       user_id: userId,
       tool_name: toolName,
     });
