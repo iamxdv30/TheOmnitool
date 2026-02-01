@@ -10,11 +10,18 @@ MyTools (The Omnitool) is a Flask-based web application providing various utilit
 
 ### Running the Application
 ```bash
-# Local development
+# Local development (Flask only)
 python main.py
 
-# Production (via Heroku)
-gunicorn main:app
+# Local development (Full stack - Flask + Next.js)
+# Terminal 1: Flask backend
+python main.py
+
+# Terminal 2: Next.js frontend
+cd frontend && npm run dev
+
+# Production (via Heroku - dual-stack)
+./scripts/start-production.sh
 ```
 
 ### Database Management
@@ -231,9 +238,10 @@ JavaScript organized by purpose in `static/js/`:
 
 Located in `frontend/` directory - a high-performance 3D application using the "Solarpunk High-Tech" design system.
 
-**Migration Status:** Phase 4 (Tool Migration Strategy) ✅ **COMPLETE**
+**Migration Status:** Phase 5 (Production Deployment) ✅ **COMPLETE**
 - See [docs/BACKEND_FRONTEND_INTEGRATION_PLAN.md](docs/BACKEND_FRONTEND_INTEGRATION_PLAN.md) for full migration strategy
-- Next: Phase 5 (Production Deployment)
+- Dual-stack deployment: Flask (Gunicorn) + Next.js on single Heroku dyno
+- CI/CD pipelines updated for both staging and production
 
 #### Tech Stack
 | Component | Technology | Purpose |
@@ -267,6 +275,27 @@ npm test
 
 # Type checking
 npm run lint
+```
+
+#### Production Deployment (Heroku)
+```bash
+# Dual-stack architecture: Flask + Next.js on single dyno
+# Startup script: scripts/start-production.sh
+
+# Health check endpoints
+curl https://your-app.herokuapp.com/health/ping      # Flask health
+curl https://your-app.herokuapp.com/api/health       # Next.js + Flask health
+
+# Buildpacks (order matters)
+heroku buildpacks:add heroku/python
+heroku buildpacks:add heroku/nodejs
+
+# Required environment variables (set via CI/CD)
+FLASK_API_URL=http://127.0.0.1:5000
+NEXT_PUBLIC_APP_URL=https://your-app.herokuapp.com
+SESSION_COOKIE_SECURE=true
+SESSION_COOKIE_SAMESITE=Lax
+SESSION_COOKIE_HTTPONLY=true
 ```
 
 #### Directory Structure

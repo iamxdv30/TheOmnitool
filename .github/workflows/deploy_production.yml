@@ -75,6 +75,24 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      # Frontend Setup
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm run build
+
       - name: Install Heroku CLI
         run: |
           curl https://cli-assets.heroku.com/install.sh | sh
@@ -131,6 +149,16 @@ jobs:
       - name: Add Heroku Remote
         run: heroku git:remote -a omnitool-by-xdv
 
+      - name: Configure Heroku Buildpacks
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          echo "Configuring buildpacks for dual-stack deployment..."
+          heroku buildpacks:clear -a omnitool-by-xdv || true
+          heroku buildpacks:add heroku/python -a omnitool-by-xdv
+          heroku buildpacks:add heroku/nodejs -a omnitool-by-xdv
+          echo "Buildpacks configured: python + nodejs"
+
       # Export tested tool_access from staging (not from dev!)
       # This ensures we deploy what was actually tested in staging
       - name: Export Staging Tool Access (Tested State)
@@ -173,6 +201,7 @@ jobs:
         run: |
           echo "Updating production environment variables..."
 
+          # Flask configuration
           heroku config:set FLASK_APP="main.py" -a omnitool-by-xdv
           heroku config:set FLASK_ENV="production" -a omnitool-by-xdv
           heroku config:set IS_LOCAL="false" -a omnitool-by-xdv
@@ -184,6 +213,16 @@ jobs:
           heroku config:set SESSION_TYPE="filesystem" -a omnitool-by-xdv
           heroku config:set RECAPTCHA_SITE_KEY="${{ secrets.RECAPTCHA_SITE_KEY }}" -a omnitool-by-xdv
           heroku config:set RECAPTCHA_SECRET_KEY="${{ secrets.RECAPTCHA_SECRET_KEY }}" -a omnitool-by-xdv
+
+          # Frontend integration configuration
+          heroku config:set FLASK_API_URL="http://127.0.0.1:5000" -a omnitool-by-xdv
+          heroku config:set NEXT_PUBLIC_APP_URL="https://omnitool-by-xdv-85a1bde25ad1.herokuapp.com" -a omnitool-by-xdv
+
+          # Session cookie settings (CRITICAL for production security)
+          heroku config:set SESSION_COOKIE_SECURE="true" -a omnitool-by-xdv
+          heroku config:set SESSION_COOKIE_SAMESITE="Lax" -a omnitool-by-xdv
+          heroku config:set SESSION_COOKIE_HTTPONLY="true" -a omnitool-by-xdv
+
           echo "✅ Environment variables updated"
 
       # Run database migrations
@@ -250,6 +289,43 @@ jobs:
           echo "✅ Verification passed"
           echo "=========================================="
 
+      # Verify dual-stack health before running full smoke tests
+      - name: Verify Dual-Stack Health
+        env:
+          PRODUCTION_URL: https://omnitool-by-xdv-85a1bde25ad1.herokuapp.com
+        run: |
+          echo "=========================================="
+          echo "🔍 VERIFYING DUAL-STACK HEALTH"
+          echo "=========================================="
+
+          MAX_RETRIES=30
+          RETRY_COUNT=0
+
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            # Check Flask health
+            FLASK_STATUS=$(curl -s -o /dev/null -w "%{http_code}" $PRODUCTION_URL/health/ping || echo "000")
+
+            # Check Next.js health
+            NEXTJS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" $PRODUCTION_URL/api/health || echo "000")
+
+            if [ "$FLASK_STATUS" = "200" ] && [ "$NEXTJS_STATUS" = "200" ]; then
+              echo "✅ Both Flask and Next.js are healthy"
+              break
+            fi
+
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            echo "Attempt $RETRY_COUNT/$MAX_RETRIES - Flask: $FLASK_STATUS, Next.js: $NEXTJS_STATUS"
+            sleep 5
+          done
+
+          if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
+            echo "❌ Services failed to become healthy within timeout"
+            echo "Check production logs: heroku logs --tail -a omnitool-by-xdv"
+            exit 1
+          fi
+
+          echo "=========================================="
+
       # Run smoke tests on production
       - name: Run Production Smoke Tests
         env:
@@ -259,6 +335,29 @@ jobs:
           echo "🧪 RUNNING PRODUCTION SMOKE TESTS"
           echo "=========================================="
 
+          # Flask health check
+          curl -f $PRODUCTION_URL/health/ping || {
+            echo "❌ Flask health check failed"
+            exit 1
+          }
+          echo "✅ Flask is healthy"
+
+          # Next.js health check
+          curl -f $PRODUCTION_URL/api/health || {
+            echo "❌ Next.js health check failed"
+            exit 1
+          }
+          echo "✅ Next.js is healthy"
+
+          # Frontend page loads
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" $PRODUCTION_URL/login)
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "❌ Frontend login page failed to load (HTTP $HTTP_STATUS)"
+            exit 1
+          fi
+          echo "✅ Frontend pages loading"
+
+          # Run Python smoke tests
           python tests/smoke_tests.py --url $PRODUCTION_URL || {
             echo "❌ SMOKE TESTS FAILED"
             echo "⚠️  Production deployment may have issues"
@@ -266,7 +365,7 @@ jobs:
             exit 1
           }
 
-          echo "✅ Smoke tests passed"
+          echo "✅ All smoke tests passed"
           echo "=========================================="
 
       # Cleanup old backups (keep last 10)
