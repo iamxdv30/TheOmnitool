@@ -22,7 +22,7 @@ This file provides context and guidance for Gemini when working with the "MyTool
 - **Styling:** CSS (in `static/css`)
 - **Scripting:** Vanilla JS / jQuery (in `static/js`)
 
-### Frontend (Modern / In-Progress)
+### Frontend (Modern / Production Ready)
 - **Location:** `frontend/` directory
 - **Framework:** Next.js 16 (App Router)
 - **Library:** React 19
@@ -31,7 +31,8 @@ This file provides context and guidance for Gemini when working with the "MyTool
 - **Styling:** Tailwind CSS v4
 - **3D Engine:** React Three Fiber (R3F) + Drei + Rapier (Physics)
 - **Testing:** Jest + React Testing Library (31 tests passing)
-- **Migration Status:** Phase 3 Complete ✅ (Auth & State Management)
+- **Migration Status:** Phase 5 Complete ✅ (Production Deployment)
+- **Deployment:** Dual-stack on single Heroku dyno (Flask + Next.js)
 
 ### Database
 - **Local:** SQLite (`users.db`)
@@ -41,15 +42,26 @@ This file provides context and guidance for Gemini when working with the "MyTool
 ## Critical Workflows
 
 ### 1. Running the Application
-*   **Backend (Flask):**
+*   **Backend (Flask only):**
     ```bash
-    # Standard entry
     python main.py
     ```
-*   **Frontend (Next.js):**
+*   **Frontend (Next.js dev):**
     ```bash
     cd frontend
     npm run dev
+    ```
+*   **Full Stack (Local Development):**
+    ```bash
+    # Terminal 1: Flask backend
+    python main.py
+
+    # Terminal 2: Next.js frontend
+    cd frontend && npm run dev
+    ```
+*   **Production (Heroku - dual-stack):**
+    ```bash
+    ./scripts/start-production.sh
     ```
 
 ### 2. Database Management
@@ -91,8 +103,10 @@ This file provides context and guidance for Gemini when working with the "MyTool
     *   `lib/api/client.ts` - Base fetch wrapper with interceptors
     *   `lib/api/auth.ts` - Auth endpoint wrappers
     *   `lib/api/csrf.ts` - CSRF token management with caching
+    *   `lib/api/tools.ts` - Tools API client (tax calc, email templates)
 *   **Route Protection:** `middleware.ts` validates session cookies server-side
 *   **Session Polling:** `useSessionPolling.ts` checks auth status every 5 minutes
+*   **Health Endpoint:** `src/app/api/health/route.ts` - Checks Flask + Next.js status
 
 ## Development Conventions
 
@@ -113,19 +127,54 @@ This file provides context and guidance for Gemini when working with the "MyTool
 *   `routes/tool_routes.py`: Legacy HTML routes for tools.
 *   `Tools/tax_calculator.py`: Core math logic for US, Canada, and VAT calculations.
 *   `utils/db_safety.py`: Database validation and backup logic.
-*   `.github/workflows/`: CI/CD pipelines for production and staging.
+*   `.github/workflows/`: CI/CD pipelines for production and staging (dual-stack deployment).
+*   `scripts/start-production.sh`: Dual-process startup script (Flask + Next.js).
 
 ### Frontend (Next.js)
 *   `frontend/src/app/(public)/page.tsx`: Landing page.
 *   `frontend/src/app/(auth)/login/page.tsx`: Login page with query param handling.
 *   `frontend/src/app/(dashboard)/layout.tsx`: Dashboard layout with collapsible sidebar.
+*   `frontend/src/app/api/health/route.ts`: Health check endpoint (Flask + Next.js status).
 *   `frontend/src/middleware.ts`: Route protection (session validation).
 *   `frontend/src/store/authStore.ts`: Authentication state management.
 *   `frontend/src/store/uiStore.ts`: UI state (toasts, modals, sidebar).
 *   `frontend/src/lib/api/client.ts`: API client with CSRF and interceptors.
+*   `frontend/src/lib/api/tools.ts`: Tools API client (tax calc, email templates).
 *   `frontend/src/__tests__/`: Jest unit tests (31 passing).
 
 ### Documentation
-*   `docs/BACKEND_FRONTEND_INTEGRATION_PLAN.md`: Migration strategy (Phase 3 complete)
+*   `docs/BACKEND_FRONTEND_INTEGRATION_PLAN.md`: Migration strategy (Phase 5 complete)
 *   `CLAUDE.md`: Context for Claude Code AI agent.
 *   `Gemini.md`: Context for Gemini AI agent (this file).
+
+## Production Deployment (Heroku)
+
+### Dual-Stack Architecture
+The application runs Flask (Gunicorn) and Next.js on a single Heroku dyno:
+- **Flask:** Background process on port 5000 (internal)
+- **Next.js:** Foreground process on `$PORT` (Heroku-assigned)
+- **Proxy:** Next.js rewrites `/api/*` to Flask backend
+
+### Health Check Endpoints
+```bash
+# Flask health
+curl https://your-app.herokuapp.com/health/ping
+
+# Next.js + Flask combined health
+curl https://your-app.herokuapp.com/api/health
+```
+
+### Buildpacks (Order Matters)
+```bash
+heroku buildpacks:add heroku/python   # First
+heroku buildpacks:add heroku/nodejs   # Second
+```
+
+### Required Environment Variables
+```bash
+FLASK_API_URL=http://127.0.0.1:5000
+NEXT_PUBLIC_APP_URL=https://your-app.herokuapp.com
+SESSION_COOKIE_SECURE=true
+SESSION_COOKIE_SAMESITE=Lax
+SESSION_COOKIE_HTTPONLY=true
+```
