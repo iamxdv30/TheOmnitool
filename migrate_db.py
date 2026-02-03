@@ -61,9 +61,10 @@ def run_migrations():
             logger.info(f"Target Database: {masked_url}")
             logger.info(f"Database Type: {'SQLite' if is_sqlite else 'PostgreSQL'}")
 
-            # SAFETY: Create backup before migration (SQLite only)
+            # SAFETY: Create backup before migration
             if is_sqlite and DatabaseSafety.database_exists():
-                logger.info("[SAFETY] Creating pre-migration backup...")
+                # SQLite: Binary backup
+                logger.info("[SAFETY] Creating pre-migration backup (SQLite binary)...")
                 success, result = DatabaseSafety.create_backup(backup_reason="pre_migration")
 
                 if success:
@@ -71,6 +72,18 @@ def run_migrations():
                 else:
                     logger.warning(f"⚠ Backup failed: {result}")
                     logger.warning("Proceeding with migration anyway (backup recommended but not required)")
+            elif not is_sqlite:
+                # PostgreSQL: JSON backup
+                logger.info("[SAFETY] Creating pre-migration backup (JSON export)...")
+                try:
+                    success, result = DatabaseSafety.create_json_backup(backup_reason="pre_migration")
+                    if success:
+                        logger.info(f"✓ JSON backup created: {result}")
+                    else:
+                        logger.warning(f"⚠ JSON backup failed: {result}")
+                except Exception as e:
+                    logger.warning(f"⚠ JSON backup failed: {e}")
+                    logger.warning("Proceeding with migration anyway")
 
             # SAFETY: Check database state before migration
             logger.info("[SAFETY] Checking database health...")

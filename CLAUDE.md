@@ -24,6 +24,48 @@ cd frontend && npm run dev
 ./scripts/start-production.sh
 ```
 
+### Docker PostgreSQL (Recommended for Local Development)
+
+Using Docker PostgreSQL ensures database parity across dev/staging/production, eliminating migration issues caused by SQLite/PostgreSQL behavioral differences.
+
+```bash
+# Start PostgreSQL container
+.\scripts\docker-db.ps1 start   # Windows
+./scripts/docker-db.sh start    # Linux/Mac
+
+# Stop container (preserves data)
+.\scripts\docker-db.ps1 stop
+
+# Reset database (WARNING: destroys all data)
+.\scripts\docker-db.ps1 reset
+
+# Access PostgreSQL shell
+.\scripts\docker-db.ps1 shell
+
+# Check status
+.\scripts\docker-db.ps1 status
+```
+
+**Environment Configuration (`.env`):**
+```bash
+USE_DOCKER_DB=true
+DATABASE_URL='postgresql://omnitool:omnitool_dev@localhost:5432/omnitool_dev'
+```
+
+**First-Time Setup:**
+```bash
+# 1. Start Docker PostgreSQL
+.\scripts\docker-db.ps1 start
+
+# 2. Run migrations to create schema
+python migrate_db.py
+
+# 3. (Optional) Migrate existing SQLite data
+python scripts/migrate_sqlite_to_postgres.py --export    # Export from SQLite
+python scripts/migrate_sqlite_to_postgres.py --import    # Import to PostgreSQL
+python scripts/migrate_sqlite_to_postgres.py --verify    # Verify migration
+```
+
 ### Database Management
 ```bash
 # Run database migrations (WITH AUTOMATIC BACKUP)
@@ -40,20 +82,37 @@ curl http://localhost:5000/health
 
 # Initialize tools in database
 python tool_management.py
+
+# Export all data to JSON (works with both SQLite and PostgreSQL)
+python scripts/export_all_data.py --output data/backups/my_backup.json
+
+# Import data from JSON backup
+python scripts/import_all_data.py --source data/backups/my_backup.json
 ```
 
 ### Database Safety Features 🛡️
 
 **Automatic Protection:**
-- ✅ Pre-migration backups (automatic)
+- ✅ Pre-migration backups (automatic - SQLite binary or JSON for PostgreSQL)
 - ✅ Schema validation on startup
 - ✅ Health check endpoints
 - ✅ Recovery utilities
+- ✅ Database parity (Docker PostgreSQL matches staging/production)
 
 **Backup Locations:**
-- Primary: `zzDumpfiles/SQLite Database Backup/users.db`
+- **JSON Backups (recommended):** `data/backups/*.json`
+- SQLite Binary: `zzDumpfiles/SQLite Database Backup/users.db`
 - Pre-migration: `zzDumpfiles/SQLite Database Backup/users.db.backup_pre_migration_*`
-- Pre-restore: `instance/users.db.before_restore_*`
+
+**Comprehensive Backup/Restore:**
+```bash
+# Export ALL tables to JSON (works with SQLite and PostgreSQL)
+python scripts/export_all_data.py --output data/backups/my_backup.json
+
+# Import from JSON backup (dry-run first)
+python scripts/import_all_data.py --source data/backups/my_backup.json --dry-run
+python scripts/import_all_data.py --source data/backups/my_backup.json
+```
 
 **Health Check Endpoints:**
 ```bash

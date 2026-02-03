@@ -35,9 +35,15 @@ This file provides context and guidance for Gemini when working with the "MyTool
 - **Deployment:** Dual-stack on single Heroku dyno (Flask + Next.js)
 
 ### Database
-- **Local:** SQLite (`users.db`)
-- **Production:** PostgreSQL (Heroku)
-- **Safety:** Built-in automatic backup before migrations via `utils/db_safety.py`.
+- **Local (Recommended):** Docker PostgreSQL (`docker-compose up -d postgres`)
+  - Provides database parity with staging/production
+  - Connection: `postgresql://omnitool:omnitool_dev@localhost:5432/omnitool_dev`
+  - Enable with: `USE_DOCKER_DB=true` in `.env`
+- **Local (Fallback):** SQLite (`users.db`) - Not recommended due to migration issues
+- **Staging/Production:** PostgreSQL (Heroku)
+- **Tests:** In-memory SQLite (fast, isolated)
+- **Safety:** Automatic backups via `utils/db_safety.py` (SQLite binary or JSON for PostgreSQL)
+- **Backup Scripts:** `scripts/export_all_data.py` and `scripts/import_all_data.py`
 
 ## Critical Workflows
 

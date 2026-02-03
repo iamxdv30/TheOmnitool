@@ -13,11 +13,11 @@ This document outlines the comprehensive strategy for integrating the existing F
   [X]  5. [Phase 4: Tool Migration Strategy](#5-phase-4-tool-migration-strategy) ✅ **COMPLETE**
   [X]  6. [Phase 5: Production Deployment](#6-phase-5-production-deployment-heroku) ✅ **COMPLETE**
   [X]  7. [Security Configuration](#7-security-configuration) ✅ **COMPLETE**
-  []  8. [Testing Strategy](#8-testing-strategy)
+  [X]  8. [Testing Strategy](#8-testing-strategy) ✅ **COMPLETE**
   [X]  9. [Implementation Checklist](#9-implementation-checklist) ✅ **COMPLETE**
   [X]  10. [CI/CD Workflow Updates](#10-cicd-workflow-updates) ✅ **COMPLETE**
-  []  11. [Migration Risks & Mitigations](#11-migration-risks--mitigations)
-  []  12. [Success Criteria](#12-success-criteria)
+  [X]  11. [Migration Risks & Mitigations](#11-migration-risks--mitigations) ✅ **COMPLETE**
+  [X]  12. [Success Criteria](#12-success-criteria) ✅ **COMPLETE**
 
 ---
 
@@ -1139,6 +1139,10 @@ heroku rollback -a omnitool-by-xdv
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
+| **SQLite/PostgreSQL behavior differences** | Migrations work locally but fail in staging/production | **SOLVED**: Use Docker PostgreSQL locally (`USE_DOCKER_DB=true`) |
+| **Dev database wiped after deployment** | Loss of test data, restore overhead | Use `scripts/export_all_data.py` before push; import after |
+| **Docker not installed locally** | Cannot start local PostgreSQL | Provide SQLite fallback (`USE_DOCKER_DB=false`) with warning |
+| **Docker PostgreSQL data loss on reset** | Dev data destroyed | Always run `export_all_data.py` before `docker-db reset` |
 | Session cookie not shared between Flask/Next.js | Auth breaks | Use same domain, test cookie flow in staging first |
 | CSRF token mismatch | All POST requests fail | Implement token refresh on 403 |
 | Flask process dies in single dyno | API unavailable | Health check loop, auto-restart in startup script |
@@ -1151,16 +1155,41 @@ heroku rollback -a omnitool-by-xdv
 | Frontend routes conflict with Flask | 404 errors | Use `/api/*` prefix for all Flask routes |
 | Legacy users bookmarked old URLs | Broken links | Add Next.js redirects for legacy routes |
 
+### 11.1 Database Environment Parity
+
+**Problem Solved**: SQLite (dev) and PostgreSQL (staging/prod) have different behaviors, causing migrations to work locally but fail in production.
+
+**Solution**: Docker PostgreSQL for local development provides database parity across all environments.
+
+```bash
+# Start Docker PostgreSQL
+.\scripts\docker-db.ps1 start   # Windows
+./scripts/docker-db.sh start    # Linux/Mac
+
+# Application automatically uses PostgreSQL when USE_DOCKER_DB=true
+```
+
+**Backup Workflow**:
+```bash
+# Before any risky operation
+python scripts/export_all_data.py --output data/backups/my_backup.json
+
+# After Docker reset or migration issue
+python scripts/import_all_data.py --source data/backups/my_backup.json
+```
+
 ---
 
 ## 12. Success Criteria
 
 Before considering each phase complete:
 
-**Phase 1-2 (Backend):**
-- [ ] All API endpoints return proper JSON envelope
-- [ ] Existing HTML routes still work (backward compatibility)
+**Phase 1-2 (Backend):** ✅ **CORE COMPLETE**
+- [x] All API endpoints return proper JSON envelope
+- [x] Existing HTML routes still work (backward compatibility)
 - [ ] API tests pass with 90%+ coverage on services
+- [ ] Rate limiting (future feature - requires payment integration)
+- [ ] Admin API (`routes/api/admin_api.py`) (future feature)
 
 **Phase 3 (Frontend Auth):** ✅ **COMPLETE**
 - [x] User can register, verify email, login, logout
@@ -1181,4 +1210,6 @@ Before considering each phase complete:
 - [x] Single dyno starts both Flask and Next.js (`scripts/start-production.sh`)
 - [x] Health check endpoints created (`/health/ping`, `/api/health`)
 - [x] CI/CD pipelines updated for dual-stack deployment
-- [ ] Response times acceptable (< 500ms P95) - pending first deployment verification
+- [x] Docker PostgreSQL for local development (database parity)
+- [x] Comprehensive backup/restore scripts (`export_all_data.py`, `import_all_data.py`)
+- [ ] Response times acceptable (< 500ms P95) - pending production load testing
