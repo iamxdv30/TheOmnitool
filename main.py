@@ -147,16 +147,26 @@ def create_app():
     logging.info(f"Using secret key: {app.config['SECRET_KEY']}")
 
     # Database configuration
-    if is_local:
-        # Local development: Use SQLite
+    # USE_DOCKER_DB=true enables Docker PostgreSQL for local development
+    # This provides database parity across dev/staging/production
+    use_docker_db = os.getenv('USE_DOCKER_DB', 'false').lower() == 'true'
+
+    if is_local and not use_docker_db:
+        # Local development with SQLite (fallback, not recommended)
         database_url = 'sqlite:///users.db'
         logging.info(f"Using local SQLite database: {database_url}")
+        logging.warning("SQLite may cause migration issues. Consider USE_DOCKER_DB=true for PostgreSQL.")
     else:
-        # Production/Staging: Use DATABASE_URL from Heroku
+        # Production, Staging, OR Local Docker PostgreSQL
         database_url = os.getenv('DATABASE_URL', '')
 
         if not database_url:
-            raise ValueError("DATABASE_URL environment variable not set in production!")
+            if is_local and use_docker_db:
+                # Default Docker PostgreSQL URL for local development
+                database_url = 'postgresql://omnitool:omnitool_dev@localhost:5432/omnitool_dev'
+                logging.info("Using Docker PostgreSQL (default connection)")
+            else:
+                raise ValueError("DATABASE_URL environment variable not set in production!")
 
         # Replace deprecated PostgreSQL connection string format
         if database_url.startswith("postgres://"):

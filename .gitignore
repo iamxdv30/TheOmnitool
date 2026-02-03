@@ -15,9 +15,10 @@ app.log
 
 # Environment and Secrets
 .env
-.env.*
 .env.backup
 .envbackup
+# Keep .env.example for developer reference
+!.env.example
 
 # Database
 *.db
@@ -26,8 +27,10 @@ app.log
 logs/
 logs
 
-# Data and Backups
-data/backups/
+# Data and Backups (content is gitignored, but keep directory structure)
+data/backups/*
+!data/backups/.gitignore
+!data/backups/.gitkeep
 
 # Documentation
 docs/FRONTEND_MIGRATION_PLAN.md

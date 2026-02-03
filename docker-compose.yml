@@ -1,0 +1,56 @@
+version: '3.8'
+
+# Docker Compose configuration for local development
+# Usage:
+#   Start:  docker-compose up -d postgres
+#   Stop:   docker-compose stop postgres
+#   Reset:  docker-compose down -v postgres && docker-compose up -d postgres
+#   Logs:   docker-compose logs -f postgres
+#   Shell:  docker exec -it omnitool-postgres psql -U omnitool -d omnitool_dev
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: omnitool-postgres
+    environment:
+      POSTGRES_USER: omnitool
+      POSTGRES_PASSWORD: omnitool_dev
+      POSTGRES_DB: omnitool_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U omnitool -d omnitool_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Optional: pgAdmin web interface for database management
+  # Access at http://localhost:5050
+  # Login: admin@omnitool.local / admin
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: omnitool-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@omnitool.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles:
+      - tools  # Only starts with: docker-compose --profile tools up -d
+
+volumes:
+  postgres_data:
+    name: omnitool-postgres-data
+  pgadmin_data:
+    name: omnitool-pgadmin-data
