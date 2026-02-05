@@ -23,6 +23,26 @@
 
 ### 1️⃣ **Development (Local)**
 
+**Prerequisites (First-Time Setup)**:
+```bash
+# 1. Install PostgreSQL adapter
+pip install psycopg2-binary
+
+# 2. Start Docker PostgreSQL
+.\scripts\docker-db.ps1 start   # Windows
+./scripts/docker-db.sh start    # Linux/Mac
+
+# 3. Verify .env has USE_DOCKER_DB=true
+# DATABASE_URL='postgresql://omnitool:omnitool_dev@localhost:5432/omnitool_dev'
+
+# 4. Create schema and migrate data (first time only)
+python migrate_db.py
+python scripts/migrate_sqlite_to_postgres.py --export   # If migrating from SQLite
+python scripts/migrate_sqlite_to_postgres.py --import
+python scripts/migrate_sqlite_to_postgres.py --verify
+```
+
+**Daily Development Workflow**:
 ```bash
 # Add tool to sync_tools.py DEFINED_TOOLS
 # Grant access via admin UI (e.g., all users EXCEPT user_a)

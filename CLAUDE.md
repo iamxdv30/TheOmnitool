@@ -150,6 +150,38 @@ curl http://localhost:5000/health/database
    - Restore from backup if needed
    - Fix migration issue and try again
 
+5. **"No module named 'psycopg2'" error:**
+   ```bash
+   pip install psycopg2-binary
+   ```
+   - This package is required for PostgreSQL connections
+   - Already in requirements.txt as `psycopg2-binary==2.9.11`
+
+6. **Malformed DATABASE_URL (e.g., "172530@localhost"):**
+   - **Cause:** System environment variables overriding `.env` file
+   - **Check:** `python -c "import os; print(os.environ.get('DATABASE_URL', 'NOT SET'))"`
+   - **Fix:**
+     1. Delete `DATABASE_URL` from Windows System Environment Variables:
+        - Press `Win + R`, type `sysdm.cpl`, press Enter
+        - Advanced tab → Environment Variables
+        - Delete `DATABASE_URL` and `DATABASE_URL_LOCAL` from User variables
+     2. **Restart VSCode completely** (not just terminal)
+     3. Verify: `echo $DATABASE_URL` should be empty
+   - **Workaround:** `export DATABASE_URL='postgresql://omnitool:omnitool_dev@localhost:5432/omnitool_dev'`
+
+7. **Docker PostgreSQL not accessible:**
+   ```bash
+   # Check container status
+   docker ps --filter "name=omnitool-postgres"
+
+   # Start if not running
+   .\scripts\docker-db.ps1 start   # Windows
+   ./scripts/docker-db.sh start    # Linux/Mac
+
+   # Verify connection
+   docker exec omnitool-postgres pg_isready -U omnitool -d omnitool_dev
+   ```
+
 ### Testing
 
 #### Backend Tests (pytest)

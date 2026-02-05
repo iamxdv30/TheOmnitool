@@ -39,11 +39,14 @@ This file provides context and guidance for Gemini when working with the "MyTool
   - Provides database parity with staging/production
   - Connection: `postgresql://omnitool:omnitool_dev@localhost:5432/omnitool_dev`
   - Enable with: `USE_DOCKER_DB=true` in `.env`
+  - **CRITICAL:** Never set `DATABASE_URL` as system environment variable (overrides `.env`)
+  - **Dependency:** Requires `psycopg2-binary==2.9.11` (installed via `pip install psycopg2-binary`)
 - **Local (Fallback):** SQLite (`users.db`) - Not recommended due to migration issues
 - **Staging/Production:** PostgreSQL (Heroku)
 - **Tests:** In-memory SQLite (fast, isolated)
 - **Safety:** Automatic backups via `utils/db_safety.py` (SQLite binary or JSON for PostgreSQL)
 - **Backup Scripts:** `scripts/export_all_data.py` and `scripts/import_all_data.py`
+- **Migration Script:** `scripts/migrate_sqlite_to_postgres.py` (one-time SQLite → PostgreSQL migration)
 
 ## Critical Workflows
 
@@ -72,10 +75,36 @@ This file provides context and guidance for Gemini when working with the "MyTool
 
 ### 2. Database Management
 **CRITICAL:** This project emphasizes database safety. Backups are automatic.
+
+**Docker PostgreSQL Setup (First-Time)**:
+```bash
+# 1. Install PostgreSQL adapter
+pip install psycopg2-binary
+
+# 2. Start Docker PostgreSQL container
+.\scripts\docker-db.ps1 start   # Windows
+./scripts/docker-db.sh start    # Linux/Mac
+
+# 3. Verify .env configuration
+# USE_DOCKER_DB=true
+# DATABASE_URL='postgresql://omnitool:omnitool_dev@localhost:5432/omnitool_dev'
+
+# 4. Create schema (empty tables)
+python migrate_db.py
+
+# 5. (Optional) Migrate existing SQLite data
+python scripts/migrate_sqlite_to_postgres.py --export
+python scripts/migrate_sqlite_to_postgres.py --import
+python scripts/migrate_sqlite_to_postgres.py --verify
+```
+
+**Daily Database Operations**:
 *   **Apply Migrations:** `flask db upgrade`
 *   **Create Migration:** `flask db migrate -m "message"`
 *   **Safe Migration Wrapper (Recommended):** `python migrate_db.py` (Performs backup -> migrate -> upgrade)
 *   **Restore Backup:** `python restore_backup.py`
+*   **Export Data (JSON):** `python scripts/export_all_data.py --output data/backups/backup.json`
+*   **Import Data (JSON):** `python scripts/import_all_data.py --source data/backups/backup.json`
 
 ### 3. Testing
 *   **Backend Tests:** `pytest` (from root directory)
@@ -150,8 +179,98 @@ This file provides context and guidance for Gemini when working with the "MyTool
 
 ### Documentation
 *   `docs/BACKEND_FRONTEND_INTEGRATION_PLAN.md`: Migration strategy (Phase 5 complete)
+*   `docs/DATABASE_SAFETY.md`: Database safety system and troubleshooting
+*   `docs/DEVELOPMENT_WORKFLOW.md`: Complete dev → staging → production pipeline
+*   `docs/QUICK_START.md`: Quick reference for daily workflows
 *   `CLAUDE.md`: Context for Claude Code AI agent.
 *   `Gemini.md`: Context for Gemini AI agent (this file).
+*   `MEMORY.md`: Development learnings and common issues.
+
+## Common Issues & Troubleshooting
+
+### Issue 1: "No module named 'psycopg2'"
+**Symptom:** Migration fails with `ModuleNotFoundError: No module named 'psycopg2'`
+
+**Cause:** PostgreSQL adapter not installed.
+
+**Solution:**
+```bash
+pip install psycopg2-binary
+```
+
+**Note:** This package is already in `requirements.txt` as `psycopg2-binary==2.9.11`.
+
+---
+
+### Issue 2: Malformed DATABASE_URL (e.g., "172530@localhost")
+**Symptom:**
+- Error: `could not translate host name "172530@localhost" to address`
+- Connection string shows: `postgresql://postgres:iamxdv@172530@localhost/omnitool`
+- Expected format: `postgresql://omnitool:omnitool_dev@localhost:5432/omnitool_dev`
+
+**Cause:** System environment variables overriding `.env` file.
+
+**Diagnosis:**
+```bash
+python -c "import os; print(os.environ.get('DATABASE_URL', 'NOT SET'))"
+```
+
+**Solution:**
+1. Press `Win + R`, type `sysdm.cpl`, press Enter
+2. Advanced tab → Environment Variables
+3. Delete `DATABASE_URL` and `DATABASE_URL_LOCAL` from User variables
+4. **Restart VSCode completely** (restarting terminal is NOT enough)
+5. Verify: `echo $DATABASE_URL` should be empty
+
+**Temporary Workaround:**
+```bash
+export DATABASE_URL='postgresql://omnitool:omnitool_dev@localhost:5432/omnitool_dev'
+python migrate_db.py
+```
+
+**Root Cause:** Python's `python-dotenv` library doesn't override existing environment variables. System environment variables always take precedence over `.env` file.
+
+---
+
+### Issue 3: Docker PostgreSQL Not Accessible
+**Symptom:** `could not connect to server` or `Connection refused`
+
+**Diagnosis:**
+```bash
+# Check container status
+docker ps --filter "name=omnitool-postgres"
+
+# Verify PostgreSQL is ready
+docker exec omnitool-postgres pg_isready -U omnitool -d omnitool_dev
+```
+
+**Solutions:**
+```bash
+# Start container if not running
+.\scripts\docker-db.ps1 start   # Windows
+./scripts/docker-db.sh start    # Linux/Mac
+
+# Check logs
+docker logs omnitool-postgres
+
+# Reset if corrupted (WARNING: destroys data)
+.\scripts\docker-db.ps1 reset
+python migrate_db.py
+```
+
+---
+
+### Issue 4: "Schema invalid - missing tables"
+**Symptom:** Application warns about missing database tables on startup.
+
+**Solution:**
+```bash
+python migrate_db.py
+```
+
+This creates all required tables via Alembic migrations.
+
+---
 
 ## Production Deployment (Heroku)
 
