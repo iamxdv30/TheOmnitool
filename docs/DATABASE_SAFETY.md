@@ -279,9 +279,81 @@ cp instance/users.db zzDumpfiles/SQLite\ Database\ Backup/users.db.manual_$(date
 2. **Pre-migration backups**: `zzDumpfiles/SQLite Database Backup/users.db.backup_pre_migration_*`
 3. **Pre-restore backups**: `instance/users.db.before_restore_*`
 
+## PostgreSQL Migration (Docker)
+
+### Why Docker PostgreSQL?
+- ✅ **Database parity**: Dev/staging/production all use PostgreSQL
+- ✅ **No migration issues**: SQLite → PostgreSQL differences eliminated
+- ✅ **Isolated environment**: Won't conflict with system PostgreSQL
+- ✅ **Easy reset**: `docker-db.ps1 reset` destroys and recreates
+
+### First-Time Setup
+```bash
+# 1. Install psycopg2-binary (PostgreSQL adapter)
+pip install psycopg2-binary
+
+# 2. Start Docker PostgreSQL
+.\scripts\docker-db.ps1 start   # Windows
+./scripts/docker-db.sh start    # Linux/Mac
+
+# 3. Create schema (empty tables)
+python migrate_db.py
+
+# 4. (Optional) Migrate existing SQLite data
+python scripts/migrate_sqlite_to_postgres.py --export
+python scripts/migrate_sqlite_to_postgres.py --import
+python scripts/migrate_sqlite_to_postgres.py --verify
+```
+
+### Environment Configuration
+**`.env` file:**
+```bash
+USE_DOCKER_DB=true
+DATABASE_URL='postgresql://omnitool:omnitool_dev@localhost:5432/omnitool_dev'
+```
+
+⚠️ **CRITICAL**: Do NOT set `DATABASE_URL` as a system environment variable!
+- System env vars override `.env` file
+- This causes malformed connection strings
+- Restarting terminal won't fix it - must restart entire IDE
+
+### Backup Strategy (PostgreSQL)
+- **JSON exports**: `python scripts/export_all_data.py --output data/backups/my_backup.json`
+- **Pre-migration**: Automatic JSON backup before every migration
+- **Import from JSON**: `python scripts/import_all_data.py --source data/backups/my_backup.json`
+
 ## Troubleshooting Guide
 
-### Problem: "Database file does not exist"
+### Problem: "No module named 'psycopg2'"
+**Cause:** PostgreSQL adapter not installed
+
+**Solution:**
+```bash
+pip install psycopg2-binary
+```
+
+### Problem: "could not translate host name '172530@localhost'"
+**Cause:** System environment variable overriding `.env` file
+
+**Diagnosis:**
+```bash
+python -c "import os; print(os.environ.get('DATABASE_URL', 'NOT SET'))"
+```
+
+**Solution:**
+1. Press `Win + R`, type `sysdm.cpl`, press Enter
+2. Advanced tab → Environment Variables
+3. Delete `DATABASE_URL` and `DATABASE_URL_LOCAL` from User variables
+4. **Restart VSCode completely** (not just terminal)
+5. Verify: `echo $DATABASE_URL` should be empty
+
+**Temporary workaround:**
+```bash
+export DATABASE_URL='postgresql://omnitool:omnitool_dev@localhost:5432/omnitool_dev'
+python migrate_db.py
+```
+
+### Problem: "Database file does not exist" (SQLite)
 **Solution:**
 ```bash
 python migrate_db.py
