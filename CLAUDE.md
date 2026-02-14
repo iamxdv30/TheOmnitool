@@ -88,6 +88,9 @@ python scripts/export_all_data.py --output data/backups/my_backup.json
 
 # Import data from JSON backup
 python scripts/import_all_data.py --source data/backups/my_backup.json
+
+# Seed dashboard Phase 1 data (categories, plans, billing cycles, providers, Pro subscriptions)
+python scripts/seed_phase1_dashboard_data.py
 ```
 
 ### Database Safety Features 🛡️
@@ -273,11 +276,19 @@ Located in `model/` directory with the following structure:
   - `SuperAdmin` - Extends Admin with full system control
   - Role differentiation via `role` column and `polymorphic_identity`
 
-- **`tools.py`**: Tool management and access control
-  - `Tool` - Available tools registry
+- **`tools.py`**: Tool management, access control, categories, and favorites
+  - `Tool` - Available tools registry (with `icon`, `display_name`, `category_id`, `is_paid`, `required_plan_id`)
   - `ToolAccess` - Junction table for user-tool permissions
+  - `ToolCategory` - Admin-manageable categories (Finance, Dev, Writing, Marketing)
+  - `ToolFavorite` - User-tool favorites with unique constraint
   - `UsageLog` - Tracks tool usage per user
   - `EmailTemplate` - User-specific email templates
+
+- **`subscription.py`**: Subscription and payment models (provider-agnostic)
+  - `SubscriptionPlan` - Plan definitions (Free/Basic/Pro) with tier levels
+  - `UserSubscription` - User-plan assignments with status, billing cycle, expiry
+  - `BillingCycle` - Billing periods (monthly/yearly/lifetime)
+  - `PaymentProvider` - Payment gateway registry (Stripe, PayPal, etc.)
 
 - **`auth.py`**: Factory Pattern for user creation
   - `UserFactory.create_user()` - Creates User/Admin/SuperAdmin based on role parameter
@@ -299,14 +310,39 @@ Located in `model/` directory with the following structure:
    - Polymorphic on `role` column
    - Admins table and super_admins table extend via foreign keys
 
+4. **Service Result Pattern** (`services/base.py`)
+   - All service methods return `ServiceResult[T]` with `.is_success`, `.is_failure`, `.data`, `.error`
+   - Standardized `ErrorCode` enum maps to HTTP status codes
+   - Routes stay thin (extract request → call service → translate result to HTTP response)
+
 ### Routes Structure
 Organized as Flask blueprints in `routes/`:
 
+**Legacy (Jinja template-rendered):**
 - `auth_routes.py` - Login, logout, registration, password reset
 - `user_routes.py` - User dashboard, profile management
 - `admin_routes.py` - Admin dashboard, user management
 - `tool_routes.py` - Tool-specific routes (tax calculators, email templates, etc.)
 - `contact_routes.py` - Contact form with Flask-Mail integration
+
+**Modern API (JSON, for Next.js frontend) — `routes/api/`:**
+- `__init__.py` - API blueprint (`/api/v1`), response helpers (`api_response`, `api_error`), decorators (`@require_auth`, `@require_verified`, `@require_role`)
+- `auth_api.py` - `/api/v1/auth/*` — login, logout, register, CSRF, password reset, email verification
+- `user_api.py` - `/api/v1/user/*` — profile, password, email, tools, usage, favorites, dashboard
+- `tool_api.py` - `/api/v1/tools/*` — list tools, tax calculator, character counter, email templates CRUD
+- `schemas.py` - Marshmallow validation schemas for all API inputs
+
+### Service Layer (`services/`)
+Business logic separated from HTTP concerns. Routes call services; services handle DB queries, validation, and computation.
+
+- `base.py` - `ServiceResult[T]` pattern (`.is_success`, `.is_failure`, `.data`, `.error`), `ErrorCode` enum, `BaseService` class
+- `auth_service.py` - Login, registration, password reset, email verification logic
+- `user_service.py` - Profile management, dashboard data assembly (`DashboardData`)
+- `tool_service.py` - Tool access, favorites (CRUD), tax calc, character counter, email templates
+- `email_service.py` - Flask-Mail email sending
+- `token_service.py` - Token generation and validation
+
+Services are singletons accessed via `get_*_service()` factory functions (e.g., `get_tool_service()`).
 
 ### Frontend Architecture (Legacy)
 JavaScript organized by purpose in `static/js/`:
@@ -599,6 +635,12 @@ Default tools are automatically assigned to new users:
 
 Non-default tools require explicit admin grant.
 
+### Dashboard Redesign (In Progress)
+See [docs/dashboard-redesign-679c76.md](docs/dashboard-redesign-679c76.md) for full implementation plan.
+- **Phase 1** (DB Schema): ✅ Complete — categories, subscriptions, favorites, payment providers, billing cycles
+- **Phase 2** (API Endpoints): In progress — 2A Favorites API complete, 2B-2G pending
+- **Phases 3-7** (Frontend): Pending
+
 ### User Creation Flow
 1. Use `UserFactory.create_user()` with role parameter
 2. Password is set automatically within factory
@@ -628,7 +670,7 @@ Test fixtures in `tests/conftest.py`:
 
 When writing tests:
 - Use in-memory SQLite for speed
-- Import models via `from model import User, Admin, Tool, etc.`
+- Import models via `from model import User, Admin, Tool, ToolCategory, ToolFavorite, SubscriptionPlan, UserSubscription, etc.`
 - CSRF is disabled in test config
 
 ## Database Migrations
