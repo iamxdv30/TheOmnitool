@@ -2,11 +2,16 @@
 User API Endpoints
 
 Handles user-related JSON API endpoints:
-- GET   /api/v1/user/profile
-- PATCH /api/v1/user/profile
-- PUT   /api/v1/user/password
-- GET   /api/v1/user/tools
-- GET   /api/v1/user/usage
+- GET    /api/v1/user/profile
+- PATCH  /api/v1/user/profile
+- PUT    /api/v1/user/password
+- PUT    /api/v1/user/email
+- GET    /api/v1/user/tools
+- GET    /api/v1/user/usage
+- GET    /api/v1/user/dashboard
+- GET    /api/v1/user/favorites
+- POST   /api/v1/user/favorites/<tool_id>
+- DELETE /api/v1/user/favorites/<tool_id>
 """
 
 from flask import Blueprint, session
@@ -270,6 +275,94 @@ def get_usage_stats():
         "usage": result.data.usage_stats or {}
     })
 
+
+@user_api_bp.route('/favorites', methods=['GET'])
+@require_auth
+def get_favorites():
+    """
+    Get user's favorited tool IDs.
+
+    Returns:
+        200: {"success": true, "data": {"favorites": [1, 3, 5]}}
+        401: Not authenticated
+    """
+    user_id = session.get('user_id')
+
+    tool_service = get_tool_service()
+    result = tool_service.get_user_favorites(user_id)
+
+    if result.is_failure:
+        return api_error(
+            result.error.code.value,
+            result.error.message,
+            status_code=result.error.http_status
+        )
+
+    return api_response({
+        "favorites": result.data
+    })
+
+
+@user_api_bp.route('/favorites/<int:tool_id>', methods=['POST'])
+@require_auth
+def add_favorite(tool_id):
+    """
+    Add a tool to user's favorites.
+
+    Path Parameters:
+        tool_id: int
+
+    Returns:
+        201: {"success": true, "data": {"message": "..."}}
+        401: Not authenticated
+        404: Tool not found
+        409: Already favorited
+    """
+    user_id = session.get('user_id')
+
+    tool_service = get_tool_service()
+    result = tool_service.add_favorite(user_id, tool_id)
+
+    if result.is_failure:
+        status = result.error.http_status
+        return api_error(
+            result.error.code.value,
+            result.error.message,
+            status_code=status
+        )
+
+    logger.info(f"API Favorite added: user_id={user_id}, tool_id={tool_id}")
+    return api_response({"message": "Favorite added."}, status_code=201)
+
+
+@user_api_bp.route('/favorites/<int:tool_id>', methods=['DELETE'])
+@require_auth
+def remove_favorite(tool_id):
+    """
+    Remove a tool from user's favorites.
+
+    Path Parameters:
+        tool_id: int
+
+    Returns:
+        204: No content (success)
+        401: Not authenticated
+        404: Favorite not found
+    """
+    user_id = session.get('user_id')
+
+    tool_service = get_tool_service()
+    result = tool_service.remove_favorite(user_id, tool_id)
+
+    if result.is_failure:
+        return api_error(
+            result.error.code.value,
+            result.error.message,
+            status_code=result.error.http_status
+        )
+
+    logger.info(f"API Favorite removed: user_id={user_id}, tool_id={tool_id}")
+    return '', 204
 
 @user_api_bp.route('/dashboard', methods=['GET'])
 @require_auth

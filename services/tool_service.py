@@ -15,7 +15,7 @@ from typing import Optional, Dict, Any, List
 from dataclasses import dataclass
 from datetime import datetime
 
-from model import User, Tool, ToolAccess, EmailTemplate, db
+from model import User, Tool, ToolAccess, ToolFavorite, EmailTemplate, db
 from .base import BaseService, ServiceResult, ErrorCode
 
 logger = logging.getLogger(__name__)
@@ -622,6 +622,115 @@ class ToolService(BaseService):
             return ServiceResult.failure(
                 ErrorCode.DATABASE_ERROR,
                 "Failed to delete email template."
+            )
+
+    # ==================== Favorites ====================
+
+    def get_user_favorites(self, user_id: int) -> ServiceResult[List[int]]:
+        """
+        Get list of tool IDs the user has favorited.
+
+        Args:
+            user_id: The user's ID
+
+        Returns:
+            ServiceResult with list of tool_id integers
+        """
+        try:
+            favorites = ToolFavorite.query.filter_by(user_id=user_id).all()
+            tool_ids = [fav.tool_id for fav in favorites]
+            return ServiceResult.success(tool_ids)
+
+        except Exception as e:
+            self._log_error("get_user_favorites", e, user_id=user_id)
+            return ServiceResult.failure(
+                ErrorCode.DATABASE_ERROR,
+                "Failed to retrieve favorites."
+            )
+
+    def add_favorite(self, user_id: int, tool_id: int) -> ServiceResult[bool]:
+        """
+        Add a tool to user's favorites.
+
+        Args:
+            user_id: The user's ID
+            tool_id: The tool's ID
+
+        Returns:
+            ServiceResult with True on success
+        """
+        self._log_operation("add_favorite", user_id=user_id, tool_id=tool_id)
+
+        # Verify tool exists
+        tool = Tool.query.get(tool_id)
+        if not tool:
+            return ServiceResult.failure(
+                ErrorCode.RESOURCE_NOT_FOUND,
+                "Tool not found."
+            )
+
+        # Check if already favorited
+        existing = ToolFavorite.query.filter_by(
+            user_id=user_id, tool_id=tool_id
+        ).first()
+        if existing:
+            return ServiceResult.failure(
+                ErrorCode.RESOURCE_ALREADY_EXISTS,
+                "Tool is already in favorites."
+            )
+
+        try:
+            favorite = ToolFavorite(user_id=user_id, tool_id=tool_id)
+            db.session.add(favorite)
+            db.session.commit()
+
+            self.logger.info(f"Favorite added: user_id={user_id}, tool_id={tool_id}")
+            return ServiceResult.success(True)
+
+        except Exception as e:
+            db.session.rollback()
+            self._log_error("add_favorite", e, user_id=user_id, tool_id=tool_id)
+            return ServiceResult.failure(
+                ErrorCode.DATABASE_ERROR,
+                "Failed to add favorite."
+            )
+
+    def remove_favorite(self, user_id: int, tool_id: int) -> ServiceResult[bool]:
+        """
+        Remove a tool from user's favorites.
+
+        Args:
+            user_id: The user's ID
+            tool_id: The tool's ID
+
+        Returns:
+            ServiceResult with True on success
+        """
+        self._log_operation("remove_favorite", user_id=user_id, tool_id=tool_id)
+
+        try:
+            favorite = ToolFavorite.query.filter_by(
+                user_id=user_id, tool_id=tool_id
+            ).first()
+
+            if not favorite:
+                return ServiceResult.failure(
+                    ErrorCode.RESOURCE_NOT_FOUND,
+                    "Favorite not found."
+                )
+
+            db.session.delete(favorite)
+            db.session.commit()
+
+            self.logger.info(f"Favorite removed: user_id={user_id}, tool_id={tool_id}")
+            return ServiceResult.success(True)
+
+        except Exception as e:
+            db.session.rollback()
+            self._log_error("remove_favorite", e, user_id=user_id, tool_id=tool_id)
+            return ServiceResult.failure(
+                ErrorCode.DATABASE_ERROR,
+                "Failed to remove favorite."
             )
 
     # ==================== Helper Methods ====================
