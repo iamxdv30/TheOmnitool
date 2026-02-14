@@ -52,6 +52,9 @@ class User(db.Model):
         "EmailTemplate", order_by="EmailTemplate.id", 
         back_populates="user", cascade="all, delete-orphan"
     )
+    subscriptions = db.relationship(
+        "UserSubscription", back_populates="user", cascade="all, delete-orphan"
+    )
 
     __mapper_args__ = {"polymorphic_identity": "user", "polymorphic_on": role}
 

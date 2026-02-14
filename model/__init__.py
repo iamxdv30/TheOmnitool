@@ -1,9 +1,9 @@
 # Import everything to maintain backward compatibility
 from .base import db, PasswordHasher, BcryptPasswordHasher
 from .users import User, Admin, SuperAdmin
-from .tools import UsageLog, EmailTemplate, ToolAccess, Tool
+from .tools import ToolCategory, UsageLog, EmailTemplate, ToolAccess, Tool, ToolFavorite
 from .auth import UserFactory
-
+from .subscription import SubscriptionPlan, BillingCycle, UserSubscription, PaymentProvider
 # This allows existing imports like "from model.model import User" to still work
 __all__ = [
     'db',
@@ -16,5 +16,12 @@ __all__ = [
     'EmailTemplate', 
     'ToolAccess', 
     'Tool',
-    'UserFactory'
+    'UserFactory',
+    'SubscriptionPlan',
+    'BillingCycle',
+    'UserSubscription',
+    'ToolCategory',
+    'ToolFavorite',
+    'PaymentProvider'
+
 ]
