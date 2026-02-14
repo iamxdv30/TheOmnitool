@@ -105,23 +105,109 @@ python scripts/migrate_sqlite_to_postgres.py --verify
 *   **Restore Backup:** `python restore_backup.py`
 *   **Export Data (JSON):** `python scripts/export_all_data.py --output data/backups/backup.json`
 *   **Import Data (JSON):** `python scripts/import_all_data.py --source data/backups/backup.json`
+*   **Initialize Tools:** `python tool_management.py`
+*   **Seed Dashboard Data:** `python scripts/seed_phase1_dashboard_data.py` (categories, plans, billing cycles, providers, Pro subscriptions)
+
+**Migration & Deployment Scripts**:
+*   **Sync tool definitions:** `python sync_tools.py`
+*   **Export tool access:** `python scripts/export_tool_access.py --env local`
+*   **Import tool access:** `python scripts/import_tool_access.py --source data/tool_access_exports/local_tool_access.json --mode merge`
+*   **Verify migration:** `python scripts/verify_migration.py --env local`
+*   **Emergency rollback:** `python scripts/rollback_migration.py --env staging`
+*   **Smoke tests:** `python tests/smoke_tests.py --url <target_url>`
 
 ### 3. Testing
-*   **Backend Tests:** `pytest` (from root directory)
-*   **Frontend Tests:** `npm test` (from `frontend/` directory)
-*   **Smoke Tests:** `python tests/smoke_tests.py --url <target_url>`
-*   **Current Coverage:** 31 frontend unit tests (auth, UI, CSRF)
+
+**Backend Tests (pytest):**
+```bash
+pytest                                        # Run all
+pytest --cov=. --cov-report=html             # With coverage
+pytest tests/test_routes.py                  # Specific file
+pytest tests/test_routes.py::test_function   # Specific test
+```
+
+**Frontend Tests (Jest):**
+```bash
+cd frontend
+npm test                        # Run all (31 unit tests)
+npm test -- --coverage          # With coverage
+npm test -- --watch             # Watch mode
+npm test -- authStore.test.ts   # Specific file
+```
+
+**Smoke Tests:** `python tests/smoke_tests.py --url <target_url>`
+
+**Current Coverage:**
+*   Backend: pytest tests for routes, models, services
+*   Frontend: 31 unit tests passing (`authStore.test.ts`, `uiStore.test.ts`, `csrf.test.ts`)
+
+**Test Fixtures** (`tests/conftest.py`):
+*   `app` - Flask test app with in-memory SQLite
+*   `client` - Test client for requests
+*   `init_database` - Pre-populated test data
+*   `logged_in_user`, `logged_in_admin`, `logged_in_superadmin` - Authenticated sessions
+*   Import models via `from model import User, Admin, Tool, ToolCategory, ToolFavorite, SubscriptionPlan, UserSubscription, etc.`
+*   CSRF is disabled in test config
 
 ## Architecture Summary
+
+### Application Factory Pattern
+*   `main.py`: Contains `create_app()` factory function.
+*   Blueprints are registered in the factory.
+*   Database and migrations initialized via factory.
 
 ### Backend (`/`)
 *   **Entry Point:** `main.py` (App factory, logging config, security headers, template loader).
 *   **Models (`model/`):**
-    *   **Users:** Single Table Inheritance (`User` -> `Admin` -> `SuperAdmin`) in `users.py`.
-    *   **Tools:** `Tool` and `ToolAccess` (many-to-many relationship) in `tools.py`.
-*   **Routes (`routes/`):** Blueprint-based logic for `auth`, `user`, `admin`, `tool`, `contact`, and `health`.
-*   **Tool Logic (`Tools/`):** Contains standalone logic for tools (e.g., `tax_calculator.py`, `char_counter.py`).
+    *   `base.py` - Core database instance (`db`) and Strategy Pattern for password hashing (`PasswordHasher` → `BcryptPasswordHasher`).
+    *   `users.py` - Single Table Inheritance (`User` → `Admin` → `SuperAdmin`), polymorphic on `role` column.
+    *   `tools.py` - Tool management, access control, categories, and favorites:
+        *   `Tool` (with `icon`, `display_name`, `category_id`, `is_paid`, `required_plan_id`)
+        *   `ToolAccess` - Junction table for user-tool permissions
+        *   `ToolCategory` - Admin-manageable categories (Finance, Dev, Writing, Marketing)
+        *   `ToolFavorite` - User-tool favorites with unique constraint
+        *   `UsageLog` - Tracks tool usage per user
+        *   `EmailTemplate` - User-specific email templates
+    *   `subscription.py` - Subscription and payment models (provider-agnostic):
+        *   `SubscriptionPlan` - Plan definitions (Free/Basic/Pro) with tier levels
+        *   `UserSubscription` - User-plan assignments with status, billing cycle, expiry
+        *   `BillingCycle` - Billing periods (monthly/yearly/lifetime)
+        *   `PaymentProvider` - Payment gateway registry (Stripe, PayPal, etc.)
+    *   `auth.py` - Factory Pattern (`UserFactory.create_user()`) for role-based user creation.
+    *   `__init__.py` - Backward compatibility layer, exports all models for easy importing.
+
+*   **Routes (`routes/`):**
+    *   **Legacy (Jinja template-rendered):**
+        *   `auth_routes.py` - Login, logout, registration, password reset
+        *   `user_routes.py` - User dashboard, profile management
+        *   `admin_routes.py` - Admin dashboard, user management
+        *   `tool_routes.py` - Tool-specific routes (tax calculators, email templates, etc.)
+        *   `contact_routes.py` - Contact form with Flask-Mail integration
+    *   **Modern API (JSON, for Next.js frontend) — `routes/api/`:**
+        *   `__init__.py` - API blueprint (`/api/v1`), response helpers (`api_response`, `api_error`), decorators (`@require_auth`, `@require_verified`, `@require_role`)
+        *   `auth_api.py` - `/api/v1/auth/*` — login, logout, register, CSRF, password reset, email verification
+        *   `user_api.py` - `/api/v1/user/*` — profile, password, email, tools, usage, favorites, dashboard
+        *   `tool_api.py` - `/api/v1/tools/*` — list tools, tax calculator, character counter, email templates CRUD
+        *   `schemas.py` - Marshmallow validation schemas for all API inputs
+
+*   **Service Layer (`services/`):**
+    Business logic separated from HTTP concerns. Routes call services; services handle DB queries, validation, and computation.
+    *   `base.py` - `ServiceResult[T]` pattern (`.is_success`, `.is_failure`, `.data`, `.error`), `ErrorCode` enum, `BaseService` class
+    *   `auth_service.py` - Login, registration, password reset, email verification logic
+    *   `user_service.py` - Profile management, dashboard data assembly (`DashboardData`)
+    *   `tool_service.py` - Tool access, favorites (CRUD), tax calc, character counter, email templates
+    *   `email_service.py` - Flask-Mail email sending
+    *   `token_service.py` - Token generation and validation
+    *   Services are singletons accessed via `get_*_service()` factory functions (e.g., `get_tool_service()`).
+
+*   **Tool Logic (`Tools/`):** Contains standalone computation modules (e.g., `tax_calculator.py`, `char_counter.py`) and Jinja2 templates. Services import from here; legacy routes call directly.
 *   **Templates:** Managed via `ChoiceLoader` searching in `Tools/templates/` then `templates/`.
+
+### Design Patterns in Use
+1.  **Factory Pattern** (`model/auth.py`) - `UserFactory.create_user()` centralizes user object creation.
+2.  **Strategy Pattern** (`model/base.py`) - `PasswordHasher` abstract class with swappable implementations.
+3.  **Single Table Inheritance** (`model/users.py`) - User, Admin, SuperAdmin share `users` table, polymorphic on `role`.
+4.  **Service Result Pattern** (`services/base.py`) - All service methods return `ServiceResult[T]`, routes stay thin.
 
 ### Frontend (`frontend/`)
 *   **Structure:** Next.js App Router (`src/app`) with route groups:
@@ -143,6 +229,60 @@ python scripts/migrate_sqlite_to_postgres.py --verify
 *   **Session Polling:** `useSessionPolling.ts` checks auth status every 5 minutes
 *   **Health Endpoint:** `src/app/api/health/route.ts` - Checks Flask + Next.js status
 
+## Key Features & Workflows
+
+### Role-Based Access Control
+*   **User**: Basic tool access based on ToolAccess permissions.
+*   **Admin**: Can manage regular users and grant/revoke tool access.
+*   **SuperAdmin**: Can manage all users including admins, change roles.
+*   Check access: `User.user_has_tool_access(user_id, tool_name)` or `user.has_tool_access(tool_name)`.
+
+### Tool Access System
+Default tools are automatically assigned to new users:
+*   Tax Calculator
+*   Canada Tax Calculator
+*   Character Counter
+*   Email Templates
+
+Non-default tools require explicit admin grant.
+
+### Dashboard Redesign (In Progress)
+See [docs/dashboard-redesign-679c76.md](docs/dashboard-redesign-679c76.md) for full implementation plan.
+*   **Phase 1** (DB Schema): ✅ Complete — categories, subscriptions, favorites, payment providers, billing cycles
+*   **Phase 2** (API Endpoints): In progress — 2A Favorites API complete, 2B-2G pending
+*   **Phases 3-7** (Frontend): Pending
+
+### User Creation Flow
+1.  Use `UserFactory.create_user()` with role parameter.
+2.  Password is set automatically within factory.
+3.  For new users, call `User.assign_default_tools(user_id)` to grant default tool access.
+
+### Session Security
+*   Sessions expire on browser close (`SESSION_PERMANENT=False`).
+*   30-minute backup timeout.
+*   HTTPS-only cookies in production.
+*   CSRF protection via `SESSION_COOKIE_SAMESITE='Lax'`.
+
+### Email System
+Flask-Mail integration for password reset, email verification, and contact form submissions. Configuration in `routes/contact_routes.py` via `configure_mail()`.
+
+## Environment Configuration
+
+### Local Development
+Set in `.env` file:
+*   `IS_LOCAL=true` - Enables local development mode
+*   `FLASK_ENV=development` - Development environment
+*   `SECRET_KEY` - Session secret key
+*   `SECURITY_PASSWORD_SALT` - For password reset tokens
+*   `TOKEN_SECRET_KEY` - For verification tokens
+
+Database: SQLite (`sqlite:///users.db`) or Docker PostgreSQL (recommended).
+
+### Production (Heroku)
+*   `IS_LOCAL=false` or unset
+*   `DATABASE_URL` - PostgreSQL connection string (auto-provided by Heroku)
+*   HTTPS enforcement and security headers enabled
+
 ## Development Conventions
 
 1.  **Imports:** Use absolute imports (e.g., `from model import User`).
@@ -152,18 +292,29 @@ python scripts/migrate_sqlite_to_postgres.py --verify
 5.  **Security:** Production environment enforces HTTPS and adds HSTS and CSP headers.
 6.  **Version:** Tracked in the root `VERSION` file, injected into templates via context processor.
 
+## Common Gotchas
+1.  **Circular imports**: Models use local imports within methods to avoid circular dependencies.
+2.  **Password handling**: Always use `user.set_password()`, never set `user.password` directly.
+3.  **Tool names**: Must match exactly between `Tool.name` and `ToolAccess.tool_name`.
+4.  **Role changes**: SuperAdmin can change roles, but this creates new User objects (not in-place updates).
+5.  **Template loading**: Both `templates/` and `Tools/templates/` are searched via ChoiceLoader.
+
 ## Key Files Map
 
 ### Backend
 *   `main.py`: App factory, logging, and middleware.
-*   `model/users.py`: RBAC and user hierarchy.
-*   `routes/api/`: JSON API endpoints (auth_api, user_api, tool_api)
-*   `services/`: Business logic layer (auth_service, user_service, tool_service)
+*   `model/users.py`: RBAC and user hierarchy (STI).
+*   `model/tools.py`: Tool, ToolAccess, ToolCategory, ToolFavorite, UsageLog, EmailTemplate.
+*   `model/subscription.py`: SubscriptionPlan, UserSubscription, BillingCycle, PaymentProvider.
+*   `model/auth.py`: UserFactory for role-based user creation.
+*   `routes/api/`: JSON API endpoints (auth_api, user_api, tool_api).
+*   `services/`: Business logic layer (auth_service, user_service, tool_service, email_service, token_service).
 *   `routes/tool_routes.py`: Legacy HTML routes for tools.
 *   `Tools/tax_calculator.py`: Core math logic for US, Canada, and VAT calculations.
 *   `utils/db_safety.py`: Database validation and backup logic.
 *   `.github/workflows/`: CI/CD pipelines for production and staging (dual-stack deployment).
 *   `scripts/start-production.sh`: Dual-process startup script (Flask + Next.js).
+*   `scripts/seed_phase1_dashboard_data.py`: Seeds categories, plans, billing cycles, providers.
 
 ### Frontend (Next.js)
 *   `frontend/src/app/(public)/page.tsx`: Landing page.
@@ -271,6 +422,29 @@ python migrate_db.py
 This creates all required tables via Alembic migrations.
 
 ---
+
+## Database Migrations
+
+Using Flask-Migrate (Alembic):
+1.  Make model changes in `model/` files.
+2.  Generate migration: `flask db migrate -m "description"`
+3.  Review migration in `migrations/versions/`
+4.  Apply: `flask db upgrade`
+
+### Production Migration Safety
+
+The CI/CD pipeline (`.github/workflows/deploy.yml`) implements automatic rollback on migration failure:
+1.  **Backup Phase**: Full PostgreSQL backup created before any changes.
+2.  **Migration Phase**: `flask db upgrade` runs with error tracking.
+3.  **Success Path**: Migration verified, data counts reported to Discord.
+4.  **Failure Path**: Automatic rollback from backup dump file (zero manual intervention).
+
+**Key Safety Features**:
+*   Migrations only ADD columns with defaults (never delete data).
+*   Full database dump (`.dump`) used for rollback, not CSV.
+*   Automatic restoration triggered immediately on failure.
+*   Backup artifacts retained for 30 days.
+*   Users experience zero downtime during rollback.
 
 ## Production Deployment (Heroku)
 
