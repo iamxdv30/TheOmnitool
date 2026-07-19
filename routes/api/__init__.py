@@ -17,11 +17,44 @@ Base URL: /api/v1
 from flask import Blueprint, jsonify, request
 from functools import wraps
 import logging
+import secrets
 
 logger = logging.getLogger(__name__)
 
 # Create the main API blueprint with /api/v1 prefix
 api_bp = Blueprint('api', __name__, url_prefix='/api/v1')
+
+
+@api_bp.before_request
+def enforce_csrf():
+    """
+    Validate the X-CSRFToken header on all mutating API requests.
+
+    The token is issued by GET /api/v1/auth/csrf (stored in the session) and
+    must be echoed back in the X-CSRFToken header for POST/PUT/PATCH/DELETE.
+    Disabled when WTF_CSRF_ENABLED is False (test config).
+    """
+    from flask import session, current_app
+
+    if request.method not in ('POST', 'PUT', 'PATCH', 'DELETE'):
+        return None
+
+    if not current_app.config.get('WTF_CSRF_ENABLED', True):
+        return None
+
+    header_token = request.headers.get('X-CSRFToken', '')
+    session_token = session.get('csrf_token', '')
+
+    if not header_token or not session_token or \
+            not secrets.compare_digest(header_token, session_token):
+        logger.warning(f"CSRF validation failed: {request.method} {request.path}")
+        return api_error(
+            "CSRF_ERROR",
+            "Invalid or missing CSRF token. Fetch a new token from /api/v1/auth/csrf.",
+            status_code=403
+        )
+
+    return None
 
 
 def api_response(data=None, status_code=200):

@@ -9,7 +9,12 @@
  */
 
 import { apiClient, isSuccess } from "./client";
-import type { ApiResponse, TaxCalculatorResult, EmailTemplate } from "@/types";
+import type {
+  ApiResponse,
+  EmailTemplate,
+  Category,
+  UsageHistoryEntry,
+} from "@/types";
 
 // ==================== Types ====================
 
@@ -66,17 +71,52 @@ export interface CharacterCountResponse {
   excess_message: string;
 }
 
+export interface ToolCategoryInfo {
+  id: number;
+  name: string | null;
+  slug: string | null;
+  color: string | null;
+  icon: string | null;
+}
+
+export interface RequiredPlanInfo {
+  id: number;
+  name: string | null;
+  tier_level: number | null;
+}
+
 export interface ToolInfo {
   id: number;
   name: string;
+  display_name: string;
   description: string | null;
   route: string | null;
   is_default: boolean;
+  is_active: boolean;
+  icon: string | null;
+  category: ToolCategoryInfo | null;
+  is_paid: boolean;
+  required_plan: RequiredPlanInfo | null;
   hasAccess: boolean;
 }
 
 export interface ToolsListResponse {
   tools: ToolInfo[];
+}
+
+export interface CategoriesResponse {
+  categories: Category[];
+}
+
+export interface FavoritesResponse {
+  favorites: number[];
+}
+
+export interface UsageHistoryResponse {
+  history: UsageHistoryEntry[];
+  total: number;
+  limit: number;
+  offset: number;
 }
 
 export interface EmailTemplatesResponse {
@@ -97,8 +137,48 @@ export const toolsApi = {
    * List all available tools with access flags
    */
   async listTools(includeInactive = false): Promise<ApiResponse<ToolsListResponse>> {
-    return apiClient.get<ToolsListResponse>("/tools/", {
+    return apiClient.get<ToolsListResponse>("/tools", {
       params: { include_inactive: includeInactive },
+    });
+  },
+
+  /**
+   * List all active tool categories (for filter pills)
+   */
+  async getCategories(): Promise<ApiResponse<CategoriesResponse>> {
+    return apiClient.get<CategoriesResponse>("/tools/categories");
+  },
+
+  /**
+   * Get the current user's favorited tool IDs
+   */
+  async getFavorites(): Promise<ApiResponse<FavoritesResponse>> {
+    return apiClient.get<FavoritesResponse>("/user/favorites");
+  },
+
+  /**
+   * Add a tool to the user's favorites
+   */
+  async addFavorite(toolId: number): Promise<ApiResponse<{ message: string }>> {
+    return apiClient.post<{ message: string }>(`/user/favorites/${toolId}`);
+  },
+
+  /**
+   * Remove a tool from the user's favorites
+   */
+  async removeFavorite(toolId: number): Promise<ApiResponse<void>> {
+    return apiClient.delete<void>(`/user/favorites/${toolId}`);
+  },
+
+  /**
+   * Get the user's recent tool usage entries (newest first)
+   */
+  async getUsageHistory(
+    limit = 10,
+    offset = 0
+  ): Promise<ApiResponse<UsageHistoryResponse>> {
+    return apiClient.get<UsageHistoryResponse>("/user/usage-history", {
+      params: { limit, offset },
     });
   },
 

@@ -4,6 +4,17 @@
  */
 
 import { useUIStore, toast, getUIState } from "@/store/uiStore";
+import { toast as sonnerToast } from "sonner";
+
+// toast.* convenience functions delegate to Sonner (not the Zustand store)
+jest.mock("sonner", () => ({
+  toast: {
+    success: jest.fn(),
+    error: jest.fn(),
+    warning: jest.fn(),
+    info: jest.fn(),
+  },
+}));
 
 describe("uiStore", () => {
   beforeEach(() => {
@@ -74,36 +85,39 @@ describe("uiStore", () => {
     });
   });
 
-  describe("toast convenience functions", () => {
-    it("toast.success should add success toast", () => {
+  describe("toast convenience functions (delegate to Sonner)", () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it("toast.success should call sonner with title prefix", () => {
       toast.success("Success message", "Title");
 
-      const toasts = getUIState().toasts;
-      expect(toasts).toHaveLength(1);
-      expect(toasts[0].type).toBe("success");
-      expect(toasts[0].message).toBe("Success message");
-      expect(toasts[0].title).toBe("Title");
+      expect(sonnerToast.success).toHaveBeenCalledWith("Title: Success message");
     });
 
-    it("toast.error should add error toast with longer duration", () => {
+    it("toast.error should call sonner with the message", () => {
       toast.error("Error message");
 
-      const toasts = getUIState().toasts;
-      expect(toasts).toHaveLength(1);
-      expect(toasts[0].type).toBe("error");
-      expect(toasts[0].duration).toBe(8000);
+      expect(sonnerToast.error).toHaveBeenCalledWith("Error message");
     });
 
-    it("toast.warning should add warning toast", () => {
+    it("toast.error should unwrap error objects", () => {
+      toast.error({ message: "Object error" });
+
+      expect(sonnerToast.error).toHaveBeenCalledWith("Object error");
+    });
+
+    it("toast.warning should call sonner", () => {
       toast.warning("Warning message");
 
-      expect(getUIState().toasts[0].type).toBe("warning");
+      expect(sonnerToast.warning).toHaveBeenCalledWith("Warning message");
     });
 
-    it("toast.info should add info toast", () => {
+    it("toast.info should call sonner", () => {
       toast.info("Info message");
 
-      expect(getUIState().toasts[0].type).toBe("info");
+      expect(sonnerToast.info).toHaveBeenCalledWith("Info message");
     });
   });
 

@@ -463,14 +463,9 @@ class AuthService(BaseService):
             )
 
         try:
-            # Mark email as verified
+            # Mark email as verified (ORM handles boolean typing for both
+            # SQLite and PostgreSQL — raw "= 1" breaks on PostgreSQL boolean)
             user.email_verified = True
-
-            # Also update directly in database as safety measure
-            db.session.execute(
-                text("UPDATE users SET email_verified = 1 WHERE id = :user_id"),
-                {"user_id": user.id}
-            )
 
             # Update last login (since we're auto-logging in)
             if hasattr(user, 'last_login'):

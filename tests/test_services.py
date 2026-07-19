@@ -490,7 +490,7 @@ class TestToolService:
             result = service.get_user_tools(user.id)
 
             assert result.is_success
-            assert "Test Tool 1" in result.data
+            assert "Test Tool 1" in [tool.name for tool in result.data]
 
     def test_check_tool_access_has_access(self, app, init_database):
         """Test checking tool access when user has access."""

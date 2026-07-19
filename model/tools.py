@@ -1,6 +1,4 @@
 from datetime import datetime, timezone
-from enum import unique
-from operator import index
 from .base import db
 
 
@@ -10,7 +8,7 @@ class UsageLog(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     tool_name = db.Column(db.String(100), nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.now(timezone.utc), nullable=False)
+    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     user = db.relationship("User", back_populates="usage_logs")
 
@@ -77,6 +75,7 @@ class Tool(db.Model):
     required_plan_id = db.Column(db.Integer, db.ForeignKey("subscription_plans.id"), nullable=True)
 
     category = db.relationship("ToolCategory", back_populates="tools")
+    required_plan = db.relationship("SubscriptionPlan")
 
     def __init__(self, name, description, route, is_default=False, is_active=True):
         self.name = name

@@ -14,6 +14,7 @@ Handles all authentication-related JSON API endpoints:
 
 from flask import Blueprint, session, request
 import logging
+import secrets
 
 from . import api_response, api_error, get_json_body, require_auth
 from services import get_auth_service
@@ -68,6 +69,11 @@ def login():
     # Set session data
     login_result = result.data
     user = login_result.user
+
+    # Prevent session fixation: start a fresh session and rotate the CSRF
+    # token on privilege change (the API client refreshes on CSRF_ERROR).
+    session.clear()
+    session['csrf_token'] = secrets.token_hex(32)
 
     session['user_id'] = user.id
     session['username'] = user.username

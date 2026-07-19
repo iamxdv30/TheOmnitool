@@ -113,14 +113,32 @@ class User(db.Model):
         self.password = generate_password_hash(password, method="pbkdf2:sha256")
         logging.debug(f"Password hash: {self.password}")
 
+    @staticmethod
+    def _normalize_tool_name(tool_name):
+        """Normalize a tool name/slug so 'Email Templates' == 'email-templates'."""
+        return (tool_name or "").strip().lower().replace("_", "-").replace(" ", "-")
+
     def has_tool_access(self, tool_name):
-        from .tools import ToolAccess
-        return ToolAccess.query.filter_by(user_id=self.id, tool_name=tool_name).first() is not None
-    
+        return User.user_has_tool_access(self.id, tool_name)
+
     @classmethod
     def user_has_tool_access(cls, user_id, tool_name):
-        from .tools import ToolAccess
-        return ToolAccess.query.filter_by(user_id=user_id, tool_name=tool_name).first() is not None
+        from .tools import Tool, ToolAccess
+        # Legacy routes pass slugs ("email-templates") while ToolAccess rows
+        # store DB tool names ("Email Templates") — compare normalized forms.
+        normalized = cls._normalize_tool_name(tool_name)
+        default_tools = Tool.query.filter_by(is_default=True, is_active=True).all()
+        if any(
+            cls._normalize_tool_name(tool.name) == normalized
+            for tool in default_tools
+        ):
+            return True
+
+        access_rows = ToolAccess.query.filter_by(user_id=user_id).all()
+        return any(
+            cls._normalize_tool_name(row.tool_name) == normalized
+            for row in access_rows
+        )
 
     @classmethod
     def assign_default_tools(cls, user_id):

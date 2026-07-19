@@ -71,6 +71,41 @@ export interface Tool {
   is_default: boolean;
 }
 
+// Tool category (admin-manageable, from /tools/categories)
+export interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  icon: string | null;
+  color: string | null;
+  display_order: number;
+}
+
+// Subscription types (from /tools/plans and /user/subscription)
+export interface SubscriptionPlan {
+  id: number;
+  name: string;
+  slug: string;
+  tier_level: number;
+  price_monthly: number | null;
+  price_yearly: number | null;
+  features: Record<string, unknown> | null;
+}
+
+export interface UserSubscription {
+  plan: Pick<SubscriptionPlan, "id" | "name" | "slug" | "tier_level"> | null;
+  status: string;
+  billing_cycle: string | null;
+  started_at: string | null;
+  expires_at: string | null;
+}
+
+// Usage history entry (from /user/usage-history)
+export interface UsageHistoryEntry {
+  tool_name: string;
+  timestamp: string | null;
+}
+
 export interface ToolAccess {
   tool_name: string;
   granted_at: string;
