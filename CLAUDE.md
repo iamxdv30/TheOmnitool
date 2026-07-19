@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-MyTools (The Omnitool) is a Flask-based web application providing various utility tools (tax calculators, character counter, email templates, etc.) with role-based access control. Current version: 1.4.0
+MyTools (The Omnitool) is a Flask-based web application providing various utility tools (tax calculators, character counter, email templates, etc.) with role-based access control. Current version: 1.5.0
 
 ## Development Commands
 
@@ -221,11 +221,12 @@ npm test -- authStore.test.ts
 ```
 
 **Current Test Coverage:**
-- Backend: pytest tests for routes, models, services
-- Frontend: 31 unit tests passing
+- Backend: 147 pytest tests passing (routes, models, services)
+- Frontend: 39 unit tests passing
   - `authStore.test.ts` - Auth state management
   - `uiStore.test.ts` - UI state (toasts, modals, sidebar)
   - `csrf.test.ts` - CSRF token management
+  - Dashboard component tests (search, filters, favorites, usage history)
 
 ### Migration Scripts
 
@@ -381,7 +382,7 @@ Located in `frontend/` directory - a high-performance 3D application using the "
 | API Client | Custom fetch wrapper | CSRF protection, 401/403 interceptors |
 | Styling | Tailwind CSS v4 | Zero-runtime CSS |
 | Icons | Lucide React | Tree-shakeable icons |
-| Testing | Jest + React Testing Library | 31 unit tests |
+| Testing | Jest + React Testing Library | 39 unit tests |
 
 #### Development Commands
 ```bash
@@ -635,11 +636,17 @@ Default tools are automatically assigned to new users:
 
 Non-default tools require explicit admin grant.
 
-### Dashboard Redesign (In Progress)
+### Dashboard Redesign (Tools Discovery Dashboard)
 See [docs/dashboard-redesign-679c76.md](docs/dashboard-redesign-679c76.md) for full implementation plan.
-- **Phase 1** (DB Schema): ✅ Complete — categories, subscriptions, favorites, payment providers, billing cycles
-- **Phase 2** (API Endpoints): In progress — 2A Favorites API complete, 2B-2G pending
-- **Phases 3-7** (Frontend): Pending
+- **Phases 1-7**: ✅ Complete (shipped in v1.5.0) — DB schema, favorites/usage-history/subscription/categories/plans APIs, `services/subscription_service.py`, paid-tool access control gated by subscription tier, dashboard frontend components (`frontend/src/components/features/dashboard/`), and automated test coverage
+- **Pending**: §2F payment-provider integration (subscribe/cancel/webhooks, `services/payment/`) and manual responsive/theme QA pass
+- New endpoints: `GET /api/v1/user/usage-history`, `GET /api/v1/user/subscription`, `GET /api/v1/tools/categories`, `GET /api/v1/tools/plans`; `GET /api/v1/tools/` and `GET /api/v1/user/dashboard` now include favorites, subscription, and plan/category metadata
+
+### API Security (added v1.5.0)
+- CSRF is **enforced** (not just issued) on mutating `/api/v1` requests via `before_request` in `routes/api/__init__.py`; honors `WTF_CSRF_ENABLED=False` for tests
+- API login clears the session and rotates the CSRF token (session fixation protection)
+- Frontend API client auto-retries once on a `CSRF_ERROR` response
+- Tests must build the app via `create_app(test_config={...})` — mutating `app.config` after `create_app()` binds the engine to the real `DATABASE_URL` and can cause tests to create/drop tables on the dev database
 
 ### User Creation Flow
 1. Use `UserFactory.create_user()` with role parameter

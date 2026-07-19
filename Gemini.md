@@ -30,7 +30,7 @@ This file provides context and guidance for Gemini when working with the "MyTool
 - **API Client:** Custom fetch wrapper with CSRF & interceptors
 - **Styling:** Tailwind CSS v4
 - **3D Engine:** React Three Fiber (R3F) + Drei + Rapier (Physics)
-- **Testing:** Jest + React Testing Library (31 tests passing)
+- **Testing:** Jest + React Testing Library (39 tests passing)
 - **Migration Status:** Phase 5 Complete ✅ (Production Deployment)
 - **Deployment:** Dual-stack on single Heroku dyno (Flask + Next.js)
 
@@ -129,7 +129,7 @@ pytest tests/test_routes.py::test_function   # Specific test
 **Frontend Tests (Jest):**
 ```bash
 cd frontend
-npm test                        # Run all (31 unit tests)
+npm test                        # Run all (39 unit tests)
 npm test -- --coverage          # With coverage
 npm test -- --watch             # Watch mode
 npm test -- authStore.test.ts   # Specific file
@@ -138,8 +138,8 @@ npm test -- authStore.test.ts   # Specific file
 **Smoke Tests:** `python tests/smoke_tests.py --url <target_url>`
 
 **Current Coverage:**
-*   Backend: pytest tests for routes, models, services
-*   Frontend: 31 unit tests passing (`authStore.test.ts`, `uiStore.test.ts`, `csrf.test.ts`)
+*   Backend: 147 pytest tests passing (routes, models, services).
+*   Frontend: 39 unit tests passing (`authStore.test.ts`, `uiStore.test.ts`, `csrf.test.ts`, dashboard component tests).
 
 **Test Fixtures** (`tests/conftest.py`):
 *   `app` - Flask test app with in-memory SQLite
@@ -246,11 +246,17 @@ Default tools are automatically assigned to new users:
 
 Non-default tools require explicit admin grant.
 
-### Dashboard Redesign (In Progress)
+### Dashboard Redesign (Tools Discovery Dashboard)
 See [docs/dashboard-redesign-679c76.md](docs/dashboard-redesign-679c76.md) for full implementation plan.
-*   **Phase 1** (DB Schema): ✅ Complete — categories, subscriptions, favorites, payment providers, billing cycles
-*   **Phase 2** (API Endpoints): In progress — 2A Favorites API complete, 2B-2G pending
-*   **Phases 3-7** (Frontend): Pending
+*   **Phases 1-7**: ✅ Complete (shipped in v1.5.0) — DB schema, favorites/usage-history/subscription/categories/plans APIs, `services/subscription_service.py`, paid-tool access control gated by subscription tier, dashboard frontend components (`frontend/src/components/features/dashboard/`), and automated test coverage.
+*   **Pending**: §2F payment-provider integration (subscribe/cancel/webhooks, `services/payment/`) and manual responsive/theme QA pass.
+*   New endpoints: `GET /api/v1/user/usage-history`, `GET /api/v1/user/subscription`, `GET /api/v1/tools/categories`, `GET /api/v1/tools/plans`; `GET /api/v1/tools/` and `GET /api/v1/user/dashboard` now include favorites, subscription, and plan/category metadata.
+
+### API Security (added v1.5.0)
+*   CSRF is **enforced** (not just issued) on mutating `/api/v1` requests via `before_request` in `routes/api/__init__.py`; honors `WTF_CSRF_ENABLED=False` for tests.
+*   API login clears the session and rotates the CSRF token (session fixation protection).
+*   Frontend API client auto-retries once on a `CSRF_ERROR` response.
+*   Tests must build the app via `create_app(test_config={...})` — mutating `app.config` after `create_app()` binds the engine to the real `DATABASE_URL` and can cause tests to create/drop tables on the dev database.
 
 ### User Creation Flow
 1.  Use `UserFactory.create_user()` with role parameter.
