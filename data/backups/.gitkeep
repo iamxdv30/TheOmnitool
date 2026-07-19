@@ -1,0 +1,6 @@
+# This directory stores JSON database backups
+# Backup files are gitignored but this .gitkeep ensures the directory exists
+#
+# Usage:
+#   Export: python scripts/export_all_data.py --output data/backups/my_backup.json
+#   Import: python scripts/import_all_data.py --source data/backups/my_backup.json

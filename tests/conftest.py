@@ -16,8 +16,11 @@ def app(monkeypatch):
     monkeypatch.setattr(AuthConfig, 'RECAPTCHA_SITE_KEY', None)
     monkeypatch.setattr(AuthConfig, 'RECAPTCHA_SECRET_KEY', None)
 
-    app = create_app()
-    app.config.update({
+    # Test config MUST be passed into create_app so the SQLAlchemy engine
+    # binds to in-memory SQLite instead of the real DATABASE_URL from .env.
+    # (Updating app.config after create_app() is too late — the startup DB
+    # validation has already bound the engine to the real database.)
+    app = create_app(test_config={
         'TESTING': True,
         'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:',
         'WTF_CSRF_ENABLED': False,  # Disable CSRF for testing

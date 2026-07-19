@@ -10,11 +10,60 @@ MyTools (The Omnitool) is a Flask-based web application providing various utilit
 
 ### Running the Application
 ```bash
-# Local development
+# Local development (Flask only)
 python main.py
 
-# Production (via Heroku)
-gunicorn main:app
+# Local development (Full stack - Flask + Next.js)
+# Terminal 1: Flask backend
+python main.py
+
+# Terminal 2: Next.js frontend
+cd frontend && npm run dev
+
+# Production (via Heroku - dual-stack)
+./scripts/start-production.sh
+```
+
+### Docker PostgreSQL (Recommended for Local Development)
+
+Using Docker PostgreSQL ensures database parity across dev/staging/production, eliminating migration issues caused by SQLite/PostgreSQL behavioral differences.
+
+```bash
+# Start PostgreSQL container
+.\scripts\docker-db.ps1 start   # Windows
+./scripts/docker-db.sh start    # Linux/Mac
+
+# Stop container (preserves data)
+.\scripts\docker-db.ps1 stop
+
+# Reset database (WARNING: destroys all data)
+.\scripts\docker-db.ps1 reset
+
+# Access PostgreSQL shell
+.\scripts\docker-db.ps1 shell
+
+# Check status
+.\scripts\docker-db.ps1 status
+```
+
+**Environment Configuration (`.env`):**
+```bash
+USE_DOCKER_DB=true
+DATABASE_URL='postgresql://omnitool:omnitool_dev@localhost:5432/omnitool_dev'
+```
+
+**First-Time Setup:**
+```bash
+# 1. Start Docker PostgreSQL
+.\scripts\docker-db.ps1 start
+
+# 2. Run migrations to create schema
+python migrate_db.py
+
+# 3. (Optional) Migrate existing SQLite data
+python scripts/migrate_sqlite_to_postgres.py --export    # Export from SQLite
+python scripts/migrate_sqlite_to_postgres.py --import    # Import to PostgreSQL
+python scripts/migrate_sqlite_to_postgres.py --verify    # Verify migration
 ```
 
 ### Database Management
@@ -33,20 +82,40 @@ curl http://localhost:5000/health
 
 # Initialize tools in database
 python tool_management.py
+
+# Export all data to JSON (works with both SQLite and PostgreSQL)
+python scripts/export_all_data.py --output data/backups/my_backup.json
+
+# Import data from JSON backup
+python scripts/import_all_data.py --source data/backups/my_backup.json
+
+# Seed dashboard Phase 1 data (categories, plans, billing cycles, providers, Pro subscriptions)
+python scripts/seed_phase1_dashboard_data.py
 ```
 
 ### Database Safety Features 🛡️
 
 **Automatic Protection:**
-- ✅ Pre-migration backups (automatic)
+- ✅ Pre-migration backups (automatic - SQLite binary or JSON for PostgreSQL)
 - ✅ Schema validation on startup
 - ✅ Health check endpoints
 - ✅ Recovery utilities
+- ✅ Database parity (Docker PostgreSQL matches staging/production)
 
 **Backup Locations:**
-- Primary: `zzDumpfiles/SQLite Database Backup/users.db`
+- **JSON Backups (recommended):** `data/backups/*.json`
+- SQLite Binary: `zzDumpfiles/SQLite Database Backup/users.db`
 - Pre-migration: `zzDumpfiles/SQLite Database Backup/users.db.backup_pre_migration_*`
-- Pre-restore: `instance/users.db.before_restore_*`
+
+**Comprehensive Backup/Restore:**
+```bash
+# Export ALL tables to JSON (works with SQLite and PostgreSQL)
+python scripts/export_all_data.py --output data/backups/my_backup.json
+
+# Import from JSON backup (dry-run first)
+python scripts/import_all_data.py --source data/backups/my_backup.json --dry-run
+python scripts/import_all_data.py --source data/backups/my_backup.json
+```
 
 **Health Check Endpoints:**
 ```bash
@@ -84,9 +153,43 @@ curl http://localhost:5000/health/database
    - Restore from backup if needed
    - Fix migration issue and try again
 
+5. **"No module named 'psycopg2'" error:**
+   ```bash
+   pip install psycopg2-binary
+   ```
+   - This package is required for PostgreSQL connections
+   - Already in requirements.txt as `psycopg2-binary==2.9.11`
+
+6. **Malformed DATABASE_URL (e.g., "172530@localhost"):**
+   - **Cause:** System environment variables overriding `.env` file
+   - **Check:** `python -c "import os; print(os.environ.get('DATABASE_URL', 'NOT SET'))"`
+   - **Fix:**
+     1. Delete `DATABASE_URL` from Windows System Environment Variables:
+        - Press `Win + R`, type `sysdm.cpl`, press Enter
+        - Advanced tab → Environment Variables
+        - Delete `DATABASE_URL` and `DATABASE_URL_LOCAL` from User variables
+     2. **Restart VSCode completely** (not just terminal)
+     3. Verify: `echo $DATABASE_URL` should be empty
+   - **Workaround:** `export DATABASE_URL='postgresql://omnitool:omnitool_dev@localhost:5432/omnitool_dev'`
+
+7. **Docker PostgreSQL not accessible:**
+   ```bash
+   # Check container status
+   docker ps --filter "name=omnitool-postgres"
+
+   # Start if not running
+   .\scripts\docker-db.ps1 start   # Windows
+   ./scripts/docker-db.sh start    # Linux/Mac
+
+   # Verify connection
+   docker exec omnitool-postgres pg_isready -U omnitool -d omnitool_dev
+   ```
+
 ### Testing
+
+#### Backend Tests (pytest)
 ```bash
-# Run all tests
+# Run all backend tests
 pytest
 
 # Run with coverage
@@ -98,6 +201,31 @@ pytest tests/test_routes.py
 # Run specific test
 pytest tests/test_routes.py::test_function_name
 ```
+
+#### Frontend Tests (Jest)
+```bash
+# Navigate to frontend
+cd frontend
+
+# Run all frontend tests
+npm test
+
+# Run with coverage
+npm test -- --coverage
+
+# Run in watch mode
+npm test -- --watch
+
+# Run specific test file
+npm test -- authStore.test.ts
+```
+
+**Current Test Coverage:**
+- Backend: pytest tests for routes, models, services
+- Frontend: 31 unit tests passing
+  - `authStore.test.ts` - Auth state management
+  - `uiStore.test.ts` - UI state (toasts, modals, sidebar)
+  - `csrf.test.ts` - CSRF token management
 
 ### Migration Scripts
 
@@ -148,11 +276,19 @@ Located in `model/` directory with the following structure:
   - `SuperAdmin` - Extends Admin with full system control
   - Role differentiation via `role` column and `polymorphic_identity`
 
-- **`tools.py`**: Tool management and access control
-  - `Tool` - Available tools registry
+- **`tools.py`**: Tool management, access control, categories, and favorites
+  - `Tool` - Available tools registry (with `icon`, `display_name`, `category_id`, `is_paid`, `required_plan_id`)
   - `ToolAccess` - Junction table for user-tool permissions
+  - `ToolCategory` - Admin-manageable categories (Finance, Dev, Writing, Marketing)
+  - `ToolFavorite` - User-tool favorites with unique constraint
   - `UsageLog` - Tracks tool usage per user
   - `EmailTemplate` - User-specific email templates
+
+- **`subscription.py`**: Subscription and payment models (provider-agnostic)
+  - `SubscriptionPlan` - Plan definitions (Free/Basic/Pro) with tier levels
+  - `UserSubscription` - User-plan assignments with status, billing cycle, expiry
+  - `BillingCycle` - Billing periods (monthly/yearly/lifetime)
+  - `PaymentProvider` - Payment gateway registry (Stripe, PayPal, etc.)
 
 - **`auth.py`**: Factory Pattern for user creation
   - `UserFactory.create_user()` - Creates User/Admin/SuperAdmin based on role parameter
@@ -174,16 +310,41 @@ Located in `model/` directory with the following structure:
    - Polymorphic on `role` column
    - Admins table and super_admins table extend via foreign keys
 
+4. **Service Result Pattern** (`services/base.py`)
+   - All service methods return `ServiceResult[T]` with `.is_success`, `.is_failure`, `.data`, `.error`
+   - Standardized `ErrorCode` enum maps to HTTP status codes
+   - Routes stay thin (extract request → call service → translate result to HTTP response)
+
 ### Routes Structure
 Organized as Flask blueprints in `routes/`:
 
+**Legacy (Jinja template-rendered):**
 - `auth_routes.py` - Login, logout, registration, password reset
 - `user_routes.py` - User dashboard, profile management
 - `admin_routes.py` - Admin dashboard, user management
 - `tool_routes.py` - Tool-specific routes (tax calculators, email templates, etc.)
 - `contact_routes.py` - Contact form with Flask-Mail integration
 
-### Frontend Architecture
+**Modern API (JSON, for Next.js frontend) — `routes/api/`:**
+- `__init__.py` - API blueprint (`/api/v1`), response helpers (`api_response`, `api_error`), decorators (`@require_auth`, `@require_verified`, `@require_role`)
+- `auth_api.py` - `/api/v1/auth/*` — login, logout, register, CSRF, password reset, email verification
+- `user_api.py` - `/api/v1/user/*` — profile, password, email, tools, usage, favorites, dashboard
+- `tool_api.py` - `/api/v1/tools/*` — list tools, tax calculator, character counter, email templates CRUD
+- `schemas.py` - Marshmallow validation schemas for all API inputs
+
+### Service Layer (`services/`)
+Business logic separated from HTTP concerns. Routes call services; services handle DB queries, validation, and computation.
+
+- `base.py` - `ServiceResult[T]` pattern (`.is_success`, `.is_failure`, `.data`, `.error`), `ErrorCode` enum, `BaseService` class
+- `auth_service.py` - Login, registration, password reset, email verification logic
+- `user_service.py` - Profile management, dashboard data assembly (`DashboardData`)
+- `tool_service.py` - Tool access, favorites (CRUD), tax calc, character counter, email templates
+- `email_service.py` - Flask-Mail email sending
+- `token_service.py` - Token generation and validation
+
+Services are singletons accessed via `get_*_service()` factory functions (e.g., `get_tool_service()`).
+
+### Frontend Architecture (Legacy)
 JavaScript organized by purpose in `static/js/`:
 
 - **`modules/`** - Reusable functionality
@@ -199,6 +360,238 @@ JavaScript organized by purpose in `static/js/`:
   - `search.js` - Reusable search with pagination
   - `email.js` - Email template functionality
   - `common.js` - Common utilities
+
+### Modern Frontend (Next.js 16 + React Three Fiber)
+
+Located in `frontend/` directory - a high-performance 3D application using the "Solarpunk High-Tech" design system.
+
+**Migration Status:** Phase 5 (Production Deployment) ✅ **COMPLETE**
+- See [docs/BACKEND_FRONTEND_INTEGRATION_PLAN.md](docs/BACKEND_FRONTEND_INTEGRATION_PLAN.md) for full migration strategy
+- Dual-stack deployment: Flask (Gunicorn) + Next.js on single Heroku dyno
+- CI/CD pipelines updated for both staging and production
+
+#### Tech Stack
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| Framework | Next.js 16 (App Router) | Server Components, Turbopack |
+| 3D Engine | React Three Fiber v9 | Declarative Three.js |
+| 3D Helpers | @react-three/drei | View tunneling, GLB loading |
+| Physics | @react-three/rapier | WASM-based physics |
+| State | Zustand (v5) | Auth, UI, theme state management |
+| API Client | Custom fetch wrapper | CSRF protection, 401/403 interceptors |
+| Styling | Tailwind CSS v4 | Zero-runtime CSS |
+| Icons | Lucide React | Tree-shakeable icons |
+| Testing | Jest + React Testing Library | 31 unit tests |
+
+#### Development Commands
+```bash
+# Navigate to frontend
+cd frontend
+
+# Development server
+npm run dev
+
+# Production build
+npm run build
+
+# Start production server
+npm start
+
+# Run tests
+npm test
+
+# Type checking
+npm run lint
+```
+
+#### Production Deployment (Heroku)
+```bash
+# Dual-stack architecture: Flask + Next.js on single dyno
+# Startup script: scripts/start-production.sh
+
+# Health check endpoints
+curl https://your-app.herokuapp.com/health/ping      # Flask health
+curl https://your-app.herokuapp.com/api/health       # Next.js + Flask health
+
+# Buildpacks (order matters)
+heroku buildpacks:add heroku/python
+heroku buildpacks:add heroku/nodejs
+
+# Required environment variables (set via CI/CD)
+FLASK_API_URL=http://127.0.0.1:5000
+NEXT_PUBLIC_APP_URL=https://your-app.herokuapp.com
+SESSION_COOKIE_SECURE=true
+SESSION_COOKIE_SAMESITE=Lax
+SESSION_COOKIE_HTTPONLY=true
+```
+
+#### Directory Structure
+```
+frontend/
+├── src/
+│   ├── app/                    # Next.js App Router
+│   │   ├── (public)/           # Public route group (no auth)
+│   │   │   ├── layout.tsx      # Public layout with header
+│   │   │   ├── page.tsx        # Landing page
+│   │   │   └── contact/        # Contact page
+│   │   ├── (auth)/             # Auth route group
+│   │   │   ├── login/          # Login page (with query param handling)
+│   │   │   ├── register/       # Registration page
+│   │   │   ├── forgot-password/
+│   │   │   └── reset-password/
+│   │   ├── (dashboard)/        # Protected route group
+│   │   │   ├── layout.tsx      # Dashboard layout with sidebar
+│   │   │   ├── dashboard/      # User dashboard
+│   │   │   ├── profile/        # User profile
+│   │   │   └── tools/          # Tool pages
+│   │   ├── layout.tsx          # Root layout (FOUC fix, Canvas provider)
+│   │   ├── not-found.tsx       # Custom 404 page
+│   │   └── globals.css         # Sage Tech color system
+│   ├── components/
+│   │   ├── ui/                 # Atomic UI components
+│   │   │   ├── Button.tsx      # Primary, Glow, Outline variants
+│   │   │   └── Card.tsx        # Glass, Interactive variants
+│   │   ├── canvas/             # 3D components
+│   │   │   ├── Canvas.tsx      # Global WebGL context
+│   │   │   ├── Scene.tsx       # 3D scene content
+│   │   │   └── SceneView.tsx   # View tunneling wrapper
+│   │   ├── layout/             # Layout components
+│   │   │   ├── Header.tsx      # Navigation header (public only)
+│   │   │   ├── Sidebar.tsx     # Collapsible sidebar (dashboard)
+│   │   │   ├── ThemeToggle.tsx # Dark/light mode toggle
+│   │   │   └── Footer.tsx      # Page footer
+│   │   ├── feedback/           # User feedback
+│   │   │   └── Toaster.tsx     # Toast notification system
+│   │   └── providers/          # React providers
+│   │       └── CanvasProvider.tsx  # Dynamic Canvas import
+│   ├── store/
+│   │   ├── authStore.ts        # Authentication state (Zustand)
+│   │   ├── uiStore.ts          # UI state (toasts, modals, sidebar)
+│   │   └── useStore.ts         # Theme state with persistence
+│   ├── lib/
+│   │   ├── api/                # API client layer
+│   │   │   ├── client.ts       # Base client with interceptors
+│   │   │   ├── auth.ts         # Auth endpoints
+│   │   │   ├── tools.ts        # Tools API (tax calc, email templates)
+│   │   │   ├── csrf.ts         # CSRF token management
+│   │   │   └── index.ts        # Centralized exports
+│   │   └── utils.ts            # cn() utility for class merging
+│   ├── hooks/
+│   │   ├── useAuth.ts          # Auth hook (uses authStore)
+│   │   ├── useToolAccess.ts    # Tool permission checking
+│   │   ├── useSessionPolling.ts # Session expiration polling
+│   │   └── index.ts            # Hook exports
+│   ├── middleware.ts           # Route protection
+│   └── __tests__/              # Unit tests (31 passing)
+│       ├── store/
+│       │   ├── authStore.test.ts
+│       │   └── uiStore.test.ts
+│       └── lib/api/
+│           └── csrf.test.ts
+├── next.config.ts              # Turbopack + 3D + API rewrites
+├── jest.config.js              # Jest configuration
+├── jest.setup.js               # Jest setup (next/navigation mocks)
+└── package.json                # Dependencies + test scripts
+```
+
+#### Design System - "Sage Tech" Dark Mode
+
+**Colors (Tailwind classes):**
+- `primary` / `primary-hover` / `primary-glow`: Sage green (#588157)
+- `secondary` / `secondary-hover`: Tech mint (#9CDFB9)
+- `accent` / `accent-hover`: Deep teal (#577A81)
+- `surface-900` / `surface-800` / `surface-700`: Tinted dark backgrounds
+- `text-high` / `text-muted`: Text colors
+- `success` / `warning` / `danger` / `info`: State colors
+
+**Typography:**
+- Display font (headers): Space Grotesk via `font-display`
+- Body font (UI): Inter via `font-body`
+
+**Glassmorphism:**
+- `.glass`: Standard glass effect
+- `.glass-strong`: Higher opacity glass
+- `.glow-primary` / `.glow-secondary`: Glow effects
+
+#### View Tunneling Architecture (3D)
+
+The 3D system uses "View Tunneling" for DOM/WebGL integration:
+
+1. **Global Canvas**: Single `<Canvas>` at root layout
+2. **View Components**: Render 3D into specific DOM positions
+3. **Benefits**: Perfect scroll sync, correct z-indexing, single WebGL context
+
+```tsx
+// Place 3D content anywhere in HTML flow
+import { SceneView } from "@/components/canvas";
+
+<div className="relative h-[400px]">
+  <SceneView className="absolute inset-0" />
+  <div className="relative z-10">Overlay content</div>
+</div>
+```
+
+#### Performance Features
+
+- **Dynamic imports**: Canvas/3D components loaded with `ssr: false`
+- **Performance monitor**: Auto-adjusts DPR based on FPS
+- **On-demand rendering**: `frameloop="demand"` for static scenes
+- **Optimized imports**: Lucide and drei tree-shaking
+- **Theme persistence**: Zustand persist middleware prevents re-initialization
+- **FOUC prevention**: Blocking script in root layout applies theme before render
+
+#### Authentication & Security
+
+**Session Management:**
+- HttpOnly cookies for session storage (Flask backend)
+- CSRF token injection on all mutating requests (POST/PUT/PATCH/DELETE)
+- Automatic token caching and refresh
+- 5-minute session polling to detect expiration
+
+**Route Protection:**
+- Next.js middleware validates session cookie
+- Public routes: `/login`, `/register`, `/forgot-password`, `/reset-password`
+- Protected routes: `/dashboard`, `/profile`, `/tools/*`, `/admin/*`
+- 401 → Redirect to `/login?session_expired=true`
+- 403 AUTH_UNVERIFIED → Redirect to `/verify-email-pending`
+
+**API Client Features:**
+- Automatic CSRF token injection via request interceptor
+- Response interceptors for 401/403 handling
+- Centralized error handling with toast notifications
+- Token refresh on 403 CSRF mismatch
+- `toolsApi` client for tool operations (tax calc, email templates)
+- `useToolAccess` hook for permission-based tool access control
+
+**State Management:**
+```typescript
+// authStore: User authentication state
+{
+  user: UserProfile | null,
+  isAuthenticated: boolean,
+  isLoading: boolean,
+  permissions: string[],
+  login(credentials) → Promise<void>,
+  logout() → Promise<void>,
+  checkAuth() → Promise<void>
+}
+
+// uiStore: UI state (toasts, modals, sidebar)
+{
+  toasts: Toast[],
+  isSidebarCollapsed: boolean,
+  isLoading: boolean,
+  showToast(toast) → void,
+  removeToast(id) → void,
+  toggleSidebar() → void
+}
+
+// useStore: Theme persistence
+{
+  theme: 'light' | 'dark',
+  toggleTheme() → void
+}
+```
 
 ### Templates
 Jinja2 templates in two locations (ChoiceLoader setup):
@@ -242,6 +635,12 @@ Default tools are automatically assigned to new users:
 
 Non-default tools require explicit admin grant.
 
+### Dashboard Redesign (In Progress)
+See [docs/dashboard-redesign-679c76.md](docs/dashboard-redesign-679c76.md) for full implementation plan.
+- **Phase 1** (DB Schema): ✅ Complete — categories, subscriptions, favorites, payment providers, billing cycles
+- **Phase 2** (API Endpoints): In progress — 2A Favorites API complete, 2B-2G pending
+- **Phases 3-7** (Frontend): Pending
+
 ### User Creation Flow
 1. Use `UserFactory.create_user()` with role parameter
 2. Password is set automatically within factory
@@ -271,7 +670,7 @@ Test fixtures in `tests/conftest.py`:
 
 When writing tests:
 - Use in-memory SQLite for speed
-- Import models via `from model import User, Admin, Tool, etc.`
+- Import models via `from model import User, Admin, Tool, ToolCategory, ToolFavorite, SubscriptionPlan, UserSubscription, etc.`
 - CSRF is disabled in test config
 
 ## Database Migrations

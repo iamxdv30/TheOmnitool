@@ -3,159 +3,376 @@ name: smart-commit
 description: Analyze changes, generate detailed commit message, commit and push
 ---
 
-You are tasked with comprehensively analyzing all uncommitted changes in the codebase, generating a detailed and meaningful git commit message, committing the changes, and pushing to the current branch.
+You are tasked with comprehensively analyzing all uncommitted changes, generating a detailed commit message, committing, pushing, and optionally updating related project files. This command is **codebase-agnostic** — it works on any project by dynamically discovering the repository context.
 
-## Process
+---
 
-### 1. Analyze Current State
-First, gather comprehensive information about the repository state:
+## Phase 0: Discovery
 
-- Run `git status` to see all modified, added, and deleted files
-- Run `git diff` to see unstaged changes in detail
-- Run `git diff --staged` to see staged changes
-- Run `git log --oneline -10` to understand recent commit message style
-- Run `git branch --show-current` to identify the current branch
+Before analyzing changes, discover the repository context. Do NOT assume any particular project structure.
 
-### 2. Comprehensive Change Analysis
-Analyze the changes to understand:
+### 0A. Repository Context
 
-- **Type of changes**: New feature, bug fix, refactor, docs, style, test, chore, etc.
-- **Affected components**: Which parts of the codebase were modified (models, routes, frontend, templates, etc.)
-- **Scope and impact**: How significant are the changes? Do they affect multiple areas?
-- **Related files**: Group related changes together for better understanding
-- **Breaking changes**: Identify any potentially breaking changes
+```bash
+git status
+git diff
+git diff --staged
+git log --oneline -10
+git branch --show-current
+git remote -v
+```
 
-### 3. Generate Detailed Commit Message
-Create a commit message following this structure:
+### 0B. Detect Project Files
+
+Scan the project root for files that may need updating alongside the commit:
+
+**Changelog files** (check if any exist):
+- `CHANGELOG.md`, `CHANGELOG`, `CHANGES.md`, `HISTORY.md`
+- `changelog.md`, `changes.md`
+
+**Readme files** (check if any exist):
+- `README.md`, `README`, `README.rst`, `readme.md`
+
+**Version files** (check if any exist):
+- `VERSION`, `version.txt`, `version.py`
+- Check `package.json` → `"version"` field
+- Check `pyproject.toml` → `[project] version`
+- Check `setup.py`, `setup.cfg` → `version=`
+- Check `Cargo.toml` → `version =`
+
+**Sensitive file patterns** (NEVER commit these):
+- `.env`, `.env.*` (except `.env.example`)
+- `*credentials*`, `*secret*`, `*token*` (config files with real values)
+- `*.key`, `*.pem`, `*.p12`
+- `id_rsa`, `id_ed25519`
+- Database files: `*.db`, `*.sqlite`, `*.sqlite3`
+
+Record what exists — these inform later phases.
+
+---
+
+## Phase 1: Comprehensive Change Analysis
+
+### 1A. Categorize Every Changed File
+
+For each modified/added/deleted file, determine:
+
+- **Change type**: `feat`, `fix`, `refactor`, `docs`, `style`, `test`, `chore`, `perf`, `build`, `ci`
+- **Scope**: Which component/area it belongs to (e.g., `auth`, `api`, `frontend`, `db`, `config`)
+- **Impact**: Breaking change? New dependency? Migration needed?
+
+### 1B. Group Related Changes
+
+Cluster files that belong to the same logical change:
+- A new API endpoint + its test + its frontend consumer = one logical feature
+- A model change + migration + service update = one logical change
+- Config-only changes = separate from feature changes
+
+### 1C. Assess Commit Strategy
+
+**Single commit** if:
+- All changes relate to one logical feature/fix/refactor
+- Changes span multiple files but serve one purpose
+
+**Multiple commits** — ask the user if:
+- Changes are clearly unrelated (e.g., a bug fix + a new feature + docs cleanup)
+- Suggest logical groupings and let the user decide
+- If user says "just commit everything", proceed with a single commit
+
+---
+
+## Phase 2: Generate Commit Message
+
+### Format
+
+Follow [Conventional Commits](https://www.conventionalcommits.org/) format, adapted to match the project's existing commit style (from `git log`):
 
 ```
 <type>(<scope>): <short summary>
 
-<detailed description>
+<detailed description — the "why" and high-level "what">
 
-- <bullet point 1>
-- <bullet point 2>
-- <bullet point 3>
+- <specific change 1>
+- <specific change 2>
+- <specific change 3>
 
-<additional notes if needed>
-
+<footer — breaking changes, issue refs, etc.>
 ```
 
-**Type options**: feat, fix, refactor, docs, style, test, chore, perf, build, ci
+### Rules
 
-**Guidelines**:
-- **Short summary**: Max 72 characters, imperative mood ("add" not "added")
-- **Detailed description**: Explain the "why" and "what" at a high level
-- **Bullet points**: List specific changes, enhancements, or fixes
-- **Be specific**: Reference file paths, function names, or components when relevant
-- **Match project style**: Follow the pattern from recent commits
+- **Short summary**: Max 72 chars, imperative mood ("add" not "added", "fix" not "fixed")
+- **Scope**: Derive from the affected area. Use broad scopes for cross-cutting changes (`app`, `system`, `stack`)
+- **Description**: Explain WHY the change was made, not just what changed. What problem does it solve?
+- **Bullet points**: Be specific — reference file paths, function names, components. Group by sub-area if many changes
+- **Breaking changes**: Prefix with `BREAKING CHANGE:` in the footer
+- **Issue references**: Include `Closes #123` or `Fixes #456` if referenced in branch name or recent context
+- **Match project style**: If recent commits use emoji prefixes, lowercase types, or a different convention — match it
 
-### 4. Stage and Commit
-- Stage all relevant files with `git add`
-- **DO NOT stage** sensitive files (.env, credentials, secrets)
-- Warn if sensitive files are detected
-- Create commit with the generated message using HEREDOC format
-- Verify commit succeeded with `git status`
+### Type Reference
 
-### 5. Push to Branch
-- Push commits to the current branch using `git push`
-- If the branch has no upstream, use `git push -u origin <branch-name>`
-- Report the final status and any warnings
+| Type | When to use |
+|------|------------|
+| `feat` | New feature or capability |
+| `fix` | Bug fix |
+| `refactor` | Code restructuring without behavior change |
+| `docs` | Documentation only |
+| `style` | Formatting, whitespace, missing semicolons (no logic change) |
+| `test` | Adding or fixing tests |
+| `chore` | Maintenance, dependency updates, config changes |
+| `perf` | Performance improvement |
+| `build` | Build system or external dependency changes |
+| `ci` | CI/CD pipeline changes |
 
-## Special Considerations
+### Multi-Scope Changes
 
-### Multiple Related Changes
-If changes span multiple areas (e.g., backend + frontend + docs):
-- Use a broader scope like `app` or `system`
-- List all affected areas in bullet points
-- Example: `feat(app): add user role management feature`
+When changes span multiple areas:
+- Use the **primary** scope in the header: `feat(auth): add OAuth2 login with Google`
+- List secondary areas in bullet points:
+  ```
+  - Add OAuth2 routes in routes/auth_routes.py
+  - Create Google OAuth provider in services/oauth_service.py
+  - Add login button to frontend/src/app/(auth)/login/page.tsx
+  - Update environment configuration with OAuth credentials
+  ```
 
-### Sequential Commits
-If changes are too diverse and should be separate commits:
-- Ask the user if they want to split into multiple commits
-- Suggest logical groupings
+---
 
-### Sensitive Files
-Never commit:
-- `.env` files
-- Files containing API keys, tokens, passwords
-- `credentials.json` or similar
-- Database files (`.db`, `.sqlite`)
+## Phase 3: Stage and Commit
 
-Warn the user and skip these files.
+### 3A. Stage Files
 
-### Commit Message Examples
+- Stage all relevant changed files by name (prefer explicit `git add <file>` over `git add -A`)
+- **NEVER stage** files matching sensitive patterns from Phase 0B
+- If sensitive files are detected in the diff, **warn the user** and skip them
+- If `.gitignore` additions are part of the changes, stage those first
 
-**Example 1 - Feature Addition**:
-```
-feat(admin): add bulk user management and role assignment
+### 3B. Commit
 
-Implement comprehensive bulk operations for admin dashboard including
-user selection, role changes, and tool access management.
+Create the commit using HEREDOC format for proper message formatting:
 
-- Add checkbox selection for multiple users
-- Implement bulk role change functionality
-- Add bulk tool access grant/revoke
-- Create confirmation modals for bulk operations
-- Update admin dashboard UI with bulk action buttons
+```bash
+git commit -m "$(cat <<'EOF'
+<commit message here>
 
-```
-
-**Example 2 - Bug Fix**:
-```
-fix(auth): resolve session timeout issue on password reset
-
-Fixed critical bug where password reset tokens were expiring
-prematurely due to incorrect session configuration.
-
-- Update token expiration logic in auth_routes.py:245
-- Fix session handling in password reset flow
-- Add proper error messages for expired tokens
-- Update tests to cover token expiration scenarios
-
-
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+EOF
+)"
 ```
 
-**Example 3 - Refactor**:
+### 3C. Verify
+
+```bash
+git status
+git log --oneline -1
 ```
-refactor(models): restructure user hierarchy with design patterns
 
-Refactor model architecture to use Factory and Strategy patterns
-for better maintainability and extensibility.
+If pre-commit hooks fail:
+- Show the hook output
+- Fix the issues the hook identified (lint errors, formatting, etc.)
+- Re-stage the fixed files
+- Create a **NEW** commit (do NOT amend — the previous commit didn't happen)
+- If hooks modify files automatically (e.g., formatters), re-stage and create a NEW commit
 
-- Split monolithic user model into modular files
-- Implement UserFactory for role-based user creation
-- Add Strategy pattern for password hashing
-- Update imports across all routes and tests
-- Maintain backward compatibility with existing code
+---
 
+## Phase 4: Push
+
+```bash
+git push
 ```
+
+If no upstream is set:
+```bash
+git push -u origin <current-branch>
+```
+
+If push fails due to remote changes:
+- **Do NOT force push**
+- Inform the user and suggest `git pull --rebase` first
+- Let the user decide how to proceed
+
+---
+
+## Phase 5: Conditional Updates (Only If Applicable)
+
+These steps are **conditional** — only execute them if the relevant files exist AND the changes warrant an update.
+
+### 5A. Update CHANGELOG (Only if file exists AND changes are user-facing)
+
+**Skip if:**
+- No changelog file exists in the project
+- Changes are internal-only (refactors, CI fixes, dev tooling, test-only changes)
+- Changes are trivial (typo fixes, comment updates, formatting)
+
+**Execute if:**
+- A changelog file exists AND changes include new features, bug fixes, breaking changes, deprecations, or security fixes
+
+**How to update:**
+1. Read the existing changelog to understand its format (Keep a Changelog, custom, etc.)
+2. Match the existing format exactly (heading levels, date format, category names, bullet style)
+3. Add a new entry at the TOP of the changelog (below the header), using the next logical version or `[Unreleased]`
+4. Categorize changes using the changelog's existing categories. Common patterns:
+   - Keep a Changelog: `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`
+   - Emoji-style: Categories with emoji prefixes (match what's already there)
+   - Flat: Simple bullet list under version heading
+5. Write entries from the USER's perspective, not the developer's:
+   - Good: "Add bulk export for user data"
+   - Bad: "Refactor export_service.py to support batch operations"
+6. Include the date in whatever format the file already uses
+
+**Version bumping logic:**
+- If changes include breaking changes → suggest major version bump
+- If changes include new features → suggest minor version bump
+- If changes are fixes only → suggest patch version bump
+- If an `[Unreleased]` section pattern is used, add there instead of creating a new version
+
+### 5B. Update README (Only if file exists AND specific triggers match)
+
+**Skip if:**
+- No readme file exists
+- Changes don't affect anything the README documents
+
+**Execute if the changes affect ANY of these (and the README documents them):**
+- Installation steps or prerequisites changed
+- New CLI commands or scripts added that are documented in README
+- Version badge needs updating (if README has version badges)
+- New major feature added that the README's feature list covers
+- API endpoints changed that the README documents
+- Environment variables changed that the README references
+- Build/deploy process changed that the README describes
+
+**How to update:**
+1. Read the full README to understand what it covers
+2. Only update the specific sections affected by the changes
+3. Do NOT add new sections unless explicitly needed
+4. Match the existing writing style and formatting
+5. If the README has a version badge, update the version number
+
+### 5C. Update Version Files (Only if version bump is warranted)
+
+**Skip if:**
+- No version files exist
+- Changes don't warrant a version bump (internal refactors, CI changes, test-only)
+
+**Execute if:**
+- A new feature, fix, or breaking change is being released
+- The changelog was updated with a new version number
+
+**How to update:**
+- Update ALL version files consistently (VERSION, package.json, pyproject.toml, etc.)
+- Ensure the same version number appears everywhere
+
+### 5D. Commit Updates (If any files were updated in 5A-5C)
+
+If any project files were updated:
+
+```bash
+git add <updated files>
+git commit -m "$(cat <<'EOF'
+docs: update changelog and project metadata for <version>
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+EOF
+)"
+git push
+```
+
+---
+
+## Phase 6: PR Message Generation
+
+After pushing, generate a pull request description that can be used when creating a PR.
+
+### When to Generate
+
+Always generate the PR message and display it. The user can use it immediately or save it for later.
+
+### Format
+
+```markdown
+## Summary
+<1-3 sentences explaining the overall purpose of the changes on this branch>
+
+## Changes
+<Grouped bullet points of what changed, organized by area/component>
+
+### [Area 1]
+- Change description
+- Change description
+
+### [Area 2]
+- Change description
+
+## Breaking Changes
+<List any breaking changes, or "None" if there are none>
+
+## Test Plan
+- [ ] <How to verify the changes work>
+- [ ] <Edge cases to test>
+- [ ] <Regression areas to check>
+
+## Notes
+<Any additional context, deployment steps, migration requirements, or caveats>
+```
+
+### Rules
+
+- **Derive from ALL commits on the branch**, not just the latest commit. Run `git log main..HEAD --oneline` (or equivalent base branch) to see all commits
+- **Write for reviewers** — explain the "why" more than the "what"
+- **Group changes logically**, not by file
+- **Test plan should be actionable** — specific steps, not vague "test it works"
+- **Include deployment notes** if there are migrations, env var changes, or infrastructure updates
+
+### Output
+
+Display the PR message in a code block so the user can copy it. Also mention:
+```
+To create the PR now, run:
+gh pr create --title "<suggested title>" --body "<body>"
+```
+
+---
 
 ## Edge Cases
 
 ### No Changes to Commit
-If `git status` shows no changes:
 - Report "No changes to commit"
-- Do not create an empty commit
-- Exit gracefully
+- Do NOT create an empty commit
 
 ### Merge Conflicts
-If there are merge conflicts:
-- Do not attempt to commit
-- Inform user to resolve conflicts first
-- Show conflicted files
+- Do NOT attempt to commit
+- Show the conflicted files
+- Inform the user to resolve conflicts first
 
-### Pre-commit Hooks
-If commit fails due to pre-commit hooks:
-- Show the hook output
-- If hooks modified files, verify it's safe to amend
-- Amend commit if safe, otherwise create new commit
+### Detached HEAD
+- Warn the user
+- Suggest creating a branch first
+
+### Large Diffs (50+ files)
+- Summarize by directory/area rather than listing every file
+- Group changes into logical categories
+- Ask the user if they want to split into multiple commits
+
+### Binary Files
+- Note them in the commit message but don't try to describe their content
+- Warn if large binaries (>5MB) are being committed
+
+---
 
 ## Output Summary
 
-After successful completion, provide:
-1. Summary of files committed (count and key files)
-2. The commit message used
-3. Confirmation of push success
-4. Current branch name and status
-5. Any warnings or issues encountered
+After completion, provide a concise summary:
+
+```
+## Commit Summary
+
+**Branch:** <branch-name>
+**Commit:** <short hash> <commit message first line>
+**Files:** <count> files changed (<insertions>+, <deletions>-)
+**Push:** Success / Failed (reason)
+
+**Updated:** CHANGELOG.md ✓ | README.md — (no update needed) | VERSION — (no update needed)
+
+**PR Message:** Generated below (copy when ready to create PR)
+```

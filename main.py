@@ -73,9 +73,11 @@ from routes.auth_routes import auth
 from routes.user_routes import user
 from routes.admin_routes import admin
 from routes.tool_routes import tool
-from routes.contact_routes import contact, configure_mail
+from routes.contact_routes import contact, configure_mail, mail
 from routes.health_routes import health
+from routes.api import api_bp, register_api_routes
 from model import db
+from services import init_email_service
 
 
 
@@ -113,7 +115,7 @@ def get_version():
         print(f"Error reading VERSION file: {e}")
         return "1.0.0"  # Fallback version
 
-def create_app():
+def create_app(test_config=None):
     # Determine if we're running locally
     is_local = os.environ.get('IS_LOCAL', 'true').lower() == 'true'
     environment = os.getenv('FLASK_ENV', 'development')
@@ -137,21 +139,33 @@ def create_app():
     # Configure Flask-Mail
     configure_mail(app)
 
+    # Initialize the email service with Flask-Mail instance
+    init_email_service(mail)
+
     # Set the secret key based on the environment
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default_secret_key_for_development')
-    logging.info(f"Using secret key: {app.config['SECRET_KEY']}")
 
     # Database configuration
-    if is_local:
-        # Local development: Use SQLite
+    # USE_DOCKER_DB=true enables Docker PostgreSQL for local development
+    # This provides database parity across dev/staging/production
+    use_docker_db = os.getenv('USE_DOCKER_DB', 'false').lower() == 'true'
+
+    if is_local and not use_docker_db:
+        # Local development with SQLite (fallback, not recommended)
         database_url = 'sqlite:///users.db'
         logging.info(f"Using local SQLite database: {database_url}")
+        logging.warning("SQLite may cause migration issues. Consider USE_DOCKER_DB=true for PostgreSQL.")
     else:
-        # Production/Staging: Use DATABASE_URL from Heroku
+        # Production, Staging, OR Local Docker PostgreSQL
         database_url = os.getenv('DATABASE_URL', '')
 
         if not database_url:
-            raise ValueError("DATABASE_URL environment variable not set in production!")
+            if is_local and use_docker_db:
+                # Default Docker PostgreSQL URL for local development
+                database_url = 'postgresql://omnitool:omnitool_dev@localhost:5432/omnitool_dev'
+                logging.info("Using Docker PostgreSQL (default connection)")
+            else:
+                raise ValueError("DATABASE_URL environment variable not set in production!")
 
         # Replace deprecated PostgreSQL connection string format
         if database_url.startswith("postgres://"):
@@ -164,13 +178,19 @@ def create_app():
     app.config["SQLALCHEMY_DATABASE_URI"] = database_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
+    # Apply test overrides BEFORE the engine binds to a database, so test
+    # suites never connect to the real DATABASE_URL from the environment.
+    if test_config:
+        app.config.update(test_config)
+
     # Initialize the db and migrations
     db.init_app(app)
     migrate = Migrate(app, db, render_as_batch=True)  # Enable batch mode for SQLite
 
-    # SAFETY: Validate database on startup
-    from utils.db_safety import validate_database_on_startup
-    validate_database_on_startup(app)
+    # SAFETY: Validate database on startup (skipped under test)
+    if not app.config.get('TESTING'):
+        from utils.db_safety import validate_database_on_startup
+        validate_database_on_startup(app)
 
     # Register blueprints
     app.register_blueprint(auth)
@@ -179,6 +199,10 @@ def create_app():
     app.register_blueprint(tool, url_prefix='/tools')
     app.register_blueprint(contact)
     app.register_blueprint(health)  # Health check endpoints
+
+    # Register API blueprint (JSON endpoints for Next.js frontend)
+    register_api_routes()  # Register sub-routes first
+    app.register_blueprint(api_bp)  # Register main API blueprint at /api/v1
 
     @app.route("/environment")
     def show_environment():
@@ -261,6 +285,6 @@ if __name__ == "__main__":
     app.run(
         host=host,
         port=int(os.environ.get('PORT', 5000)),
-        debug=True,
+        debug=is_local,  # Never expose the Werkzeug debugger outside local dev
         ssl_context=ssl_context
     )

@@ -50,7 +50,12 @@ DEPRECATED_TOOLS = {
     "Canada Tax Calculator": "Tax Calculator",
     "US Tax Calculator": "Tax Calculator",
     "Unified Tax Calculator": "Tax Calculator",
-    "Email Templates management": "Email Templates"
+    "Email Templates management": "Email Templates",
+    # Legacy kebab-case names (migrate to title case)
+    "tax-calculator": "Tax Calculator",
+    "char-counter": "Character Counter",
+    "email-templates": "Email Templates",
+    "unix-timestamp": "Unix Timestamp Converter",
 }
 
 def sync_tools():
