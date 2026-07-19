@@ -48,3 +48,7 @@ zzDumpfiles/
 
 # macOS
 .DS_Store
+
+# Local working docs (kept out of the repo)
+docs/dashboard-redesign-679c76.md
+docs/MEMORY.md
