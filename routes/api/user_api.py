@@ -8,20 +8,22 @@ Handles user-related JSON API endpoints:
 - PUT    /api/v1/user/email
 - GET    /api/v1/user/tools
 - GET    /api/v1/user/usage
+- GET    /api/v1/user/usage-history
+- GET    /api/v1/user/subscription
 - GET    /api/v1/user/dashboard
 - GET    /api/v1/user/favorites
 - POST   /api/v1/user/favorites/<tool_id>
 - DELETE /api/v1/user/favorites/<tool_id>
 """
 
-from flask import Blueprint, session
+from flask import Blueprint, session, request
 import logging
 
 from . import (
     api_response, api_error, get_json_body,
     require_auth, require_verified
 )
-from services import get_user_service, get_tool_service
+from services import get_user_service, get_tool_service, get_subscription_service
 
 logger = logging.getLogger(__name__)
 
@@ -276,6 +278,71 @@ def get_usage_stats():
     })
 
 
+@user_api_bp.route('/usage-history', methods=['GET'])
+@require_auth
+def get_usage_history():
+    """
+    Get current user's recent tool usage entries (paginated, newest first).
+
+    Query Parameters:
+        limit: int (default 10, max 100)
+        offset: int (default 0)
+
+    Returns:
+        200: {"success": true, "data": {"history": [{"tool_name", "timestamp"}, ...], "total": int}}
+        400: Invalid pagination parameters
+        401: Not authenticated
+    """
+    user_id = session.get('user_id')
+
+    try:
+        limit = int(request.args.get('limit', 10))
+        offset = int(request.args.get('offset', 0))
+    except (TypeError, ValueError):
+        return api_error(
+            "VALIDATION_ERROR",
+            "limit and offset must be integers.",
+            status_code=400
+        )
+
+    tool_service = get_tool_service()
+    result = tool_service.get_usage_history(user_id, limit=limit, offset=offset)
+
+    if result.is_failure:
+        return api_error(
+            result.error.code.value,
+            result.error.message,
+            status_code=result.error.http_status
+        )
+
+    return api_response(result.data)
+
+
+@user_api_bp.route('/subscription', methods=['GET'])
+@require_auth
+def get_subscription():
+    """
+    Get current user's active subscription.
+
+    Returns:
+        200: {"success": true, "data": {"subscription": {...} | null}}
+        401: Not authenticated
+    """
+    user_id = session.get('user_id')
+
+    subscription_service = get_subscription_service()
+    result = subscription_service.get_user_subscription(user_id)
+
+    if result.is_failure:
+        return api_error(
+            result.error.code.value,
+            result.error.message,
+            status_code=result.error.http_status
+        )
+
+    return api_response({"subscription": result.data})
+
+
 @user_api_bp.route('/favorites', methods=['GET'])
 @require_auth
 def get_favorites():
@@ -376,7 +443,9 @@ def get_dashboard():
             "data": {
                 "user": UserProfileData,
                 "tools": ["Tool1", ...],
-                "usage": {"ToolName": count, ...}
+                "usage": {"ToolName": count, ...},
+                "favorites": [tool_id, ...],
+                "subscription": {...} | null
             }
         }
         401: Not authenticated
@@ -393,9 +462,18 @@ def get_dashboard():
             status_code=result.error.http_status
         )
 
+    tool_service = get_tool_service()
+    favorites_result = tool_service.get_user_favorites(user_id)
+    favorites = favorites_result.data if favorites_result.is_success else []
+
+    subscription_result = get_subscription_service().get_user_subscription(user_id)
+    subscription = subscription_result.data if subscription_result.is_success else None
+
     dashboard = result.data
     return api_response({
         "user": dashboard.user.to_dict(),
         "tools": dashboard.tools,
-        "usage": dashboard.usage_stats or {}
+        "usage": dashboard.usage_stats or {},
+        "favorites": favorites,
+        "subscription": subscription
     })

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { toast } from "@/store/uiStore";
@@ -50,24 +50,20 @@ export function useToolAccess(
   const isInitialized = useAuthStore((state) => state.isInitialized);
   const isAuthLoading = useAuthStore((state) => state.isLoading);
 
-  const [hasChecked, setHasChecked] = useState(false);
-
   // Check if user is admin/superadmin
   const isAdmin = user?.role === "admin" || user?.role === "superadmin";
 
   // Admins have access to all tools
   const hasAccess = isAdmin || permissions.includes(toolName);
 
-  // Combined loading state
-  const isLoading = !isInitialized || isAuthLoading || !hasChecked;
+  // Loading until auth state is initialized (derived — no extra state needed)
+  const isLoading = !isInitialized || isAuthLoading;
 
   useEffect(() => {
     // Wait until auth is initialized
     if (!isInitialized || isAuthLoading) {
       return;
     }
-
-    setHasChecked(true);
 
     // If user doesn't have access, redirect
     if (!hasAccess) {

@@ -212,17 +212,17 @@ Implement a full-stack "Tools Discovery" dashboard with backend-persisted favori
   - `remove_favorite(user_id, tool_id) → ServiceResult[bool]`
 
 #### 2B. Usage History Endpoint (add to `routes/api/user_api.py`)
-- [ ] **`GET /api/v1/user/usage-history`** — Return recent `UsageLog` entries (paginated)
+- [X] **`GET /api/v1/user/usage-history`** — Return recent `UsageLog` entries (paginated)
   - Uses `@require_auth`
   - Existing `GET /api/v1/user/usage` only returns aggregated counts (`{tool_name: count}`)
   - New endpoint returns actual log entries: `UsageLog` has `user_id`, `tool_name`, `timestamp`
   - Query params: `?limit=10&offset=0`
   - Returns: `{"history": [{"tool_name": "...", "timestamp": "ISO8601"}, ...], "total": int}`
-- [ ] **Add service method to `services/tool_service.py`:**
+- [X] **Add service method to `services/tool_service.py`:**
   - `get_usage_history(user_id, limit=10, offset=0) → ServiceResult[dict]`
 
 #### 2C. Subscription Read Endpoint (add to `routes/api/user_api.py`)
-- [ ] **`GET /api/v1/user/subscription`** — Get user's current subscription status
+- [X] **`GET /api/v1/user/subscription`** — Get user's current subscription status
   - Uses `@require_auth`
   - Queries `UserSubscription` by `user_id` (Phase 1 assigned all users waived-forever Pro)
   - Joins `SubscriptionPlan` for plan details and `BillingCycle` for cycle info
@@ -238,16 +238,16 @@ Implement a full-stack "Tools Discovery" dashboard with backend-persisted favori
       }
     }
     ```
-- [ ] **Add service method to `services/tool_service.py` (or new `services/subscription_service.py`):**
-  - `get_user_subscription(user_id) → ServiceResult[dict]`
+- [X] **Add service method to `services/tool_service.py` (or new `services/subscription_service.py`):**
+  - `get_user_subscription(user_id) → ServiceResult[dict]` — implemented in new `services/subscription_service.py` (also `get_plans()`, `get_active_tier()`)
 
 #### 2D. Tool & Category Endpoints (modify `routes/api/tool_api.py`)
-- [ ] **`GET /api/v1/tools/categories`** — List all active categories (for filter pills)
+- [X] **`GET /api/v1/tools/categories`** — List all active categories (for filter pills)
   - Uses `@require_auth`
   - Queries `ToolCategory` where `is_active=True`, ordered by `display_order`
   - Seeded categories (Phase 1): Finance, Development, Writing, Marketing
   - Returns: `{"categories": [{"id": 1, "name": "Finance", "slug": "finance", "color": "text-success", "icon": "coins"}, ...]}`
-- [ ] **Update `GET /api/v1/tools/` response** — Include new Phase 1 fields in response
+- [X] **Update `GET /api/v1/tools/` response** — Include new Phase 1 fields in response (also fixed pre-existing bug: `hasAccess` compared tool names against `ToolInfo` objects, so it was always `false` for regular users)
   - Current response (`tool_api.py:114-121`) only returns `id`, `name`, `description`, `route`, `is_default`, `hasAccess`
   - **Add:** `icon`, `display_name`, `is_paid`, `required_plan`, nested `category` object
   - Update `ToolInfo` dataclass (`services/tool_service.py:25-44`) to include:
@@ -262,10 +262,10 @@ Implement a full-stack "Tools Discovery" dashboard with backend-persisted favori
     - `required_plan_tier: Optional[int]`
   - Update `_tool_to_info()` helper (`services/tool_service.py:629-639`) to populate new fields from `Tool.category` and `Tool.required_plan_id` relationships
   - Update response builder (`tool_api.py:106-122`) to include new fields
-- [ ] **Add service method:** `get_categories() → ServiceResult[List[dict]]`
+- [X] **Add service method:** `get_categories() → ServiceResult[List[dict]]`
 
 #### 2E. Access Control Updates (modify `services/tool_service.py`)
-- [ ] **Extend `check_tool_access()` (`services/tool_service.py:162-198`):**
+- [X] **Extend `check_tool_access()` (`services/tool_service.py:162-198`):**
   ```python
   def check_tool_access(self, user_id, tool_name, user_role=None):
       # 1. Admins/SuperAdmins bypass all checks (existing, line 182)
@@ -276,7 +276,7 @@ Implement a full-stack "Tools Discovery" dashboard with backend-persisted favori
       #    - Tool model has: is_paid (bool), required_plan_id (FK → subscription_plans.id)
       #    - SubscriptionPlan model has: tier_level (int) — 0=Free, 1=Basic, 2=Pro
   ```
-- [ ] **Update `check_tool_access()` in `routes/api/tool_api.py:28-55`** to pass subscription context
+- [X] **Update `check_tool_access()` in `routes/api/tool_api.py:28-55`** to pass subscription context (service resolves tier internally via `get_subscription_service().get_active_tier()`)
 
 #### 2F. Subscription Management Endpoints (future — payment integration)
 > **Note:** These endpoints are deferred until a payment provider is integrated.
@@ -285,7 +285,7 @@ Implement a full-stack "Tools Discovery" dashboard with backend-persisted favori
 > architecture (`services/payment/base.py` → `PaymentProviderInterface`) should be
 > created when the first provider is integrated.
 
-- [ ] **`GET /api/v1/tools/plans`** — List available subscription plans
+- [X] **`GET /api/v1/tools/plans`** — List available subscription plans (implemented — read-only, no payment required)
   - Queries `SubscriptionPlan` where `is_active=True`
   - Seeded plans (Phase 1): Free (tier 0), Basic (tier 1, $9.99/mo), Pro (tier 2, $29.99/mo)
 - [ ] **`POST /api/v1/user/subscription`** — Create/upgrade subscription (requires payment provider)
@@ -297,43 +297,49 @@ Implement a full-stack "Tools Discovery" dashboard with backend-persisted favori
   - `stripe_provider.py` — Stripe implementation (first provider)
 
 #### 2G. Phase 2 Delivery Checklist
-- [ ] **Update `routes/api/__init__.py:273-290`** — No new sub-blueprints needed (favorites/usage-history/subscription go on existing `user_api_bp`; categories goes on existing `tool_api_bp`)
-- [ ] **Update `services/__init__.py`** — Export any new service classes/functions
-- [ ] **Add validation schemas** to `routes/api/schemas.py` if needed (e.g., `FavoriteSchema`)
-- [ ] **Update `GET /api/v1/user/dashboard`** (`user_api.py:274-308`) — Include favorites and subscription in the combined dashboard response
+- [X] **Update `routes/api/__init__.py:273-290`** — No new sub-blueprints needed (favorites/usage-history/subscription go on existing `user_api_bp`; categories goes on existing `tool_api_bp`)
+- [X] **Update `services/__init__.py`** — Exported `SubscriptionService` / `get_subscription_service`
+- [X] **Add validation schemas** — Not needed: new endpoints are GET-only or take path params; pagination validated inline
+- [X] **Update `GET /api/v1/user/dashboard`** (`user_api.py:274-308`) — Include favorites and subscription in the combined dashboard response
+
+#### 2H. Phase 2 Delivery Notes (Added During Implementation)
+- [X] **CSRF enforcement added** (`routes/api/__init__.py`): mutating `/api/v1` requests now require a valid `X-CSRFToken` header matching the session token (previously tokens were issued but never validated). Disabled via `WTF_CSRF_ENABLED=False` in tests; frontend client auto-refreshes and retries once on `CSRF_ERROR`.
+- [X] **Session fixation protection**: API login clears the session and rotates the CSRF token.
+- [X] **Bug fixes found during implementation**: `UsageLog.timestamp` default evaluated at import time; `verify_email` raw SQL (`= 1`) incompatible with PostgreSQL boolean; legacy `tool_access_required` slug/name mismatch and missing `super_admin` bypass; SECRET_KEY logged in plaintext; test suite binding to the real `DATABASE_URL` (fixed via `create_app(test_config=...)`).
 
 ### Phase 3: Frontend — API Client Updates
-- [ ] Add to `frontend/src/lib/api/tools.ts`:
+- [X] Add to `frontend/src/lib/api/tools.ts`:
   - `getCategories()` — Fetch dynamic category list
   - `getFavorites()` / `addFavorite(toolId)` / `removeFavorite(toolId)`
-  - `getUsageHistory(limit?)`
-- [ ] Add to `frontend/src/lib/api/subscription.ts` (new file):
-  - `getPlans()` / `getUserSubscription()` / `subscribeToPlan(planId)`
-- [ ] Update `ToolInfo` interface with `is_paid`, `required_plan`, nested `category`
-- [ ] Create `Category`, `SubscriptionPlan`, `UserSubscription` interfaces
+  - `getUsageHistory(limit?, offset?)`
+- [X] Add to `frontend/src/lib/api/subscription.ts` (new file):
+  - `getPlans()` / `getUserSubscription()` — `subscribeToPlan()` deferred with §2F payment integration
+- [X] Update `ToolInfo` interface with `is_paid`, `required_plan`, nested `category`
+- [X] Create `Category`, `SubscriptionPlan`, `UserSubscription` interfaces (`frontend/src/types/index.ts`)
 
 ### Phase 4: Frontend — Reusable UI Components
-- [ ] **`SearchInput.tsx`** — Debounced search input with icon
-- [ ] **`Badge.tsx`** — Category badge component
-- [ ] **`CategoryFilter.tsx`** — Filter pills ("All", "Favorites", "Dev", "Finance", etc.)
+- [X] **`SearchInput.tsx`** — Debounced search input with icon
+- [X] **`Badge.tsx`** — Category badge component
+- [X] **`CategoryFilter.tsx`** — Filter pills ("All", "Favorites", "Dev", "Finance", etc.) — lives in `components/features/dashboard/`
 
 ### Phase 5: Frontend — Dashboard Feature Components
-- [ ] **`ToolCard.tsx`** — Enhanced card with favorite toggle, category badge, **paid/locked indicator**
-- [ ] **`ToolsGrid.tsx`** — Responsive grid with search/filter logic
-- [ ] **`UsageHistory.tsx`** — Recent activity card
-- [ ] **`UpgradeBanner.tsx`** — Optional banner prompting upgrade for locked tools
+- [X] **`ToolCard.tsx`** — Enhanced card with favorite toggle, category badge, **paid/locked indicator**
+- [X] **`ToolsGrid.tsx`** — Responsive grid with search/filter logic
+- [X] **`UsageHistory.tsx`** — Recent activity card
+- [X] **`UpgradeBanner.tsx`** — Optional banner prompting upgrade for locked tools
+- [X] **`toolMaps.ts`** — Shared icon/route lookups (fixed pre-existing wrong `/dashboard/tools/*` links; real routes are `/tools/*`)
 
 ### Phase 6: Frontend — Dashboard Page Refactor
-- [ ] Integrate new components into `page.tsx`
-- [ ] Add state: `searchQuery`, `activeCategory`, `favorites`
-- [ ] Implement filtering logic
-- [ ] Fetch favorites and usage history on mount
+- [X] Integrate new components into `page.tsx`
+- [X] Add state: `searchQuery`, `activeCategory`, `favorites`
+- [X] Implement filtering logic
+- [X] Fetch tools, categories, favorites, and usage history on mount (parallel); optimistic favorite toggling with rollback
 
 ### Phase 7: Testing
-- [ ] Unit tests for new API endpoints (pytest)
-- [ ] Frontend component tests (Jest + RTL)
-- [ ] Responsive testing: 320px / 768px / 1024px+
-- [ ] Theme toggle verification
+- [X] Unit tests for new API endpoints (pytest) — `tests/test_dashboard_api.py` (21 tests), `tests/test_csrf.py` (4 tests); full backend suite: 145 passing
+- [X] Frontend component tests (Jest + RTL) — `ToolsGrid.test.tsx` (7 tests); full frontend suite: 39 passing
+- [ ] Responsive testing: 320px / 768px / 1024px+ (manual — pending)
+- [ ] Theme toggle verification (manual — pending)
 
 ---
 

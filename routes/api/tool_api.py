@@ -3,6 +3,8 @@ Tool API Endpoints
 
 Handles tool-related JSON API endpoints:
 - GET    /api/v1/tools/                  - List all tools
+- GET    /api/v1/tools/categories        - List active tool categories
+- GET    /api/v1/tools/plans             - List active subscription plans
 - POST   /api/v1/tools/tax-calculator    - Execute tax calculation
 - POST   /api/v1/tools/character-counter - Execute character counting
 - GET    /api/v1/tools/email-templates   - List email templates
@@ -18,7 +20,7 @@ from . import (
     api_response, api_error, get_json_body,
     require_auth, require_verified
 )
-from services import get_tool_service
+from services import get_tool_service, get_subscription_service
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +57,7 @@ def check_tool_access(tool_name):
     return True, None
 
 
-@tool_api_bp.route('/', methods=['GET'])
+@tool_api_bp.route('/', methods=['GET'], strict_slashes=False)
 @require_auth
 def list_tools():
     """
@@ -98,29 +100,77 @@ def list_tools():
             status_code=tools_result.error.http_status
         )
 
-    # Get user's accessible tools
+    # Get user's accessible tool names
     user_tools_result = tool_service.get_user_tools(user_id)
-    user_tools = user_tools_result.data if user_tools_result.is_success else []
+    accessible_names = {
+        t.name for t in (user_tools_result.data if user_tools_result.is_success else [])
+    }
+
+    is_admin = user_role in ['admin', 'super_admin', 'superadmin']
+
+    # Resolve the user's subscription tier once for paid-tool gating
+    user_tier = None if is_admin else get_subscription_service().get_active_tier(user_id)
 
     # Build response with access flags
     tools_with_access = []
     for tool in tools_result.data:
-        # Admins have access to all tools
-        has_access = (
-            user_role in ['admin', 'super_admin', 'superadmin'] or
-            tool.name in user_tools
-        )
+        has_access = is_admin or tool.name in accessible_names
 
-        tools_with_access.append({
-            "id": tool.id,
-            "name": tool.name,
-            "description": tool.description,
-            "route": tool.route,
-            "is_default": tool.is_default,
-            "hasAccess": has_access
-        })
+        # Paid tools are also unlocked by a sufficient subscription tier
+        if not has_access and tool.is_paid and tool.required_plan_tier is not None:
+            has_access = user_tier is not None and user_tier >= tool.required_plan_tier
+
+        tool_dict = tool.to_dict()
+        tool_dict["hasAccess"] = has_access
+        tools_with_access.append(tool_dict)
 
     return api_response({"tools": tools_with_access})
+
+
+@tool_api_bp.route('/categories', methods=['GET'])
+@require_auth
+def list_categories():
+    """
+    List all active tool categories for filter pills.
+
+    Returns:
+        200: {"success": true, "data": {"categories": [{"id", "name", "slug", "icon", "color", "display_order"}, ...]}}
+        401: Not authenticated
+    """
+    tool_service = get_tool_service()
+    result = tool_service.get_categories()
+
+    if result.is_failure:
+        return api_error(
+            result.error.code.value,
+            result.error.message,
+            status_code=result.error.http_status
+        )
+
+    return api_response({"categories": result.data})
+
+
+@tool_api_bp.route('/plans', methods=['GET'])
+@require_auth
+def list_plans():
+    """
+    List all active subscription plans.
+
+    Returns:
+        200: {"success": true, "data": {"plans": [{"id", "name", "slug", "tier_level", "price_monthly", "price_yearly", "features"}, ...]}}
+        401: Not authenticated
+    """
+    subscription_service = get_subscription_service()
+    result = subscription_service.get_plans()
+
+    if result.is_failure:
+        return api_error(
+            result.error.code.value,
+            result.error.message,
+            status_code=result.error.http_status
+        )
+
+    return api_response({"plans": result.data})
 
 
 @tool_api_bp.route('/tax-calculator', methods=['POST'])

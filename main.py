@@ -115,7 +115,7 @@ def get_version():
         print(f"Error reading VERSION file: {e}")
         return "1.0.0"  # Fallback version
 
-def create_app():
+def create_app(test_config=None):
     # Determine if we're running locally
     is_local = os.environ.get('IS_LOCAL', 'true').lower() == 'true'
     environment = os.getenv('FLASK_ENV', 'development')
@@ -144,7 +144,6 @@ def create_app():
 
     # Set the secret key based on the environment
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default_secret_key_for_development')
-    logging.info(f"Using secret key: {app.config['SECRET_KEY']}")
 
     # Database configuration
     # USE_DOCKER_DB=true enables Docker PostgreSQL for local development
@@ -179,13 +178,19 @@ def create_app():
     app.config["SQLALCHEMY_DATABASE_URI"] = database_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
+    # Apply test overrides BEFORE the engine binds to a database, so test
+    # suites never connect to the real DATABASE_URL from the environment.
+    if test_config:
+        app.config.update(test_config)
+
     # Initialize the db and migrations
     db.init_app(app)
     migrate = Migrate(app, db, render_as_batch=True)  # Enable batch mode for SQLite
 
-    # SAFETY: Validate database on startup
-    from utils.db_safety import validate_database_on_startup
-    validate_database_on_startup(app)
+    # SAFETY: Validate database on startup (skipped under test)
+    if not app.config.get('TESTING'):
+        from utils.db_safety import validate_database_on_startup
+        validate_database_on_startup(app)
 
     # Register blueprints
     app.register_blueprint(auth)
@@ -280,6 +285,6 @@ if __name__ == "__main__":
     app.run(
         host=host,
         port=int(os.environ.get('PORT', 5000)),
-        debug=True,
+        debug=is_local,  # Never expose the Werkzeug debugger outside local dev
         ssl_context=ssl_context
     )

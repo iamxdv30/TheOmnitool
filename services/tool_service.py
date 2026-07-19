@@ -15,7 +15,7 @@ from typing import Optional, Dict, Any, List
 from dataclasses import dataclass
 from datetime import datetime
 
-from model import User, Tool, ToolAccess, ToolFavorite, EmailTemplate, db
+from model import User, Tool, ToolAccess, ToolFavorite, ToolCategory, EmailTemplate, UsageLog, db
 from .base import BaseService, ServiceResult, ErrorCode
 
 logger = logging.getLogger(__name__)
@@ -31,8 +31,36 @@ class ToolInfo:
     is_default: bool
     is_active: bool
     display_name: Optional[str] = None
+    icon: Optional[str] = None
+    category_id: Optional[int] = None
+    category_name: Optional[str] = None
+    category_slug: Optional[str] = None
+    category_color: Optional[str] = None
+    category_icon: Optional[str] = None
+    is_paid: bool = False
+    required_plan_id: Optional[int] = None
+    required_plan_name: Optional[str] = None
+    required_plan_tier: Optional[int] = None
 
     def to_dict(self) -> Dict[str, Any]:
+        category = None
+        if self.category_id is not None:
+            category = {
+                "id": self.category_id,
+                "name": self.category_name,
+                "slug": self.category_slug,
+                "color": self.category_color,
+                "icon": self.category_icon,
+            }
+
+        required_plan = None
+        if self.required_plan_id is not None:
+            required_plan = {
+                "id": self.required_plan_id,
+                "name": self.required_plan_name,
+                "tier_level": self.required_plan_tier,
+            }
+
         return {
             "id": self.id,
             "name": self.name,
@@ -41,6 +69,10 @@ class ToolInfo:
             "route": self.route,
             "is_default": self.is_default,
             "is_active": self.is_active,
+            "icon": self.icon,
+            "category": category,
+            "is_paid": self.is_paid,
+            "required_plan": required_plan,
         }
 
 
@@ -141,13 +173,14 @@ class ToolService(BaseService):
         try:
             # Get tool access records for the user
             access_list = ToolAccess.query.filter_by(user_id=user_id).all()
-            tool_names = [access.tool_name for access in access_list]
+            tool_names = {access.tool_name for access in access_list}
             
             # Get full tool objects
-            tools = Tool.query.filter(
-                Tool.name.in_(tool_names),
-                Tool.is_active == True
-            ).all()
+            active_tools = Tool.query.filter_by(is_active=True).all()
+            tools = [
+                tool for tool in active_tools
+                if tool.is_default or tool.name in tool_names
+            ]
             
             tool_list = [self._tool_to_info(tool) for tool in tools]
             return ServiceResult.success(tool_list)
@@ -183,12 +216,20 @@ class ToolService(BaseService):
             return ServiceResult.success(True)
 
         try:
-            has_access = ToolAccess.query.filter_by(
-                user_id=user_id,
-                tool_name=tool_name
-            ).first() is not None
+            if User.user_has_tool_access(user_id, tool_name):
+                return ServiceResult.success(True)
 
-            return ServiceResult.success(has_access)
+            # Paid tools: access can also be granted by an active subscription
+            # whose plan tier meets the tool's required tier.
+            tool = Tool.query.filter_by(name=tool_name).first()
+            if tool is not None and tool.is_paid and tool.required_plan_id is not None:
+                from .subscription_service import get_subscription_service
+                user_tier = get_subscription_service().get_active_tier(user_id)
+                required_tier = tool.required_plan.tier_level if tool.required_plan else None
+                if user_tier is not None and required_tier is not None and user_tier >= required_tier:
+                    return ServiceResult.success(True)
+
+            return ServiceResult.success(False)
 
         except Exception as e:
             self._log_error("check_tool_access", e, user_id=user_id, tool_name=tool_name)
@@ -733,18 +774,120 @@ class ToolService(BaseService):
                 "Failed to remove favorite."
             )
 
+    # ==================== Usage History ====================
+
+    def get_usage_history(
+        self,
+        user_id: int,
+        limit: int = 10,
+        offset: int = 0
+    ) -> ServiceResult[Dict[str, Any]]:
+        """
+        Get recent usage log entries for a user (most recent first).
+
+        Args:
+            user_id: The user's ID
+            limit: Max entries to return (clamped to 1-100)
+            offset: Number of entries to skip
+
+        Returns:
+            ServiceResult with {"history": [...], "total": int, "limit": int, "offset": int}
+        """
+        try:
+            limit = max(1, min(int(limit), 100))
+            offset = max(0, int(offset))
+        except (TypeError, ValueError):
+            return ServiceResult.failure(
+                ErrorCode.VALIDATION_ERROR,
+                "limit and offset must be integers."
+            )
+
+        try:
+            query = (
+                UsageLog.query
+                .filter_by(user_id=user_id)
+                .order_by(UsageLog.timestamp.desc(), UsageLog.id.desc())
+            )
+            total = query.count()
+            logs = query.offset(offset).limit(limit).all()
+
+            history = [{
+                "tool_name": log.tool_name,
+                "timestamp": log.timestamp.isoformat() if log.timestamp else None,
+            } for log in logs]
+
+            return ServiceResult.success({
+                "history": history,
+                "total": total,
+                "limit": limit,
+                "offset": offset,
+            })
+
+        except Exception as e:
+            self._log_error("get_usage_history", e, user_id=user_id)
+            return ServiceResult.failure(
+                ErrorCode.DATABASE_ERROR,
+                "Failed to retrieve usage history."
+            )
+
+    # ==================== Categories ====================
+
+    def get_categories(self) -> ServiceResult[List[Dict[str, Any]]]:
+        """
+        Get all active tool categories ordered for display.
+
+        Returns:
+            ServiceResult with list of category dicts
+        """
+        try:
+            categories = (
+                ToolCategory.query
+                .filter_by(is_active=True)
+                .order_by(ToolCategory.display_order.asc(), ToolCategory.name.asc())
+                .all()
+            )
+            category_list = [{
+                "id": c.id,
+                "name": c.name,
+                "slug": c.slug,
+                "icon": c.icon,
+                "color": c.color,
+                "display_order": c.display_order,
+            } for c in categories]
+
+            return ServiceResult.success(category_list)
+
+        except Exception as e:
+            self._log_error("get_categories", e)
+            return ServiceResult.failure(
+                ErrorCode.DATABASE_ERROR,
+                "Failed to retrieve categories."
+            )
+
     # ==================== Helper Methods ====================
 
     def _tool_to_info(self, tool: Tool) -> ToolInfo:
         """Convert Tool model to ToolInfo dataclass."""
+        category = getattr(tool, 'category', None)
+        required_plan = getattr(tool, 'required_plan', None)
         return ToolInfo(
             id=tool.id,
             name=tool.name,
-            display_name=tool.name.replace('-', ' ').title(),
+            display_name=getattr(tool, 'display_name', None) or tool.name.replace('-', ' ').title(),
             description=getattr(tool, 'description', None),
             route=getattr(tool, 'route', None),
             is_default=getattr(tool, 'is_default', False),
             is_active=getattr(tool, 'is_active', True),
+            icon=getattr(tool, 'icon', None),
+            category_id=category.id if category else None,
+            category_name=category.name if category else None,
+            category_slug=category.slug if category else None,
+            category_color=category.color if category else None,
+            category_icon=category.icon if category else None,
+            is_paid=bool(getattr(tool, 'is_paid', False)),
+            required_plan_id=required_plan.id if required_plan else None,
+            required_plan_name=required_plan.name if required_plan else None,
+            required_plan_tier=required_plan.tier_level if required_plan else None,
         )
 
     def _template_to_data(self, template: EmailTemplate) -> EmailTemplateData:

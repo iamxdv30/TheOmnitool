@@ -43,6 +43,7 @@ def tool_access_required(tool_name):
             if user_role not in [
                 "admin",
                 "superadmin",
+                "super_admin",
             ] and not User.user_has_tool_access(user_id, tool_name):
                 flash(
                     f"You don't have access to {tool_name}. Please contact an administrator.",
@@ -407,14 +408,11 @@ def check_tool_access(tool_name):
         logging.debug(f"User ID: {user_id}, Role: {user_role}")
 
         # Admins and superadmins have access to all tools
-        if user_role in ["admin", "superadmin"]:
+        if user_role in ["admin", "superadmin", "super_admin"]:
             has_access = True
         else:
-            # For regular users, check ToolAccess table
-            has_access = (
-                ToolAccess.query.filter_by(user_id=user_id, tool_name=tool_name).first()
-                is not None
-            )
+            # For regular users, check ToolAccess table (slug-insensitive)
+            has_access = User.user_has_tool_access(user_id, tool_name)
         logging.debug(f"Has access: {has_access}")
 
         if has_access:

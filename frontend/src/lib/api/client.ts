@@ -9,7 +9,7 @@
  * - Standardized response envelope
  */
 
-import { getCsrfToken, clearCsrfToken } from "./csrf";
+import { getCsrfToken, clearCsrfToken, refreshCsrfToken } from "./csrf";
 import { getAuthState } from "@/store/authStore";
 import { toast } from "@/store/uiStore";
 import type { ApiResponse } from "@/types";
@@ -190,7 +190,26 @@ async function request<T>(
   }
 
   try {
-    const response = await fetch(url, config);
+    let response = await fetch(url, config);
+
+    // CSRF mismatch (e.g. session rotated): refresh token and retry once
+    if (
+      response.status === 403 &&
+      ["POST", "PUT", "PATCH", "DELETE"].includes(method) &&
+      !skipCsrf
+    ) {
+      const errorBody = await response.clone().json().catch(() => null);
+      if (errorBody?.error?.code === "CSRF_ERROR") {
+        try {
+          const freshToken = await refreshCsrfToken();
+          (config.headers as Record<string, string>)["X-CSRFToken"] = freshToken;
+          response = await fetch(url, config);
+        } catch {
+          // Fall through with the original 403 response
+        }
+      }
+    }
+
     return handleResponse<T>(response, options);
   } catch (error) {
     console.error("API request failed:", error);
