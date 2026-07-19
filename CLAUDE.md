@@ -231,8 +231,8 @@ npm test -- authStore.test.ts
 ### Migration Scripts
 
 ```bash
-# Sync tool definitions (add/rename/delete tools)
-python sync_tools.py
+# Sync tool definitions (add/rename/delete tools, categories, icons, display names)
+python scripts/sync_tools.py
 
 # Export tool access permissions (after granting/revoking access)
 python scripts/export_tool_access.py --env local
@@ -253,6 +253,23 @@ python tests/smoke_tests.py --url https://omnitool-by-xdv-staging.herokuapp.com
 # Sync production data to staging (requires Heroku Standard tier)
 python scripts/sync_data_prod_to_staging.py
 ```
+
+### Post-Deployment Checklist (Manual — CI/CD does NOT automate these)
+
+After every deploy to staging or production:
+
+1. **Run `python scripts/sync_tools.py` on that environment** (via `heroku run`). Tool category, icon, and display_name assignments are *data*, not schema — migrations don't apply them. If skipped, dashboard tool cards render without category tags. If categories don't exist yet on that environment, run `python scripts/seed_phase1_dashboard_data.py` first.
+2. Run smoke tests: `python tests/smoke_tests.py --url <target_url>`
+
+### reCAPTCHA Key Configuration
+
+reCAPTCHA keys come in **site/secret pairs** — the frontend site key and backend secret must be from the same pair:
+
+- Backend `.env`: `RECAPTCHA_SITE_KEY` + `RECAPTCHA_SECRET_KEY`
+- Frontend `frontend/.env.local`: `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` — **must equal the backend's `RECAPTCHA_SITE_KEY`**
+- A mismatched frontend key causes "ERROR for site owner: Invalid site key" on the widget (this happened locally on 2026-07-20)
+- `NEXT_PUBLIC_*` vars are baked in at dev-server/build start — restart `npm run dev` after changing them
+- Heroku staging/production have their own working key config; don't copy local values there
 
 **📚 Complete Workflow Guide**: See [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md) for detailed step-by-step instructions
 
