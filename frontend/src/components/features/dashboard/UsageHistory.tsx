@@ -1,9 +1,10 @@
 "use client";
 
-import { History, Activity } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui";
+import Link from "next/link";
+import { ExternalLink } from "lucide-react";
+import { Card } from "@/components/ui";
 import type { UsageHistoryEntry } from "@/types";
-import { getToolIcon } from "./toolMaps";
+import { getToolIcon, getToolRoute } from "./toolMaps";
 
 export interface UsageHistoryProps {
   history: UsageHistoryEntry[];
@@ -32,51 +33,59 @@ function formatTimestamp(timestamp: string | null): string {
  */
 export function UsageHistory({ history, totalCount, isLoading }: UsageHistoryProps) {
   return (
-    <Card variant="glass">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <History className="h-5 w-5 text-secondary" />
-            Usage &amp; History
-          </CardTitle>
-          <span className="flex items-center gap-1.5 text-sm text-text-muted">
-            <Activity className="h-4 w-4" />
-            {totalCount} total
+    <Card variant="glass" padding="lg" className="w-full max-w-md rounded-2xl">
+      <div className="flex items-baseline justify-between">
+        <h3 className="font-display text-lg font-bold text-text-high">
+          Usage &amp; History
+        </h3>
+        <span className="flex items-baseline gap-1.5">
+          <span className="font-display text-2xl font-bold text-secondary">
+            {totalCount}
           </span>
-        </div>
-        <CardDescription>Your recent tool activity</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <p className="py-4 text-center text-sm text-text-muted">Loading…</p>
-        ) : history.length === 0 ? (
-          <p className="py-4 text-center text-sm text-text-muted">
-            No activity yet — launch a tool to get started.
-          </p>
-        ) : (
-          <ul className="divide-y divide-surface-700">
-            {history.map((entry, index) => {
-              const Icon = getToolIcon(null, entry.tool_name);
-              return (
-                <li
-                  key={`${entry.tool_name}-${entry.timestamp}-${index}`}
-                  className="flex items-center gap-3 py-2.5"
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">
+            Tools used
+          </span>
+        </span>
+      </div>
+
+      <p className="mt-4 text-[10px] font-semibold uppercase tracking-widest text-text-muted">
+        Recent activity
+      </p>
+
+      {isLoading ? (
+        <p className="py-4 text-center text-sm text-text-muted">Loading…</p>
+      ) : history.length === 0 ? (
+        <p className="py-4 text-center text-sm text-text-muted">
+          No activity yet — launch a tool to get started.
+        </p>
+      ) : (
+        <ul className="mt-2 space-y-2">
+          {history.map((entry, index) => {
+            const Icon = getToolIcon(null, entry.tool_name);
+            return (
+              <li key={`${entry.tool_name}-${entry.timestamp}-${index}`}>
+                <Link
+                  href={getToolRoute(entry.tool_name)}
+                  className="flex items-center gap-3 rounded-xl bg-surface-800/80 px-3 py-2.5 transition-colors hover:bg-surface-700"
                 >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-700 text-secondary">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/20 text-secondary">
                     <Icon className="h-4 w-4" />
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-sm text-text-high">
-                    {entry.tool_name}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium text-text-high">
+                      {entry.tool_name}
+                    </span>
+                    <span className="block text-xs text-text-muted">
+                      {formatTimestamp(entry.timestamp)}
+                    </span>
                   </span>
-                  <span className="shrink-0 text-xs text-text-muted">
-                    {formatTimestamp(entry.timestamp)}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </CardContent>
+                  <ExternalLink className="h-3.5 w-3.5 shrink-0 text-text-muted" />
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </Card>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
+import { toolsApi } from "@/lib/api";
 import {
   Card,
   CardHeader,
@@ -45,6 +46,17 @@ function countStats(text: string): TextStats {
 export default function CharCounterPage() {
   const [text, setText] = useState("");
   const [charLimit, setCharLimit] = useState(DEFAULT_CHAR_LIMIT);
+  const usageLogged = useRef(false);
+
+  // Counting happens client-side, so usage is reported explicitly the
+  // first time the user enters text (backend dedupes repeats).
+  const handleTextChange = (value: string) => {
+    setText(value);
+    if (value && !usageLogged.current) {
+      usageLogged.current = true;
+      toolsApi.logUsage("Character Counter").catch(() => {});
+    }
+  };
 
   const stats = useMemo(() => countStats(text), [text]);
   const isOverLimit = stats.characters > charLimit;
@@ -86,7 +98,7 @@ export default function CharCounterPage() {
             <CardContent className="space-y-4">
               <Textarea
                 value={text}
-                onChange={(e) => setText(e.target.value)}
+                onChange={(e) => handleTextChange(e.target.value)}
                 placeholder="Start typing or paste your text here..."
                 className={`min-h-[300px] resize-y ${isOverLimit ? "border-danger focus:border-danger focus:ring-danger/20" : ""}`}
               />

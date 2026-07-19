@@ -3,7 +3,7 @@
 import { createElement } from "react";
 import Link from "next/link";
 import { ArrowRight, Heart, Lock } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, Badge } from "@/components/ui";
+import { Card } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import type { ToolInfo } from "@/lib/api";
 import { getToolIcon, getToolRoute } from "./toolMaps";
@@ -24,8 +24,9 @@ export function ToolCard({ tool, isFavorite, onToggleFavorite }: ToolCardProps) 
   const cardBody = (
     <Card
       variant="interactive"
+      padding="lg"
       className={cn(
-        "relative h-full transition-all",
+        "relative flex h-full flex-col rounded-2xl transition-all",
         locked ? "opacity-70 hover:border-surface-700" : "hover:border-primary/50"
       )}
     >
@@ -45,48 +46,41 @@ export function ToolCard({ tool, isFavorite, onToggleFavorite }: ToolCardProps) 
         />
       </button>
 
-      <CardHeader>
-        <div
-          className={cn(
-            "mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-surface-700",
-            tool.category?.color || "text-primary"
-          )}
-        >
-          {createElement(getToolIcon(tool.icon, tool.name), {
-            className: "h-5 w-5",
-          })}
-        </div>
-        <CardTitle className="pr-8 text-lg">{tool.display_name}</CardTitle>
-        <CardDescription className="line-clamp-2">
-          {tool.description}
-        </CardDescription>
-      </CardHeader>
+      <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/20 text-secondary">
+        {createElement(getToolIcon(tool.icon, tool.name), {
+          className: "h-6 w-6",
+        })}
+      </div>
 
-      <CardContent>
-        <div className="flex items-center justify-between gap-2">
-          {locked ? (
-            <span className="flex items-center text-sm text-warning">
-              <Lock className="mr-1 h-4 w-4" />
-              {tool.is_paid && tool.required_plan?.name
-                ? `Requires ${tool.required_plan.name}`
-                : "No access"}
-            </span>
-          ) : (
-            <span className="flex items-center text-sm text-primary">
-              Launch
-              <ArrowRight className="ml-1 h-4 w-4" />
-            </span>
-          )}
-          {tool.category?.name && (
-            <Badge
-              variant="outline"
-              className={cn("shrink-0", tool.category.color || "text-text-muted")}
-            >
-              {tool.category.name}
-            </Badge>
-          )}
-        </div>
-      </CardContent>
+      <h3 className="font-display text-xl font-bold text-text-high">
+        {tool.display_name}
+      </h3>
+      <p className="mt-2 line-clamp-2 flex-1 text-sm leading-relaxed text-text-muted">
+        {tool.description}
+      </p>
+
+      <div className="mt-6 flex items-center justify-between gap-2">
+        {tool.category?.name ? (
+          <span className="shrink-0 rounded bg-surface-700/70 px-2.5 py-1 font-mono text-xs text-text-muted">
+            {tool.category.name}
+          </span>
+        ) : (
+          <span />
+        )}
+        {locked ? (
+          <span className="flex items-center text-sm text-warning">
+            <Lock className="mr-1 h-4 w-4" />
+            {tool.is_paid && tool.required_plan?.name
+              ? `Requires ${tool.required_plan.name}`
+              : "No access"}
+          </span>
+        ) : (
+          <span className="flex items-center gap-1.5 text-sm font-medium text-text-high transition-colors group-hover:text-primary">
+            Launch
+            <ArrowRight className="h-4 w-4" />
+          </span>
+        )}
+      </div>
     </Card>
   );
 
@@ -94,7 +88,11 @@ export function ToolCard({ tool, isFavorite, onToggleFavorite }: ToolCardProps) 
     return <div aria-disabled="true">{cardBody}</div>;
   }
 
-  return <Link href={route}>{cardBody}</Link>;
+  return (
+    <Link href={route} className="group">
+      {cardBody}
+    </Link>
+  );
 }
 
 export default ToolCard;

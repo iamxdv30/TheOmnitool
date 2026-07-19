@@ -121,7 +121,11 @@ The Omnitool started as a simple Flask utility site and was progressively re-arc
 
 ## Screenshots
 
-> _Add screenshots or a short demo GIF of the dashboard, tool pages, and admin panel here to give reviewers a quick visual tour._
+### Tools Discovery Dashboard
+
+![Tools Discovery dashboard — searchable tool grid with category filters, favorites, and usage history](docs/images/tools-discovery-dashboard.jpg)
+
+The redesigned dashboard (v1.5.0): debounced search, category filter pills, tool cards with launch actions, and a recent-activity feed — rendered in the "Sage Tech" dark theme.
 
 ## Getting Started
 
@@ -235,8 +239,6 @@ CI/CD (`.github/workflows/`) runs on every push to staging/production branches:
 - [ ] Payment provider integration (Stripe/PayPal subscribe, cancel, webhooks)
 - [ ] Manual responsive/theme QA pass on the redesigned dashboard
 - [ ] Additional tools and category expansion
-
-See [docs/dashboard-redesign-679c76.md](docs/dashboard-redesign-679c76.md) for the full dashboard redesign plan.
 
 ## License
 

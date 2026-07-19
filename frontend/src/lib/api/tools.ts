@@ -43,20 +43,25 @@ export interface TaxCalculatorRequest {
   };
 }
 
+/**
+ * Shape returned by Tools/tax_calculator.py. US/Canada calculations return
+ * the total_* fields; VAT calculations return the *_amount / vat_* fields.
+ */
 export interface TaxCalculatorResponse {
-  subtotal: number;
+  item_total: number;
   discount_total: number;
-  taxable_amount: number;
-  tax_amount: number;
   shipping_cost: number;
-  shipping_tax: number;
-  total: number;
-  items: Array<{
-    price: number;
-    tax_rate: number;
-    tax_amount: number;
-    total: number;
-  }>;
+  // US / Canada
+  shipping_tax?: number;
+  total_tax?: number;
+  total_amount?: number;
+  tax_breakdown?: Array<{ item: string; tax: number }>;
+  // VAT
+  net_amount?: number;
+  vat_amount?: number;
+  gross_amount?: number;
+  vat_rate_applied?: number;
+  vat_breakdown?: Array<{ item: string; net_amount: number; vat: number }>;
 }
 
 export interface CharacterCountRequest {
@@ -179,6 +184,16 @@ export const toolsApi = {
   ): Promise<ApiResponse<UsageHistoryResponse>> {
     return apiClient.get<UsageHistoryResponse>("/user/usage-history", {
       params: { limit, offset },
+    });
+  },
+
+  /**
+   * Record a usage event for a client-side tool (e.g. Unix Timestamp).
+   * Server-executed tools log automatically. Fire-and-forget: ignore failures.
+   */
+  async logUsage(toolName: string): Promise<ApiResponse<{ logged: boolean }>> {
+    return apiClient.post<{ logged: boolean }>("/tools/usage", {
+      tool_name: toolName,
     });
   },
 

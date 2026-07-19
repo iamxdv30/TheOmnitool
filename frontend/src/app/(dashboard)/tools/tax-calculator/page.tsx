@@ -160,50 +160,76 @@ export default function TaxCalculatorPage() {
       // Build tax breakdown for display
       const taxBreakdown: { name: string; rate: number; amount: number }[] = [];
 
-      if (activeTab === "us") {
-        if (data.tax_amount > 0) {
-          taxBreakdown.push({
-            name: "Sales Tax",
-            rate: state.taxRate,
-            amount: data.tax_amount,
-          });
-        }
-      } else if (activeTab === "canada") {
-        if (state.gstRate > 0) {
-          const gstAmount = data.taxable_amount * (state.gstRate / 100);
-          taxBreakdown.push({
-            name: state.pstRate > 0 ? "GST" : "HST",
-            rate: state.gstRate,
-            amount: gstAmount,
-          });
-        }
-        if (state.pstRate > 0) {
-          const pstAmount = data.taxable_amount * (state.pstRate / 100);
-          const pstName = state.province === "QC" ? "QST" : "PST";
-          taxBreakdown.push({
-            name: pstName,
-            rate: state.pstRate,
-            amount: pstAmount,
-          });
-        }
-      } else if (activeTab === "vat") {
-        if (data.tax_amount > 0) {
+      if (activeTab === "vat") {
+        // VAT responses use net/gross/vat_* fields
+        const vatAmount = data.vat_amount ?? 0;
+        if (vatAmount > 0) {
           taxBreakdown.push({
             name: "VAT",
-            rate: state.vatRate,
-            amount: data.tax_amount,
+            rate: data.vat_rate_applied ?? state.vatRate,
+            amount: vatAmount,
           });
         }
-      }
 
-      setSummary({
-        itemTotal: data.subtotal,
-        discountTotal: data.discount_total,
-        shippingTotal: data.shipping_cost + data.shipping_tax,
-        taxBreakdown,
-        totalTax: data.tax_amount + data.shipping_tax,
-        grandTotal: data.total,
-      });
+        setSummary({
+          itemTotal: data.item_total,
+          discountTotal: data.discount_total,
+          shippingTotal: data.shipping_cost,
+          taxBreakdown,
+          totalTax: vatAmount,
+          grandTotal: data.gross_amount ?? 0,
+        });
+      } else {
+        // US / Canada responses use total_tax / total_amount fields.
+        // total_tax already includes shipping tax.
+        const totalTax = data.total_tax ?? 0;
+        const shippingTax = data.shipping_tax ?? 0;
+        const itemTax = totalTax - shippingTax;
+
+        if (activeTab === "us") {
+          if (itemTax > 0) {
+            taxBreakdown.push({
+              name: "Sales Tax",
+              rate: state.taxRate,
+              amount: itemTax,
+            });
+          }
+        } else {
+          // Split the combined item tax by the GST/PST rate proportions
+          const combinedRate = state.gstRate + state.pstRate;
+          if (state.gstRate > 0 && combinedRate > 0) {
+            taxBreakdown.push({
+              name: state.pstRate > 0 ? "GST" : "HST",
+              rate: state.gstRate,
+              amount: itemTax * (state.gstRate / combinedRate),
+            });
+          }
+          if (state.pstRate > 0 && combinedRate > 0) {
+            taxBreakdown.push({
+              name: state.province === "QC" ? "QST" : "PST",
+              rate: state.pstRate,
+              amount: itemTax * (state.pstRate / combinedRate),
+            });
+          }
+        }
+
+        if (shippingTax > 0) {
+          taxBreakdown.push({
+            name: "Shipping Tax",
+            rate: activeTab === "us" ? state.taxRate : state.gstRate + state.pstRate,
+            amount: shippingTax,
+          });
+        }
+
+        setSummary({
+          itemTotal: data.item_total,
+          discountTotal: data.discount_total,
+          shippingTotal: data.shipping_cost,
+          taxBreakdown,
+          totalTax,
+          grandTotal: data.total_amount ?? 0,
+        });
+      }
 
       toast.success("Calculation complete!");
     } else {

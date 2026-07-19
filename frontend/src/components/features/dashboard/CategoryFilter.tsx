@@ -1,6 +1,5 @@
 "use client";
 
-import { Heart, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Category } from "@/types";
 
@@ -28,10 +27,10 @@ function Pill({
       onClick={onClick}
       aria-pressed={isActive}
       className={cn(
-        "flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-all duration-200",
+        "flex shrink-0 items-center gap-1.5 rounded-full border px-5 py-2 text-sm font-medium transition-all duration-200",
         isActive
-          ? "border-primary bg-primary/15 text-primary"
-          : "border-surface-700 bg-surface-800 text-text-muted hover:border-primary/50 hover:text-text-high"
+          ? "border-primary bg-primary text-white shadow-[0_0_15px_rgba(88,129,87,0.4)]"
+          : "border-surface-700 bg-transparent text-text-muted hover:border-primary/50 hover:text-text-high"
       )}
     >
       {children}
@@ -55,14 +54,12 @@ export function CategoryFilter({
       className={cn("flex flex-wrap items-center gap-2", className)}
     >
       <Pill isActive={active === "all"} onClick={() => onChange("all")}>
-        <LayoutGrid className="h-3.5 w-3.5" />
         All Tools
       </Pill>
       <Pill
         isActive={active === "favorites"}
         onClick={() => onChange("favorites")}
       >
-        <Heart className="h-3.5 w-3.5" />
         Favorites
       </Pill>
       {categories.map((category) => (

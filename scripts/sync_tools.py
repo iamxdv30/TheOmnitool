@@ -4,7 +4,12 @@ This script serves as the Single Source of Truth for available tools.
 It ensures the database matches the code definition of tools.
 """
 import logging
-from model import db, Tool, ToolAccess, User
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from model import db, Tool, ToolAccess, ToolCategory, User
 from main import create_app
 
 # Configure logging
@@ -16,29 +21,41 @@ logger = logging.getLogger("sync_tools")
 DEFINED_TOOLS = [
     {
         "name": "Tax Calculator",
+        "display_name": "Tax Calculator",
         "description": "Calculate US, Canada, and international VAT taxes",
         "route": "/unified_tax_calculator",
+        "icon": "calculator",
+        "category_slug": "finance",
         "is_default": True,
         "is_active": True
     },
     {
         "name": "Unix Timestamp Converter",
+        "display_name": "Unix Timestamp",
         "description": "Convert Unix timestamps",
         "route": "/convert",
+        "icon": "clock",
+        "category_slug": "dev",
         "is_default": True,
         "is_active": True
     },
     {
         "name": "Character Counter",
+        "display_name": "Character Counter",
         "description": "Count characters in text",
         "route": "/char_counter",
+        "icon": "file-text",
+        "category_slug": "writing",
         "is_default": True,
         "is_active": True
     },
     {
         "name": "Email Templates",  # Renamed from 'Email Templates management' if needed
+        "display_name": "Email Templates",
         "description": "Create and manage email templates",
         "route": "/email_templates",
+        "icon": "mail",
+        "category_slug": "marketing",
         "is_default": True,
         "is_active": True
     }
@@ -111,8 +128,22 @@ def sync_tools():
     logger.info("Deprecated tools removed successfully.")
 
     # 2. Sync Defined Tools (after deprecation to avoid route conflicts)
+    # Resolve category slugs once; missing categories are logged and skipped
+    # (run scripts/seed_phase1_dashboard_data.py to create them).
+    category_by_slug = {c.slug: c for c in ToolCategory.query.all()}
+
     for tool_def in DEFINED_TOOLS:
         logger.info(f"Checking definition for: {tool_def['name']}")
+
+        category_id = None
+        slug = tool_def.get("category_slug")
+        if slug:
+            category = category_by_slug.get(slug)
+            if category:
+                category_id = category.id
+            else:
+                logger.warning(f"Category '{slug}' not found for tool '{tool_def['name']}' - skipping category assignment")
+
         tool = Tool.query.filter_by(name=tool_def["name"]).first()
 
         if tool:
@@ -136,6 +167,20 @@ def sync_tools():
                 tool.is_active = target_active
                 updates.append("is_active")
 
+            target_display = tool_def.get("display_name")
+            if target_display and tool.display_name != target_display:
+                tool.display_name = target_display
+                updates.append("display_name")
+
+            target_icon = tool_def.get("icon")
+            if target_icon and tool.icon != target_icon:
+                tool.icon = target_icon
+                updates.append("icon")
+
+            if category_id is not None and tool.category_id != category_id:
+                tool.category_id = category_id
+                updates.append("category_id")
+
             if updates:
                 logger.info(f"Updating tool '{tool.name}': {', '.join(updates)}")
             else:
@@ -150,6 +195,9 @@ def sync_tools():
                 is_default=tool_def["is_default"],
                 is_active=tool_def.get("is_active", True)
             )
+            new_tool.display_name = tool_def.get("display_name")
+            new_tool.icon = tool_def.get("icon")
+            new_tool.category_id = category_id
             db.session.add(new_tool)
             logger.info(f"Staged creation of {tool_def['name']}")
 

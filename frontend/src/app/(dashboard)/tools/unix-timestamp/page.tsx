@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { toolsApi } from "@/lib/api";
 import {
   Card,
   CardHeader,
@@ -25,6 +26,15 @@ export default function UnixTimestampPage() {
   const [dateResult, setDateResult] = useState<number | null>(null);
   
   const [copied, setCopied] = useState<string | null>(null);
+  const usageLogged = useRef(false);
+
+  // This tool runs entirely client-side, so usage is reported explicitly
+  // on the first successful conversion (backend dedupes repeats).
+  const reportUsage = () => {
+    if (usageLogged.current) return;
+    usageLogged.current = true;
+    toolsApi.logUsage("Unix Timestamp Converter").catch(() => {});
+  };
 
   // Update current timestamp every second
   useEffect(() => {
@@ -52,6 +62,7 @@ export default function UnixTimestampPage() {
         utc: date.toUTCString(),
         relative: getRelativeTime(date),
       });
+      reportUsage();
     } catch (err) {
       toast.error("Please enter a valid Unix timestamp.");
     }
@@ -66,6 +77,7 @@ export default function UnixTimestampPage() {
       if (isNaN(date.getTime())) throw new Error("Invalid date");
 
       setDateResult(Math.floor(date.getTime() / 1000));
+      reportUsage();
     } catch (err) {
       toast.error("Please enter a valid date and time.");
     }

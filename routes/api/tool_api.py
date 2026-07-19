@@ -7,6 +7,7 @@ Handles tool-related JSON API endpoints:
 - GET    /api/v1/tools/plans             - List active subscription plans
 - POST   /api/v1/tools/tax-calculator    - Execute tax calculation
 - POST   /api/v1/tools/character-counter - Execute character counting
+- POST   /api/v1/tools/usage             - Log usage for client-side tools
 - GET    /api/v1/tools/email-templates   - List email templates
 - POST   /api/v1/tools/email-templates   - Create email template
 - PUT    /api/v1/tools/email-templates/:id  - Update email template
@@ -231,6 +232,7 @@ def calculate_tax():
             status_code=result.error.http_status
         )
 
+    tool_service.log_usage(session.get('user_id'), "Tax Calculator")
     logger.info(f"API Tax calculation completed for user: {session.get('username')}")
     return api_response(result.data)
 
@@ -294,8 +296,55 @@ def count_characters():
             status_code=result.error.http_status
         )
 
+    tool_service.log_usage(session.get('user_id'), "Character Counter")
     logger.info(f"API Character count completed for user: {session.get('username')}")
     return api_response(result.data.to_dict())
+
+
+@tool_api_bp.route('/usage', methods=['POST'])
+@require_auth
+@require_verified
+def log_tool_usage():
+    """
+    Record a usage event for a tool that runs client-side (no server
+    endpoint of its own), e.g. the Unix Timestamp Converter.
+
+    Request Body:
+        {"tool_name": "string"}  // exact Tool.name
+
+    Returns:
+        200: {"success": true, "data": {"logged": bool}}  // false = deduplicated
+        400: Validation error
+        401: Not authenticated
+        403: No tool access or email not verified
+        404: Unknown tool
+    """
+    data, error = get_json_body()
+    if error:
+        return error
+
+    tool_name = (data.get('tool_name') or '').strip()
+    if not tool_name:
+        return api_error(
+            "VALIDATION_ERROR",
+            "tool_name is required.",
+            status_code=400
+        )
+
+    has_access, error = check_tool_access(tool_name)
+    if not has_access:
+        return error
+
+    result = get_tool_service().log_usage(session.get('user_id'), tool_name)
+
+    if result.is_failure:
+        return api_error(
+            result.error.code.value,
+            result.error.message,
+            status_code=result.error.http_status
+        )
+
+    return api_response({"logged": result.data})
 
 
 # ==================== Email Templates CRUD ====================
@@ -333,6 +382,7 @@ def list_email_templates():
             status_code=result.error.http_status
         )
 
+    tool_service.log_usage(user_id, "Email Templates")
     templates = [t.to_dict() for t in result.data]
     return api_response({"templates": templates})
 

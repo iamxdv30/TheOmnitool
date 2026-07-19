@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useAuth } from "@/hooks";
 import { toolsApi, isSuccess, type ToolInfo } from "@/lib/api";
 import { toast } from "@/store/uiStore";
 import { SearchInput } from "@/components/ui";
@@ -12,12 +11,10 @@ import {
   UpgradeBanner,
   type CategoryFilterValue,
 } from "@/components/features/dashboard";
-import { Loader2 } from "lucide-react";
+import { LayoutGrid, Loader2 } from "lucide-react";
 import type { Category, UsageHistoryEntry } from "@/types";
 
 export default function DashboardPage() {
-  const { user } = useAuth();
-
   const [tools, setTools] = useState<ToolInfo[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [favorites, setFavorites] = useState<number[]>([]);
@@ -88,44 +85,61 @@ export default function DashboardPage() {
   );
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="font-display text-3xl font-bold text-text-high">
+    <div className="space-y-10">
+      {/* Centered hero */}
+      <div className="pt-6 text-center">
+        <h1 className="font-display text-4xl font-bold text-text-high sm:text-5xl">
           Tools Discovery
         </h1>
-        <p className="mt-2 text-text-muted">
-          Welcome back, {user?.username || "User"}. Find, favorite, and launch
-          your tools.
+        <p className="mt-3 text-lg text-text-muted">
+          Find the perfect utility for your next task.
         </p>
       </div>
 
       <UpgradeBanner tools={tools} />
 
       {/* Search + filters */}
-      <div className="space-y-4">
-        <SearchInput onSearch={setSearchQuery} placeholder="Search tools..." />
+      <div className="space-y-6">
+        <SearchInput
+          variant="hero"
+          onSearch={setSearchQuery}
+          placeholder="Search tools..."
+          className="mx-auto max-w-2xl"
+        />
         <CategoryFilter
           categories={categories}
           active={activeCategory}
           onChange={setActiveCategory}
+          className="justify-center"
         />
       </div>
 
-      {/* Tools grid */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      {/* Available tools */}
+      <section>
+        <div className="mb-6 flex items-center justify-between border-b border-surface-700 pb-3">
+          <h2 className="flex items-center gap-2.5 font-display text-xl font-bold text-text-high">
+            <LayoutGrid className="h-5 w-5 text-primary" />
+            Available Tools
+          </h2>
+          <span className="font-mono text-sm text-primary">
+            Total: {tools.length}
+          </span>
         </div>
-      ) : (
-        <ToolsGrid
-          tools={tools}
-          favorites={favorites}
-          searchQuery={searchQuery}
-          activeCategory={activeCategory}
-          onToggleFavorite={handleToggleFavorite}
-        />
-      )}
+
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <ToolsGrid
+            tools={tools}
+            favorites={favorites}
+            searchQuery={searchQuery}
+            activeCategory={activeCategory}
+            onToggleFavorite={handleToggleFavorite}
+          />
+        )}
+      </section>
 
       {/* Usage & history */}
       <UsageHistory

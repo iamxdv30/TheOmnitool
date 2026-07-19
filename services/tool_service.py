@@ -13,7 +13,7 @@ This service separates tool business logic from HTTP/route concerns.
 import logging
 from typing import Optional, Dict, Any, List
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 
 from model import User, Tool, ToolAccess, ToolFavorite, ToolCategory, EmailTemplate, UsageLog, db
 from .base import BaseService, ServiceResult, ErrorCode
@@ -776,6 +776,59 @@ class ToolService(BaseService):
 
     # ==================== Usage History ====================
 
+    #: Repeated uses of the same tool within this window are not re-logged,
+    #: so per-keystroke or recalculation requests don't flood the history.
+    USAGE_LOG_DEDUP_SECONDS = 60
+
+    def log_usage(self, user_id: int, tool_name: str) -> ServiceResult[bool]:
+        """
+        Record a tool usage event for the user's history.
+
+        Failures are reported in the result but must never block the tool
+        operation itself — callers should ignore the outcome.
+
+        Args:
+            user_id: The user's ID
+            tool_name: Exact Tool.name (e.g. "Tax Calculator")
+
+        Returns:
+            ServiceResult with True if a log entry was written (False when
+            deduplicated), or error
+        """
+        try:
+            tool = Tool.query.filter_by(name=tool_name).first()
+            if not tool or not getattr(tool, "is_active", True):
+                return ServiceResult.failure(
+                    ErrorCode.NOT_FOUND,
+                    f"Unknown tool: {tool_name}"
+                )
+
+            latest = (
+                UsageLog.query
+                .filter_by(user_id=user_id, tool_name=tool_name)
+                .order_by(UsageLog.timestamp.desc(), UsageLog.id.desc())
+                .first()
+            )
+            if latest and latest.timestamp:
+                ts = latest.timestamp
+                if ts.tzinfo is None:
+                    ts = ts.replace(tzinfo=timezone.utc)
+                age = (datetime.now(timezone.utc) - ts).total_seconds()
+                if 0 <= age < self.USAGE_LOG_DEDUP_SECONDS:
+                    return ServiceResult.success(False)
+
+            db.session.add(UsageLog(user_id=user_id, tool_name=tool_name))
+            db.session.commit()
+            return ServiceResult.success(True)
+
+        except Exception as e:
+            db.session.rollback()
+            self._log_error("log_usage", e, user_id=user_id, tool_name=tool_name)
+            return ServiceResult.failure(
+                ErrorCode.DATABASE_ERROR,
+                "Failed to record tool usage."
+            )
+
     def get_usage_history(
         self,
         user_id: int,
@@ -811,9 +864,18 @@ class ToolService(BaseService):
             total = query.count()
             logs = query.offset(offset).limit(limit).all()
 
+            def _to_utc_iso(ts):
+                # Timestamps are stored naive-UTC; stamp the offset so JS
+                # clients don't misparse them as local time.
+                if ts is None:
+                    return None
+                if ts.tzinfo is None:
+                    ts = ts.replace(tzinfo=timezone.utc)
+                return ts.isoformat()
+
             history = [{
                 "tool_name": log.tool_name,
-                "timestamp": log.timestamp.isoformat() if log.timestamp else None,
+                "timestamp": _to_utc_iso(log.timestamp),
             } for log in logs]
 
             return ServiceResult.success({
