@@ -166,6 +166,15 @@ npm install
 npm run dev
 ```
 
+### Run Both Servers (optional — single terminal)
+```bash
+# Linux / Mac / Git Bash
+./scripts/dev.sh
+
+# Windows PowerShell
+.\scripts\dev.ps1
+```
+
 Visit `http://localhost:5000` for the legacy server-rendered app, or `http://localhost:3000` for the Next.js frontend (proxies API calls to Flask).
 
 ### Health Checks

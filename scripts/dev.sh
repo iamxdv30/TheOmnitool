@@ -1,6 +1,7 @@
 #!/bin/bash
 # Start both Flask backend and Next.js frontend for local development
 # Usage: ./scripts/dev.sh
+# Use this script when Git Bash, WSL, or another shell that supports .sh files
 
 # Colors for output
 RED='\033[0;31m'
