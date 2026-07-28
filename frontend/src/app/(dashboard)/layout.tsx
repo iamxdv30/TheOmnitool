@@ -33,13 +33,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   }
 
   const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+  const isSuperAdmin = user?.role === "superadmin";
 
   return (
     <div className="min-h-full bg-surface-900">
-      <Sidebar isAdmin={isAdmin} />
+      <Sidebar isAdmin={isAdmin} isSuperAdmin={isSuperAdmin} />
       <div 
         className={cn(
-          "p-4 md:p-8 transition-all duration-300",
+          "p-4 pt-20 md:p-8 transition-all duration-300",
           isSidebarCollapsed ? "md:ml-20" : "md:ml-64"
         )}
       >

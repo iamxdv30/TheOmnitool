@@ -34,7 +34,7 @@ This file provides context and guidance for Gemini when working with the "MyTool
 - **API Client:** Custom fetch wrapper with CSRF & interceptors
 - **Styling:** Tailwind CSS v4
 - **3D Engine:** React Three Fiber (R3F) + Drei + Rapier (Physics)
-- **Testing:** Jest + React Testing Library (39 tests passing)
+- **Testing:** Jest + React Testing Library (41 tests passing)
 - **Migration Status:** Phase 5 Complete ✅ (Production Deployment)
 - **Deployment:** Dual-stack on single Heroku dyno (Flask + Next.js)
 
@@ -133,7 +133,7 @@ pytest tests/test_routes.py::test_function   # Specific test
 **Frontend Tests (Jest):**
 ```bash
 cd frontend
-npm test                        # Run all (39 unit tests)
+npm test                        # Run all (41 unit tests)
 npm test -- --coverage          # With coverage
 npm test -- --watch             # Watch mode
 npm test -- authStore.test.ts   # Specific file
@@ -142,8 +142,8 @@ npm test -- authStore.test.ts   # Specific file
 **Smoke Tests:** `python tests/smoke_tests.py --url <target_url>`
 
 **Current Coverage:**
-*   Backend: 147 pytest tests passing (routes, models, services).
-*   Frontend: 39 unit tests passing (`authStore.test.ts`, `uiStore.test.ts`, `csrf.test.ts`, dashboard component tests).
+*   Backend: 165 pytest tests passing (routes, models, services).
+*   Frontend: 41 unit tests passing (`authStore.test.ts`, `uiStore.test.ts`, `csrf.test.ts`, dashboard component tests, `Sidebar.test.tsx`).
 
 **Test Fixtures** (`tests/conftest.py`):
 *   `app` - Flask test app with in-memory SQLite
@@ -192,6 +192,7 @@ npm test -- authStore.test.ts   # Specific file
         *   `auth_api.py` - `/api/v1/auth/*` — login, logout, register, CSRF, password reset, email verification
         *   `user_api.py` - `/api/v1/user/*` — profile, password, email, tools, usage, favorites, dashboard
         *   `tool_api.py` - `/api/v1/tools/*` — list tools, tax calculator, character counter, email templates CRUD
+        *   `admin_api.py` - `/api/v1/admin/*` — user list/search/paginate, create/update/delete, role changes (SuperAdmin only), tool-access grant/revoke, tool catalog CRUD (SuperAdmin only)
         *   `schemas.py` - Marshmallow validation schemas for all API inputs
 
 *   **Service Layer (`services/`):**
@@ -200,6 +201,7 @@ npm test -- authStore.test.ts   # Specific file
     *   `auth_service.py` - Login, registration, password reset, email verification logic
     *   `user_service.py` - Profile management, dashboard data assembly (`DashboardData`)
     *   `tool_service.py` - Tool access, favorites (CRUD), tax calc, character counter, email templates
+    *   `admin_service.py` - Admin/SuperAdmin panel logic (user CRUD, role changes, tool-access grants, tool catalog CRUD); normalizes `"super_admin"` ⟷ `"superadmin"` at this boundary
     *   `email_service.py` - Flask-Mail email sending
     *   `token_service.py` - Token generation and validation
     *   Services are singletons accessed via `get_*_service()` factory functions (e.g., `get_tool_service()`).
@@ -217,7 +219,8 @@ npm test -- authStore.test.ts   # Specific file
 *   **Structure:** Next.js App Router (`src/app`) with route groups:
     *   `(public)/` - No auth required (landing, contact)
     *   `(auth)/` - Auth pages (login, register, forgot-password)
-    *   `(dashboard)/` - Protected routes (dashboard, profile, tools)
+    *   `(dashboard)/` - Protected routes for any authenticated user (dashboard, profile, tools)
+    *   `(admin)/` - Admin/SuperAdmin control panel (`/admin`, `/superadmin`, `/superadmin/tools`); own layout + `AdminSidebar`, guards non-admins back to `/dashboard`
 *   **UI Components:** Shadcn-like structure in `src/components/ui`.
 *   **View Tunneling:** Uses `<SceneView />` to render 3D R3F content from the DOM into a global shared Canvas.
 *   **State Management:**
@@ -240,6 +243,12 @@ npm test -- authStore.test.ts   # Specific file
 *   **Admin**: Can manage regular users and grant/revoke tool access.
 *   **SuperAdmin**: Can manage all users including admins, change roles.
 *   Check access: `User.user_has_tool_access(user_id, tool_name)` or `user.has_tool_access(tool_name)`.
+
+### Dashboard Navigation Rework (Next.js)
+The public `Header` and the authenticated dashboard shell are now fully separate: `Header` renders only inside `(public)`'s layout (landing, contact); `(dashboard)` and `(admin)` have no header — the sidebar is the whole nav shell. `/dashboard` became a personal workspace (pinned tools + recent usage history, greets the user by name) rather than the tool-search page; full tool discovery (search/filters/grid) moved to `/tools` (`frontend/src/app/(dashboard)/tools/page.tsx`). `Sidebar.tsx` now shows one "All tools" link (was one link per tool), plus history-aware Back (`router.back()`), direct Logout, and an inline theme toggle; the dead `/settings` link was removed. Regression coverage: `frontend/src/__tests__/components/layout/Sidebar.test.tsx`.
+
+### Admin/SuperAdmin Control Panel (Next.js)
+The `(admin)` route group (`frontend/src/app/(admin)/admin`, `.../superadmin`, `.../superadmin/tools`) is a full JSON-API-backed control panel: user table with search/pagination, create/update/delete, tool-access grants, and (SuperAdmin only) role changes plus tool-catalog CRUD. Reached via "Admin Dashboard" / "SuperAdmin Panel" / "Manage Tools" links in the main `(dashboard)` `Sidebar.tsx` (shown when `isAdmin`/`isSuperAdmin`). Backed by `routes/api/admin_api.py` + `services/admin_service.py`. The legacy Jinja `routes/admin_routes.py` templates (`admin_dashboard.html`, `superadmin_dashboard.html`) still exist in parallel and are unrelated to this JSON API.
 
 ### Tool Access System
 Default tools are automatically assigned to new users:
@@ -306,8 +315,9 @@ Database: SQLite (`sqlite:///users.db`) or Docker PostgreSQL (recommended).
 1.  **Circular imports**: Models use local imports within methods to avoid circular dependencies.
 2.  **Password handling**: Always use `user.set_password()`, never set `user.password` directly.
 3.  **Tool names**: Must match exactly between `Tool.name` and `ToolAccess.tool_name`.
-4.  **Role changes**: SuperAdmin can change roles, but this creates new User objects (not in-place updates).
+4.  **Role changes**: SuperAdmin can change roles, but this creates new User objects (not in-place updates), which get a **new `id`** (joined-table inheritance re-insert) and **cascade-delete** the user's `ToolAccess` grants — re-look-up by username afterward, and expect tool access to be wiped by a role change.
 5.  **Template loading**: Both `templates/` and `Tools/templates/` are searched via ChoiceLoader.
+6.  **Role spelling mismatch**: Backend stores/serializes SuperAdmin as `"super_admin"` (underscore, the SQLAlchemy polymorphic identity in `model/users.py`); the frontend role union and every UI check use `"superadmin"`. New code reading `user.role` from the API must normalize — see `to_frontend_role`/`to_backend_role` in `services/admin_service.py` and `normalizeUser` in `frontend/src/lib/api/auth.ts`. Missing this makes SuperAdmin-only UI silently never render.
 
 ## Key Files Map
 
@@ -317,8 +327,8 @@ Database: SQLite (`sqlite:///users.db`) or Docker PostgreSQL (recommended).
 *   `model/tools.py`: Tool, ToolAccess, ToolCategory, ToolFavorite, UsageLog, EmailTemplate.
 *   `model/subscription.py`: SubscriptionPlan, UserSubscription, BillingCycle, PaymentProvider.
 *   `model/auth.py`: UserFactory for role-based user creation.
-*   `routes/api/`: JSON API endpoints (auth_api, user_api, tool_api).
-*   `services/`: Business logic layer (auth_service, user_service, tool_service, email_service, token_service).
+*   `routes/api/`: JSON API endpoints (auth_api, user_api, tool_api, admin_api).
+*   `services/`: Business logic layer (auth_service, user_service, tool_service, admin_service, email_service, token_service).
 *   `routes/tool_routes.py`: Legacy HTML routes for tools.
 *   `Tools/tax_calculator.py`: Core math logic for US, Canada, and VAT calculations.
 *   `utils/db_safety.py`: Database validation and backup logic.
@@ -330,13 +340,16 @@ Database: SQLite (`sqlite:///users.db`) or Docker PostgreSQL (recommended).
 *   `frontend/src/app/(public)/page.tsx`: Landing page.
 *   `frontend/src/app/(auth)/login/page.tsx`: Login page with query param handling.
 *   `frontend/src/app/(dashboard)/layout.tsx`: Dashboard layout with collapsible sidebar.
+*   `frontend/src/app/(admin)/layout.tsx`: Admin/SuperAdmin panel layout (guards non-admins, renders `AdminSidebar`).
 *   `frontend/src/app/api/health/route.ts`: Health check endpoint (Flask + Next.js status).
 *   `frontend/src/middleware.ts`: Route protection (session validation).
 *   `frontend/src/store/authStore.ts`: Authentication state management.
 *   `frontend/src/store/uiStore.ts`: UI state (toasts, modals, sidebar).
 *   `frontend/src/lib/api/client.ts`: API client with CSRF and interceptors.
+*   `frontend/src/lib/api/auth.ts`: Auth endpoints; normalizes `"super_admin"` → `"superadmin"` on the way in.
 *   `frontend/src/lib/api/tools.ts`: Tools API client (tax calc, email templates).
-*   `frontend/src/__tests__/`: Jest unit tests (31 passing).
+*   `frontend/src/components/layout/AdminSidebar.tsx`: Sidebar for the `(admin)` route group.
+*   `frontend/src/__tests__/`: Jest unit tests (41 passing).
 
 ### Documentation
 *   `docs/BACKEND_FRONTEND_INTEGRATION_PLAN.md`: Migration strategy (Phase 5 complete)

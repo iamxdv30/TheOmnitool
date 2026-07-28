@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { Menu, X, User, LogOut } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui";
@@ -15,14 +14,12 @@ interface NavLink {
 
 const navLinks: NavLink[] = [
   { href: "/", label: "Home" },
-  { href: "/tools", label: "Tools" },
   { href: "/about", label: "About" },
 ];
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, logout } = useAuth();
-  const pathname = usePathname();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 glass-strong border-b border-surface-700/50">
@@ -58,7 +55,7 @@ export function Header() {
                 <Link href="/dashboard">
                   <Button variant="outline" size="sm">
                     <User size={16} className="mr-1" />
-                    Dashboard
+                    Open dashboard
                   </Button>
                 </Link>
                 <Button variant="ghost" size="sm" onClick={logout}>
@@ -84,7 +81,7 @@ export function Header() {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2 text-text-muted hover:text-text-high transition-colors"
+            className="flex h-11 w-11 items-center justify-center text-text-muted transition-colors hover:text-text-high md:hidden"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             aria-label={isMenuOpen ? "Close menu" : "Open menu"}
           >
@@ -116,7 +113,7 @@ export function Header() {
                     <Link href="/dashboard" onClick={() => setIsMenuOpen(false)}>
                       <Button variant="outline" size="sm" className="w-full">
                         <User size={16} className="mr-1" />
-                        Dashboard
+                        Open dashboard
                       </Button>
                     </Link>
                     <Button variant="ghost" size="sm" className="w-full" onClick={() => { logout(); setIsMenuOpen(false); }}>

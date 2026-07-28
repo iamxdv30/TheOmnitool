@@ -1,28 +1,25 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowRight, Loader2, Pin } from "lucide-react";
 import { toolsApi, isSuccess, type ToolInfo } from "@/lib/api";
 import { toast } from "@/store/uiStore";
-import { SearchInput } from "@/components/ui";
+import { useAuth } from "@/hooks";
+import { Button, Card, CardContent } from "@/components/ui";
 import {
-  CategoryFilter,
-  ToolsGrid,
+  ToolCard,
   UsageHistory,
   UpgradeBanner,
-  type CategoryFilterValue,
 } from "@/components/features/dashboard";
-import { LayoutGrid, Loader2 } from "lucide-react";
-import type { Category, UsageHistoryEntry } from "@/types";
+import type { UsageHistoryEntry } from "@/types";
 
 export default function DashboardPage() {
+  const { user } = useAuth();
   const [tools, setTools] = useState<ToolInfo[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [favorites, setFavorites] = useState<number[]>([]);
   const [history, setHistory] = useState<UsageHistoryEntry[]>([]);
   const [historyTotal, setHistoryTotal] = useState(0);
-
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState<CategoryFilterValue>("all");
   const [isLoading, setIsLoading] = useState(true);
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
 
@@ -33,18 +30,15 @@ export default function DashboardPage() {
       setIsLoading(true);
       setIsHistoryLoading(true);
 
-      const [toolsRes, categoriesRes, favoritesRes, historyRes] =
-        await Promise.all([
-          toolsApi.listTools(),
-          toolsApi.getCategories(),
-          toolsApi.getFavorites(),
-          toolsApi.getUsageHistory(8),
-        ]);
+      const [toolsRes, favoritesRes, historyRes] = await Promise.all([
+        toolsApi.listTools(),
+        toolsApi.getFavorites(),
+        toolsApi.getUsageHistory(8),
+      ]);
 
       if (cancelled) return;
 
       if (isSuccess(toolsRes)) setTools(toolsRes.data.tools);
-      if (isSuccess(categoriesRes)) setCategories(categoriesRes.data.categories);
       if (isSuccess(favoritesRes)) setFavorites(favoritesRes.data.favorites);
       if (isSuccess(historyRes)) {
         setHistory(historyRes.data.history);
@@ -65,9 +59,10 @@ export default function DashboardPage() {
     async (toolId: number) => {
       const isFavorite = favorites.includes(toolId);
 
-      // Optimistic update, rolled back on failure
-      setFavorites((prev) =>
-        isFavorite ? prev.filter((id) => id !== toolId) : [...prev, toolId]
+      setFavorites((previous) =>
+        isFavorite
+          ? previous.filter((id) => id !== toolId)
+          : [...previous, toolId]
       );
 
       const response = isFavorite
@@ -75,8 +70,10 @@ export default function DashboardPage() {
         : await toolsApi.addFavorite(toolId);
 
       if (response.status === "error") {
-        setFavorites((prev) =>
-          isFavorite ? [...prev, toolId] : prev.filter((id) => id !== toolId)
+        setFavorites((previous) =>
+          isFavorite
+            ? [...previous, toolId]
+            : previous.filter((id) => id !== toolId)
         );
         toast.error(response.message || "Could not update favorites.");
       }
@@ -84,69 +81,108 @@ export default function DashboardPage() {
     [favorites]
   );
 
+  const pinnedTools = useMemo(
+    () => tools.filter((tool) => favorites.includes(tool.id)),
+    [favorites, tools]
+  );
+  const displayName = user?.fname || user?.username || "there";
+
   return (
-    <div className="space-y-10">
-      {/* Centered hero */}
-      <div className="pt-6 text-center">
-        <h1 className="font-display text-4xl font-bold text-text-high sm:text-5xl">
-          Tools Discovery
-        </h1>
-        <p className="mt-3 text-lg text-text-muted">
-          Find the perfect utility for your next task.
-        </p>
-      </div>
+    <div className="space-y-8">
+      <header className="flex flex-col gap-5 border-b border-surface-700 pb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.1em] text-primary">
+            Your workspace
+          </p>
+          <h1 className="mt-2 font-display text-3xl font-bold text-text-high sm:text-4xl">
+            Welcome back, {displayName}
+          </h1>
+          <p className="mt-2 text-base text-text-muted">
+            Continue where you left off or find a utility for your next task.
+          </p>
+        </div>
+        <Link href="/tools">
+          <Button variant="outline">
+            Browse all tools
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </Button>
+        </Link>
+      </header>
 
       <UpgradeBanner tools={tools} />
 
-      {/* Search + filters */}
-      <div className="space-y-6">
-        <SearchInput
-          variant="hero"
-          onSearch={setSearchQuery}
-          placeholder="Search tools..."
-          className="mx-auto max-w-2xl"
-        />
-        <CategoryFilter
-          categories={categories}
-          active={activeCategory}
-          onChange={setActiveCategory}
-          className="justify-center"
-        />
-      </div>
-
-      {/* Available tools */}
-      <section>
-        <div className="mb-6 flex items-center justify-between border-b border-surface-700 pb-3">
-          <h2 className="flex items-center gap-2.5 font-display text-xl font-bold text-text-high">
-            <LayoutGrid className="h-5 w-5 text-primary" />
-            Available Tools
-          </h2>
-          <span className="font-mono text-sm text-primary">
-            Total: {tools.length}
-          </span>
-        </div>
-
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="grid gap-8 xl:grid-cols-[minmax(0,1.5fr)_minmax(20rem,0.85fr)]">
+        <section aria-labelledby="pinned-tools-heading">
+          <div className="mb-5 flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-primary">
+                <Pin className="h-4 w-4" aria-hidden="true" />
+                <p className="text-xs font-semibold uppercase tracking-[0.1em]">
+                  Quick access
+                </p>
+              </div>
+              <h2
+                id="pinned-tools-heading"
+                className="mt-2 font-display text-2xl font-bold text-text-high"
+              >
+                Pinned tools
+              </h2>
+            </div>
+            <span className="font-mono text-sm text-text-muted">
+              {pinnedTools.length} pinned
+            </span>
           </div>
-        ) : (
-          <ToolsGrid
-            tools={tools}
-            favorites={favorites}
-            searchQuery={searchQuery}
-            activeCategory={activeCategory}
-            onToggleFavorite={handleToggleFavorite}
-          />
-        )}
-      </section>
 
-      {/* Usage & history */}
-      <UsageHistory
-        history={history}
-        totalCount={historyTotal}
-        isLoading={isHistoryLoading}
-      />
+          {isLoading ? (
+            <div className="flex min-h-52 items-center justify-center">
+              <Loader2 className="h-7 w-7 animate-spin text-primary" />
+            </div>
+          ) : pinnedTools.length > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {pinnedTools.slice(0, 4).map((tool) => (
+                <ToolCard
+                  key={tool.id}
+                  tool={tool}
+                  isFavorite
+                  onToggleFavorite={handleToggleFavorite}
+                />
+              ))}
+            </div>
+          ) : (
+            <Card variant="glass" padding="lg" className="rounded-2xl">
+              <CardContent className="flex flex-col items-start gap-4">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15 text-secondary">
+                  <Pin className="h-5 w-5" aria-hidden="true" />
+                </div>
+                <div>
+                  <h3 className="font-display text-lg font-bold text-text-high">
+                    Pin your most-used tools
+                  </h3>
+                  <p className="mt-1 text-sm leading-relaxed text-text-muted">
+                    Save tools from the library to keep your regular work close at hand.
+                  </p>
+                </div>
+                <Link href="/tools">
+                  <Button variant="outline" size="sm">
+                    Explore tools
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
+        </section>
+
+        <section aria-labelledby="recent-activity-heading">
+          <h2 id="recent-activity-heading" className="sr-only">
+            Recent activity
+          </h2>
+          <UsageHistory
+            history={history}
+            totalCount={historyTotal}
+            isLoading={isHistoryLoading}
+          />
+        </section>
+      </div>
     </div>
   );
 }

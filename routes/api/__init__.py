@@ -314,13 +314,15 @@ def register_api_routes():
     from .auth_api import auth_api_bp
     from .user_api import user_api_bp
     from .tool_api import tool_api_bp
+    from .admin_api import admin_api_bp
 
     api_bp.register_blueprint(auth_api_bp)
     api_bp.register_blueprint(user_api_bp)
     api_bp.register_blueprint(tool_api_bp)
+    api_bp.register_blueprint(admin_api_bp)
 
     _routes_registered = True
-    logger.info("API routes registered: /api/v1/auth, /api/v1/user, /api/v1/tools")
+    logger.info("API routes registered: /api/v1/auth, /api/v1/user, /api/v1/tools, /api/v1/admin")
 
 
 # Health check endpoint for the API

@@ -229,12 +229,13 @@ npm test -- authStore.test.ts
 ```
 
 **Current Test Coverage:**
-- Backend: 147 pytest tests passing (routes, models, services)
-- Frontend: 39 unit tests passing
+- Backend: 165 pytest tests passing (routes, models, services)
+- Frontend: 41 unit tests passing
   - `authStore.test.ts` - Auth state management
   - `uiStore.test.ts` - UI state (toasts, modals, sidebar)
   - `csrf.test.ts` - CSRF token management
   - Dashboard component tests (search, filters, favorites, usage history)
+  - `Sidebar.test.tsx` - All-tools nav destination, collapsed-state brand mark
 
 ### Migration Scripts
 
@@ -356,6 +357,7 @@ Organized as Flask blueprints in `routes/`:
 - `auth_api.py` - `/api/v1/auth/*` — login, logout, register, CSRF, password reset, email verification
 - `user_api.py` - `/api/v1/user/*` — profile, password, email, tools, usage, favorites, dashboard
 - `tool_api.py` - `/api/v1/tools/*` — list tools, tax calculator, character counter, email templates CRUD
+- `admin_api.py` - `/api/v1/admin/*` — user list/search/paginate, create/update/delete, role changes (SuperAdmin only), tool-access grant/revoke, tool catalog CRUD (SuperAdmin only). Backs the Next.js `(admin)` route group's `/admin` and `/superadmin` panels.
 - `schemas.py` - Marshmallow validation schemas for all API inputs
 
 ### Service Layer (`services/`)
@@ -365,6 +367,7 @@ Business logic separated from HTTP concerns. Routes call services; services hand
 - `auth_service.py` - Login, registration, password reset, email verification logic
 - `user_service.py` - Profile management, dashboard data assembly (`DashboardData`)
 - `tool_service.py` - Tool access, favorites (CRUD), tax calc, character counter, email templates
+- `admin_service.py` - Admin/SuperAdmin panel logic: user list/search/paginate, create/update/delete (delegates to `Admin`/`SuperAdmin` model methods), role changes, tool-access grants, tool catalog CRUD. Normalizes the `"super_admin"` ⟷ `"superadmin"` role spelling at this boundary (see Common Gotchas).
 - `email_service.py` - Flask-Mail email sending
 - `token_service.py` - Token generation and validation
 
@@ -407,7 +410,7 @@ Located in `frontend/` directory - a high-performance 3D application using the "
 | API Client | Custom fetch wrapper | CSRF protection, 401/403 interceptors |
 | Styling | Tailwind CSS v4 | Zero-runtime CSS |
 | Icons | Lucide React | Tree-shakeable icons |
-| Testing | Jest + React Testing Library | 39 unit tests |
+| Testing | Jest + React Testing Library | 41 unit tests |
 
 #### Development Commands
 ```bash
@@ -465,11 +468,16 @@ frontend/
 │   │   │   ├── register/       # Registration page
 │   │   │   ├── forgot-password/
 │   │   │   └── reset-password/
-│   │   ├── (dashboard)/        # Protected route group
-│   │   │   ├── layout.tsx      # Dashboard layout with sidebar
-│   │   │   ├── dashboard/      # User dashboard
+│   │   ├── (dashboard)/        # Protected route group (any authenticated user)
+│   │   │   ├── layout.tsx      # Dashboard layout with sidebar (no Header — sidebar is the whole shell)
+│   │   │   ├── dashboard/      # Personal workspace: pinned tools + recent activity (not the tool catalogue)
 │   │   │   ├── profile/        # User profile
-│   │   │   └── tools/          # Tool pages
+│   │   │   └── tools/          # Tool catalogue — search/filter/browse all tools (moved out of dashboard/)
+│   │   ├── (admin)/            # Admin/SuperAdmin control panel route group
+│   │   │   ├── layout.tsx      # Guards non-admins → /dashboard; renders AdminSidebar
+│   │   │   ├── admin/          # Admin dashboard (user table, create/edit/delete, tool access)
+│   │   │   └── superadmin/     # SuperAdmin dashboard (+ role changes)
+│   │   │       └── tools/      # Tool catalog CRUD (SuperAdmin only)
 │   │   ├── layout.tsx          # Root layout (FOUC fix, Canvas provider)
 │   │   ├── not-found.tsx       # Custom 404 page
 │   │   └── globals.css         # Sage Tech color system
@@ -482,10 +490,14 @@ frontend/
 │   │   │   ├── Scene.tsx       # 3D scene content
 │   │   │   └── SceneView.tsx   # View tunneling wrapper
 │   │   ├── layout/             # Layout components
-│   │   │   ├── Header.tsx      # Navigation header (public only)
-│   │   │   ├── Sidebar.tsx     # Collapsible sidebar (dashboard)
+│   │   │   ├── Header.tsx      # Navigation header (public route group only — dashboard has its own shell via Sidebar)
+│   │   │   ├── Sidebar.tsx     # Collapsible sidebar ((dashboard) group): single "All tools" link to /tools, history-aware Back (router.back()), direct Logout, inline theme toggle; shows Admin/SuperAdmin nav links when applicable
+│   │   │   ├── AdminSidebar.tsx # Sidebar for the (admin) route group ((admin)/(super)admin/tools links)
 │   │   │   ├── ThemeToggle.tsx # Dark/light mode toggle
 │   │   │   └── Footer.tsx      # Page footer
+│   │   ├── features/
+│   │   │   ├── dashboard/      # Tools grid, category filter, upgrade banner, etc.
+│   │   │   └── admin/          # UserTable, CreateUserDialog, UpdateUserDialog, ToolAccessDialog
 │   │   ├── feedback/           # User feedback
 │   │   │   └── Toaster.tsx     # Toast notification system
 │   │   └── providers/          # React providers
@@ -497,7 +509,7 @@ frontend/
 │   ├── lib/
 │   │   ├── api/                # API client layer
 │   │   │   ├── client.ts       # Base client with interceptors
-│   │   │   ├── auth.ts         # Auth endpoints
+│   │   │   ├── auth.ts         # Auth endpoints; normalizes "super_admin" → "superadmin" (see Common Gotchas)
 │   │   │   ├── tools.ts        # Tools API (tax calc, email templates)
 │   │   │   ├── csrf.ts         # CSRF token management
 │   │   │   └── index.ts        # Centralized exports
@@ -508,12 +520,14 @@ frontend/
 │   │   ├── useSessionPolling.ts # Session expiration polling
 │   │   └── index.ts            # Hook exports
 │   ├── middleware.ts           # Route protection
-│   └── __tests__/              # Unit tests (31 passing)
+│   └── __tests__/              # Unit tests
 │       ├── store/
 │       │   ├── authStore.test.ts
 │       │   └── uiStore.test.ts
-│       └── lib/api/
-│           └── csrf.test.ts
+│       ├── lib/api/
+│       │   └── csrf.test.ts
+│       └── components/layout/
+│           └── Sidebar.test.tsx
 ├── next.config.ts              # Turbopack + 3D + API rewrites
 ├── jest.config.js              # Jest configuration
 ├── jest.setup.js               # Jest setup (next/navigation mocks)
@@ -652,6 +666,12 @@ Database: SQLite (`sqlite:///users.db`)
 
 Check access: `User.user_has_tool_access(user_id, tool_name)` or `user.has_tool_access(tool_name)`
 
+### Dashboard Navigation Rework (Next.js)
+The public `Header` and the authenticated dashboard shell are now fully separate: `Header` renders only inside the `(public)` route group's layout (landing, contact); `(dashboard)` and `(admin)` route groups have no header at all — the sidebar (`Sidebar.tsx` / `AdminSidebar.tsx`) is the entire navigation shell, full `h-screen`. `/dashboard` is a personal workspace (pinned/favorited tools + recent usage history, greets the user by name) — it is no longer the tool-search/browse page. Full tool discovery (search, category filters, grid) lives at `/tools` (`frontend/src/app/(dashboard)/tools/page.tsx`), linked from the dashboard's "Browse all tools" button and the sidebar's single "All tools" item (previously the sidebar listed each tool individually). The sidebar also gained history-aware Back navigation (`router.back()`), a direct Logout button, and an inline theme toggle; the dead `/settings` link was removed since no settings page exists. Regression coverage: `frontend/src/__tests__/components/layout/Sidebar.test.tsx`.
+
+### Admin/SuperAdmin Control Panel (Next.js)
+The `(admin)` route group (`frontend/src/app/(admin)/admin`, `.../superadmin`, `.../superadmin/tools`) is a full JSON-API-backed control panel — user table with search/pagination, create/update/delete, tool-access grants, and (SuperAdmin only) role changes and tool-catalog CRUD. It's reached via the "Admin Dashboard" / "SuperAdmin Panel" / "Manage Tools" links that appear in the main `(dashboard)` `Sidebar.tsx` when `isAdmin`/`isSuperAdmin` are true. Backed by `routes/api/admin_api.py` + `services/admin_service.py`. The legacy Jinja `routes/admin_routes.py` (`/admin_dashboard`, `/superadmin_dashboard` templates) still exists in parallel and is unrelated to this JSON API.
+
 ### Tool Access System
 Default tools are automatically assigned to new users:
 - Tax Calculator
@@ -737,8 +757,9 @@ The CI/CD pipeline (`.github/workflows/deploy.yml`) implements automatic rollbac
 1. **Circular imports**: Models use local imports within methods to avoid circular dependencies
 2. **Password handling**: Always use `user.set_password()`, never set `user.password` directly
 3. **Tool names**: Must match exactly between `Tool.name` and `ToolAccess.tool_name`
-4. **Role changes**: SuperAdmin can change roles, but this creates new User objects (not in-place updates)
+4. **Role changes**: SuperAdmin can change roles, but this creates new User objects (not in-place updates), which also gets a **new `id`** (joined-table inheritance re-insert) — re-look-up by username afterward, don't assume the id is preserved. This also cascade-deletes the user's `ToolAccess` grants (relationship `cascade="all, delete-orphan"`), so a role change wipes tool access.
 5. **Template loading**: Both `templates/` and `Tools/templates/` are searched via ChoiceLoader
+6. **Role spelling mismatch**: The backend stores/serializes the SuperAdmin role as the SQLAlchemy polymorphic identity `"super_admin"` (underscore, see `model/users.py`), but the frontend's role union and every UI check use `"superadmin"` (no underscore). If you add a new place that reads `user.role` from the API, normalize it — see `to_frontend_role`/`to_backend_role` in `services/admin_service.py` (backend) and `normalizeUser` in `frontend/src/lib/api/auth.ts` (frontend). Skipping this makes SuperAdmin-only UI silently fail to render, since `role === "superadmin"` is always `false` for the raw API value.
 
 # Agent Context & Tooling
 

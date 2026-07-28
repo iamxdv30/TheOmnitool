@@ -9,6 +9,17 @@ import { getAuthState } from "@/store/authStore";
 import type { User, LoginCredentials, RegisterCredentials } from "@/types";
 
 /**
+ * The backend serializes role from the SQLAlchemy polymorphic identity,
+ * which is "super_admin" (with underscore) - the frontend's role union
+ * uses "superadmin". Normalize at the wire boundary so every downstream
+ * comparison (isAdmin, isSuperAdmin, useHasRole, etc.) sees one spelling.
+ */
+function normalizeUser(user: User): User {
+  const rawRole = user.role as unknown as string;
+  return rawRole === "super_admin" ? { ...user, role: "superadmin" } : user;
+}
+
+/**
  * Auth status response
  */
 interface AuthStatusResponse {
@@ -52,7 +63,8 @@ export const authApi = {
     });
 
     if (isSuccess(response)) {
-      return response.data;
+      const { isAuthenticated, user } = response.data;
+      return { isAuthenticated, user: user ? normalizeUser(user) : null };
     }
 
     return { isAuthenticated: false, user: null };
@@ -89,7 +101,7 @@ export const authApi = {
     });
 
     if (isSuccess(response)) {
-      const { user } = response.data;
+      const user = normalizeUser(response.data.user);
       const authState = getAuthState();
       authState.setUser(user);
 

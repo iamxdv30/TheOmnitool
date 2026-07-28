@@ -2,26 +2,24 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
+  ArrowLeft,
   LayoutDashboard,
-  Calculator,
-  FileText,
-  Mail,
-  Settings,
-  Users,
+  LogOut,
+  Wrench,
   Shield,
   User,
   Menu,
   X,
   ChevronLeft,
   ChevronRight,
-  Clock,
   type LucideIcon,
 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { useUIStore } from "@/store/uiStore";
+import { useAuth } from "@/hooks";
 
 interface NavItem {
   label: string;
@@ -31,23 +29,27 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: "Tax Calculator", href: "/tools/tax-calculator", icon: Calculator },
-  { label: "Character Counter", href: "/tools/char-counter", icon: FileText },
-  { label: "Unix Timestamp", href: "/tools/unix-timestamp", icon: Clock },
-  { label: "Email Templates", href: "/tools/email-templates", icon: Mail },
+  { label: "All tools", href: "/tools", icon: Wrench },
 ];
 
 const adminItems: NavItem[] = [
-  { label: "User Management", href: "/admin/users", icon: Users, adminOnly: true },
-  { label: "Access Control", href: "/admin/access", icon: Shield, adminOnly: true },
+  { label: "Admin Dashboard", href: "/admin", icon: Shield, adminOnly: true },
+];
+
+const superAdminItems: NavItem[] = [
+  { label: "SuperAdmin Panel", href: "/superadmin", icon: Shield },
+  { label: "Manage Tools", href: "/superadmin/tools", icon: Wrench },
 ];
 
 interface SidebarProps {
   isAdmin?: boolean;
+  isSuperAdmin?: boolean;
 }
 
-export function Sidebar({ isAdmin = false }: SidebarProps) {
+export function Sidebar({ isAdmin = false, isSuperAdmin = false }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { logout } = useAuth();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const { isSidebarCollapsed, toggleSidebarCollapsed } = useUIStore();
 
@@ -69,7 +71,7 @@ export function Sidebar({ isAdmin = false }: SidebarProps) {
           <ThemeToggle />
           <button
             onClick={() => setIsMobileOpen(!isMobileOpen)}
-            className="p-2 text-text-muted hover:text-text-high transition-colors"
+            className="flex h-11 w-11 items-center justify-center text-text-muted transition-colors hover:text-text-high"
             aria-label={isMobileOpen ? "Close menu" : "Open menu"}
           >
             {isMobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -88,7 +90,7 @@ export function Sidebar({ isAdmin = false }: SidebarProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed left-0 top-16 z-40 border-r border-surface-700 bg-surface-900/95 backdrop-blur-sm transition-all duration-300 h-[calc(100vh-4rem)]",
+          "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-surface-700 bg-surface-900/95 backdrop-blur-sm transition-all duration-300",
           isSidebarCollapsed ? "w-20" : "w-64",
           "md:translate-x-0",
           isMobileOpen ? "translate-x-0 w-64 top-0 h-screen z-50" : "-translate-x-full"
@@ -103,20 +105,31 @@ export function Sidebar({ isAdmin = false }: SidebarProps) {
           {isSidebarCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
       </button>
 
-      {/* Logo Area (Only visible on mobile) */}
-      <div className={cn("flex h-16 items-center border-b border-surface-700 md:hidden", isSidebarCollapsed ? "justify-center px-0" : "px-6")}>
-        <Link href="/dashboard" className="flex items-center gap-2" title="Omnitool Dashboard">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shrink-0">
+      {/* Logo Area */}
+      <div
+        className={cn(
+          "flex h-16 items-center border-b border-surface-700",
+          isSidebarCollapsed ? "justify-center px-0" : "px-6"
+        )}
+      >
+        <Link
+          href="/dashboard"
+          className="flex items-center gap-2"
+          title={isSidebarCollapsed ? "Omnitool Dashboard" : undefined}
+        >
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary">
             <span className="font-display text-lg font-bold text-surface-900">O</span>
           </div>
-           <span className="font-display text-xl font-semibold text-text-high truncate">
+          {!isSidebarCollapsed && (
+            <span className="truncate font-display text-xl font-semibold text-text-high">
               Omnitool
-           </span>
+            </span>
+          )}
         </Link>
       </div>
 
       {/* Navigation */}
-      <nav className="flex flex-col gap-1 p-3 pt-6 h-full overflow-y-auto">
+      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3 pt-6">
         {/* Dashboard Link (Always at top) */}
         <Link
           href="/dashboard"
@@ -128,22 +141,33 @@ export function Sidebar({ isAdmin = false }: SidebarProps) {
             isSidebarCollapsed && "justify-center px-2"
           )}
           title={isSidebarCollapsed ? "Dashboard" : undefined}
+          aria-current={pathname === "/dashboard" ? "page" : undefined}
         >
           <LayoutDashboard className="h-5 w-5 shrink-0" />
           {!isSidebarCollapsed && <span className="truncate">Dashboard</span>}
         </Link>
 
-        {!isSidebarCollapsed && (
-          <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-text-muted truncate">
-            Tools
-          </p>
-        )}
         {/* Separator for collapsed mode */}
         {isSidebarCollapsed && <div className="my-2 border-t border-surface-700" />}
 
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className={cn(
+            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-surface-800 hover:text-text-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-glow focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900",
+            isSidebarCollapsed && "justify-center px-2"
+          )}
+          aria-label="Back"
+          title={isSidebarCollapsed ? "Back" : undefined}
+        >
+          <ArrowLeft className="h-5 w-5 shrink-0" />
+          {!isSidebarCollapsed && <span className="truncate">Back</span>}
+        </button>
+
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href;
+          const isActive =
+            pathname === item.href || pathname.startsWith(`${item.href}/`);
 
           return (
             <Link
@@ -157,6 +181,7 @@ export function Sidebar({ isAdmin = false }: SidebarProps) {
                 isSidebarCollapsed && "justify-center px-2"
               )}
               title={isSidebarCollapsed ? item.label : undefined}
+              aria-current={isActive ? "page" : undefined}
             >
               <Icon className="h-5 w-5 shrink-0" />
               {!isSidebarCollapsed && <span className="truncate">{item.label}</span>}
@@ -174,7 +199,7 @@ export function Sidebar({ isAdmin = false }: SidebarProps) {
              {/* Separator for collapsed mode */}
              {isSidebarCollapsed && <div className="my-2 border-t border-surface-700" />}
              
-            {adminItems.map((item) => {
+            {[...adminItems, ...(isSuperAdmin ? superAdminItems : [])].map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
 
@@ -222,20 +247,28 @@ export function Sidebar({ isAdmin = false }: SidebarProps) {
             <User className="h-5 w-5 shrink-0" />
             {!isSidebarCollapsed && <span className="truncate">Profile</span>}
           </Link>
-          <Link
-            href="/settings"
+          <button
+            type="button"
+            onClick={() => void logout()}
             className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-              pathname === "/settings"
-                ? "bg-primary/20 text-primary"
-                : "text-text-muted hover:bg-surface-800 hover:text-text-high",
-               isSidebarCollapsed && "justify-center px-2"
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-surface-800 hover:text-text-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-glow focus-visible:ring-offset-2 focus-visible:ring-offset-surface-900",
+              isSidebarCollapsed && "justify-center px-2"
             )}
-             title={isSidebarCollapsed ? "Settings" : undefined}
+            aria-label="Log out"
+            title={isSidebarCollapsed ? "Log out" : undefined}
           >
-            <Settings className="h-5 w-5 shrink-0" />
-            {!isSidebarCollapsed && <span className="truncate">Settings</span>}
-          </Link>
+            <LogOut className="h-5 w-5 shrink-0" />
+            {!isSidebarCollapsed && <span className="truncate">Log out</span>}
+          </button>
+          <div
+            className={cn(
+              "flex items-center rounded-lg px-3 py-2 text-sm font-medium text-text-muted",
+              isSidebarCollapsed ? "justify-center px-2" : "justify-between"
+            )}
+          >
+            {!isSidebarCollapsed && <span>Theme</span>}
+            <ThemeToggle />
+          </div>
         </div>
       </nav>
       </aside>

@@ -243,6 +243,11 @@ class SuperAdmin(Admin):
                 )
                 new_admin.password = user.password
                 db.session.delete(user)
+                # Flush the delete before inserting the replacement row - both
+                # share the same unique username/email, so inserting first
+                # (SQLAlchemy's default add-before-delete flush order) trips
+                # the unique constraint.
+                db.session.flush()
                 db.session.add(new_admin)
             elif new_role == "user" and isinstance(user, (Admin, SuperAdmin)):
                 new_user = User(
@@ -257,7 +262,23 @@ class SuperAdmin(Admin):
                 )
                 new_user.password = user.password
                 db.session.delete(user)
+                db.session.flush()
                 db.session.add(new_user)
+            elif new_role == "super_admin" and not isinstance(user, SuperAdmin):
+                new_super_admin = SuperAdmin(
+                    username=user.username,
+                    email=user.email,
+                    fname=user.fname,
+                    lname=user.lname,
+                    address=user.address,
+                    city=user.city,
+                    state=user.state,
+                    zip=user.zip
+                )
+                new_super_admin.password = user.password
+                db.session.delete(user)
+                db.session.flush()
+                db.session.add(new_super_admin)
             db.session.commit()
 
     def create_user(self, user_data):

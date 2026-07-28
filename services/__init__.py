@@ -9,6 +9,7 @@ from .auth_service import AuthService, get_auth_service, UserProfile, LoginResul
 from .user_service import UserService, get_user_service, UserProfileData, DashboardData
 from .tool_service import ToolService, get_tool_service, ToolInfo, EmailTemplateData
 from .subscription_service import SubscriptionService, get_subscription_service
+from .admin_service import AdminService, get_admin_service, AdminUserData
 
 __all__ = [
     # Base classes and utilities
@@ -48,4 +49,9 @@ __all__ = [
     # Subscription Service
     'SubscriptionService',
     'get_subscription_service',
+
+    # Admin Service
+    'AdminService',
+    'get_admin_service',
+    'AdminUserData',
 ]

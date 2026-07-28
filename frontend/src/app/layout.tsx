@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Space_Grotesk, Inter } from "next/font/google";
 import "./globals.css";
 import { CanvasProvider } from "@/components/providers";
-import { Header } from "@/components/layout";
 import { Toaster } from "@/components/feedback";
 
 const spaceGrotesk = Space_Grotesk({
@@ -65,11 +64,7 @@ export default function RootLayout({
         {/* Global 3D Canvas for View Tunneling */}
         <CanvasProvider />
 
-        {/* Header */}
-        <Header />
-
-        {/* Main Content */}
-        <main className="relative z-10 pt-16">{children}</main>
+        <div className="relative z-10">{children}</div>
 
         {/* Toast Notifications */}
         <Toaster />
