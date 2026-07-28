@@ -302,3 +302,9 @@ Implemented responsive patterns:
 - Preserve a clear hierarchy: page title and lead copy, then controls/filters, then responsive content grids.
 - Use responsive stacking for action groups (`flex-col` → `sm:flex-row`) and for multi-field forms.
 - Keep high-emphasis glow effects selective: primary calls to action, hero search, and ambient decoration rather than every interactive element.
+
+## 6. Do's and Don'ts (Agent Guardrails)
+
+- **DO:** Use explicit design tokens defined in this file.
+- **DON'T:** Use arbitrary spacing values; stick strictly to the 4px/8px grid scale.
+- **DON'T:** Introduce new colors outside the defined color palette.
