@@ -7,6 +7,10 @@ This file provides context and guidance for Gemini when working with the "MyTool
 **Type:** Hybrid Web Application (Flask Monolith + Modernizing Next.js Frontend)
 **Purpose:** A suite of utility tools (Tax calculators, Character counters, etc.) with role-based access control (RBAC).
 
+## Frontend Design System (Production — Authoritative)
+
+**[DESIGN.md](DESIGN.md) is the official, production frontend design system for the Next.js app.** It documents what's already implemented (Sage Tech palette, Space Grotesk/Inter typography, component tokens, spacing/layout rules) and must be treated as fixed — do not propose a new palette, font pairing, or aesthetic direction for `frontend/` work. Extend `DESIGN.md` to cover new cases rather than inventing an alternate system.
+
 ## Tech Stack
 
 ### Backend (Core)

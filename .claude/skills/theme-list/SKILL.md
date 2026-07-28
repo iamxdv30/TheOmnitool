@@ -23,7 +23,9 @@ When the frontend-design skill is active and you're building a UI from scratch, 
 
 ## Workflow
 
-When building a frontend interface:
+Before anything else, check the project root (and any `docs/` folder) for a design-system file (e.g. `DESIGN.md`) documenting an already-implemented, production frontend. If one exists, that project already has its theme — do not run the steps below. Instead, read the doc's token values (colors, fonts, spacing, radii) and apply them directly; skip preset/custom theme selection entirely. Only proceed with the workflow below when no such doc exists, or the user explicitly asks to replace/compare themes.
+
+When building a frontend interface (no existing design-system doc):
 
 1. **Offer theme selection**: Present the 10 available themes with their one-line descriptions. Mention the option to generate a custom theme.
 2. **Wait for selection**: Get explicit confirmation of the chosen theme.

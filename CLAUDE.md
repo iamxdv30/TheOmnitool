@@ -6,6 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 MyTools (The Omnitool) is a Flask-based web application providing various utility tools (tax calculators, character counter, email templates, etc.) with role-based access control. Current version: 1.5.0
 
+## Frontend Design System (Production — Authoritative)
+
+**[DESIGN.md](DESIGN.md) is the official, production frontend design system for the Next.js app.** It is descriptive of what's already implemented (Sage Tech palette, Space Grotesk/Inter typography, component tokens, spacing/layout rules) and MUST be treated as fixed when building or modifying any `frontend/` UI.
+
+- Do not introduce a new color palette, font pairing, or "bold aesthetic direction" for this project. Reuse the semantic tokens and component patterns documented in `DESIGN.md`.
+- The `frontend-design` and `theme-list` skills under `.claude/skills/` are generic, project-agnostic design skills. Both are patched with a guard clause that defers to `DESIGN.md` when present — if you invoke them here, confirm they actually followed that guard (loaded `DESIGN.md` tokens) rather than proposing a new theme or "unforgettable" pivot.
+- If `DESIGN.md` doesn't yet cover a case you need (a new component, a new page pattern), extend it to match, then implement — don't invent an alternate system.
+
 ## Development Commands
 
 ### Running the Application

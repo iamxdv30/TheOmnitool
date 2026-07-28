@@ -9,6 +9,15 @@ This skill guides creation of distinctive, production-grade frontend interfaces 
 
 The user provides frontend requirements: a component, page, application, or interface to build. They may include context about the purpose, audience, or technical constraints.
 
+## Existing design system check (do this first)
+
+Before picking an aesthetic direction, check the project root (and any `docs/` folder) for a design-system file (e.g. `DESIGN.md`) that documents an already-implemented, production frontend. If one exists:
+
+- Treat it as fixed. Do not choose a new palette, font pairing, or "bold aesthetic direction" — reuse its documented tokens, components, and layout patterns instead.
+- Skip the "Differentiation / unforgettable" framing below for that project; consistency with the existing system takes priority over novelty.
+- If the task needs something the doc doesn't cover, extend the doc to match what you build rather than diverging from it silently.
+- Only run the full creative process below when no such design-system doc exists, or the user explicitly asks for a new/alternate direction.
+
 ## Design Thinking
 
 Before coding, understand the context and commit to a BOLD aesthetic direction:
