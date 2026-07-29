@@ -225,21 +225,21 @@ def create_app(test_config=None):
     @app.before_request
     def handle_headers():
         is_local = os.getenv('IS_LOCAL', 'true').lower() == 'true'
-        
-        # Skip HTTPS checks in local development
-        if is_local:
-            return None
-            
-        # Production HTTPS handling
-        if request.headers.get("X-Forwarded-Proto") == "https":
-            request.environ["wsgi.url_scheme"] = "https"
 
         # Use X-Forwarded-Host if present for host header
         forwarded_host = request.headers.get("X-Forwarded-Host")
         if forwarded_host:
             request.environ["HTTP_HOST"] = forwarded_host
 
-        # Redirect to HTTPS in production
+        # Skip HTTPS checks for local development and internal (Next.js -> Flask) requests
+        if is_local or request.host.split(":")[0] in ("127.0.0.1", "localhost"):
+            return None
+
+        # Production HTTPS handling
+        if request.headers.get("X-Forwarded-Proto") == "https":
+            request.environ["wsgi.url_scheme"] = "https"
+
+        # Redirect to HTTPS in production for external requests only
         if not request.is_secure:
             url = request.url.replace("http://", "https://", 1)
             return redirect(url, code=301)

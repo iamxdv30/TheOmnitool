@@ -22,6 +22,9 @@ const PUBLIC_ROUTES = [
   "/",
   "/about",
   "/contact",
+  "/health",
+  "/health/ping",
+  "/health/database",
 ];
 
 /**
