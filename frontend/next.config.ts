@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
   // Enable React strict mode for better development experience
@@ -19,11 +20,17 @@ const nextConfig: NextConfig = {
 
   // Turbopack configuration (Next.js 16+ default)
   turbopack: {
+    // Force the project root to the frontend directory so Turbopack does not
+    // walk up to the repository root when multiple lockfiles are present.
+    root: path.resolve(__dirname),
     // Resolve aliases for better module resolution
     resolveAlias: {
       // Add any custom aliases here if needed
     },
   },
+
+  // Keep output tracing in sync with the Turbopack root
+  outputFileTracingRoot: path.resolve(__dirname),
 
   // Configure transpilation for 3D packages
   transpilePackages: [
