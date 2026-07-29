@@ -1,5 +1,5 @@
 alembic==1.13.2
-authlib==1.6.3
+authlib==1.6.12
 bcrypt==4.2.0
 blinker==1.8.2
 click==8.1.7
