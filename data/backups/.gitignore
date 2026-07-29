@@ -1,0 +1,11 @@
+# Ignore all backup files (database dumps, SQLite files, and JSON exports)
+*.dump
+*.db
+*.sql
+*.tar.gz
+*.zip
+*.json
+
+# Keep these files in git
+!.gitignore
+!.gitkeep

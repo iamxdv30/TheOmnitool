@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from .base import db
 
 
@@ -8,7 +8,7 @@ class UsageLog(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     tool_name = db.Column(db.String(100), nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     user = db.relationship("User", back_populates="usage_logs")
 
@@ -67,7 +67,15 @@ class Tool(db.Model):
     route = db.Column(db.String(255), nullable=False)
     is_default = db.Column(db.Boolean, default=False)
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    icon = db.Column(db.String(50), nullable=True)
+    display_name = db.Column(db.String(50), nullable=True)
+    category_id = db.Column(db.Integer, db.ForeignKey("tool_categories.id"), nullable=True)
+    is_paid = db.Column(db.Boolean, default=False)
+    required_plan_id = db.Column(db.Integer, db.ForeignKey("subscription_plans.id"), nullable=True)
+
+    category = db.relationship("ToolCategory", back_populates="tools")
+    required_plan = db.relationship("SubscriptionPlan")
 
     def __init__(self, name, description, route, is_default=False, is_active=True):
         self.name = name
@@ -107,3 +115,27 @@ class Tool(db.Model):
     def remove_default_tool_from_users(cls, tool_name):
         ToolAccess.query.filter_by(tool_name=tool_name).delete()
         db.session.commit()
+
+class ToolCategory(db.Model):
+    __tablename__ = "tool_categories"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+    slug = db.Column(db.String(50), unique=True, nullable=False)
+    icon = db.Column(db.String(50), nullable=True)
+    color = db.Column(db.String(20), nullable=True)
+    display_order = db.Column(db.Integer, default=0)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    tools = db.relationship("Tool", back_populates="category")
+
+class ToolFavorite(db.Model):
+    __tablename__ = "tool_favorites"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    tool_id = db.Column(db.Integer, db.ForeignKey("tools.id"), nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (db.UniqueConstraint('user_id', 'tool_id', name='uq_user_tool_favorite'),)

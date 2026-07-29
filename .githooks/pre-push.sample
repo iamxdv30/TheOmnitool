@@ -1,0 +1,55 @@
+#!/bin/bash
+#
+# Pre-push Git Hook: Automatic Database Backup
+#
+# This hook creates a JSON backup of the database before each push.
+# It helps prevent data loss if a deployment causes migration issues.
+#
+# INSTALLATION:
+#   1. Rename this file to remove .sample extension:
+#      mv .githooks/pre-push.sample .githooks/pre-push
+#
+#   2. Make it executable (Linux/Mac):
+#      chmod +x .githooks/pre-push
+#
+#   3. Configure Git to use this hooks directory:
+#      git config core.hooksPath .githooks
+#
+# USAGE:
+#   - The hook runs automatically before each push
+#   - To skip the backup: git push --no-verify
+#   - Backups are stored in: data/backups/
+#
+# REQUIREMENTS:
+#   - Python 3.x in PATH
+#   - Flask app must be runnable
+
+echo "=========================================="
+echo "Pre-push hook: Creating database backup..."
+echo "=========================================="
+
+# Check if Python is available
+if ! command -v python &> /dev/null; then
+    echo "WARNING: Python not found in PATH. Skipping backup."
+    echo "To skip this hook: git push --no-verify"
+    exit 0
+fi
+
+# Generate timestamp for backup filename
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+BACKUP_FILE="data/backups/pre_push_${TIMESTAMP}.json"
+
+# Run the export script
+python scripts/export_all_data.py --output "$BACKUP_FILE" 2>&1
+
+if [ $? -eq 0 ]; then
+    echo "Backup created: $BACKUP_FILE"
+    echo "=========================================="
+    echo "Proceeding with push..."
+else
+    echo "WARNING: Backup failed, but proceeding with push."
+    echo "To enforce backup, modify this hook to exit 1 on failure."
+    echo "=========================================="
+fi
+
+exit 0

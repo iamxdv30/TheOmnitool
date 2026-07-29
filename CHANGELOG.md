@@ -3,6 +3,50 @@
 All notable changes to this project will be documented in this file.
 
 
+## [1.5.0] - 2026-07-20
+### 🚀 Tools Discovery Dashboard & API Security Hardening
+
+Major release delivering the redesigned Tools Discovery dashboard (Phases 2-7 of the dashboard redesign plan) plus security fixes found during a full audit.
+
+### 🌟 New Features
+
+#### Tools Discovery Dashboard (Next.js)
+- **Search**: Debounced full-text search across tool names and descriptions
+- **Category Filters**: Pills for All Tools, Favorites, and admin-managed categories
+- **Favorites**: Heart any tool — synced to your account across devices, with optimistic UI
+- **Usage & History**: Recent activity feed with relative timestamps and total usage count
+- **Premium Tool Support**: Locked tools show the required plan; upgrade banner when paid tools are locked
+
+#### New API Endpoints
+- `GET /api/v1/user/usage-history` — paginated recent tool activity
+- `GET /api/v1/user/subscription` — current plan, billing cycle, and status
+- `GET /api/v1/tools/categories` — active tool categories
+- `GET /api/v1/tools/plans` — available subscription plans
+- `GET /api/v1/tools/` now returns icon, display name, category, and plan requirements
+- `GET /api/v1/user/dashboard` now includes favorites and subscription
+
+#### Access Control
+- Paid tools unlock automatically when the user's active subscription tier meets the tool's required plan tier
+- Default active tools no longer require explicit per-user access grants
+
+### 🔐 Security
+- **CSRF enforcement**: Mutating API requests now require a valid `X-CSRFToken` header (tokens were previously issued but never validated)
+- **Session fixation protection**: Login starts a fresh session and rotates the CSRF token
+- **Secret hygiene**: Removed SECRET_KEY from startup logs; Werkzeug debug mode restricted to local development
+
+### 🐛 Fixed
+- Email verification failed on PostgreSQL (raw SQL boolean type mismatch)
+- Tool list reported "no access" for all regular users
+- Legacy tool routes denied access due to slug vs. tool-name mismatch; super admins were not recognized on legacy routes
+- Usage log timestamps were frozen at app startup time
+- Test suite connected to the real development database instead of in-memory SQLite
+
+### ✅ Quality
+- 147 backend tests and 39 frontend tests passing; TypeScript and ESLint clean
+
+**Developer**: Xyrus De Vera
+
+
 ## [1.4.3] - 2026-01-18
 ### 🚀 Unified Tax Calculator - Production Ready
 

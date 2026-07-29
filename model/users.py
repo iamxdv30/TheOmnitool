@@ -52,6 +52,9 @@ class User(db.Model):
         "EmailTemplate", order_by="EmailTemplate.id", 
         back_populates="user", cascade="all, delete-orphan"
     )
+    subscriptions = db.relationship(
+        "UserSubscription", back_populates="user", cascade="all, delete-orphan"
+    )
 
     __mapper_args__ = {"polymorphic_identity": "user", "polymorphic_on": role}
 
@@ -110,14 +113,32 @@ class User(db.Model):
         self.password = generate_password_hash(password, method="pbkdf2:sha256")
         logging.debug(f"Password hash: {self.password}")
 
+    @staticmethod
+    def _normalize_tool_name(tool_name):
+        """Normalize a tool name/slug so 'Email Templates' == 'email-templates'."""
+        return (tool_name or "").strip().lower().replace("_", "-").replace(" ", "-")
+
     def has_tool_access(self, tool_name):
-        from .tools import ToolAccess
-        return ToolAccess.query.filter_by(user_id=self.id, tool_name=tool_name).first() is not None
-    
+        return User.user_has_tool_access(self.id, tool_name)
+
     @classmethod
     def user_has_tool_access(cls, user_id, tool_name):
-        from .tools import ToolAccess
-        return ToolAccess.query.filter_by(user_id=user_id, tool_name=tool_name).first() is not None
+        from .tools import Tool, ToolAccess
+        # Legacy routes pass slugs ("email-templates") while ToolAccess rows
+        # store DB tool names ("Email Templates") — compare normalized forms.
+        normalized = cls._normalize_tool_name(tool_name)
+        default_tools = Tool.query.filter_by(is_default=True, is_active=True).all()
+        if any(
+            cls._normalize_tool_name(tool.name) == normalized
+            for tool in default_tools
+        ):
+            return True
+
+        access_rows = ToolAccess.query.filter_by(user_id=user_id).all()
+        return any(
+            cls._normalize_tool_name(row.tool_name) == normalized
+            for row in access_rows
+        )
 
     @classmethod
     def assign_default_tools(cls, user_id):
@@ -222,6 +243,11 @@ class SuperAdmin(Admin):
                 )
                 new_admin.password = user.password
                 db.session.delete(user)
+                # Flush the delete before inserting the replacement row - both
+                # share the same unique username/email, so inserting first
+                # (SQLAlchemy's default add-before-delete flush order) trips
+                # the unique constraint.
+                db.session.flush()
                 db.session.add(new_admin)
             elif new_role == "user" and isinstance(user, (Admin, SuperAdmin)):
                 new_user = User(
@@ -236,7 +262,23 @@ class SuperAdmin(Admin):
                 )
                 new_user.password = user.password
                 db.session.delete(user)
+                db.session.flush()
                 db.session.add(new_user)
+            elif new_role == "super_admin" and not isinstance(user, SuperAdmin):
+                new_super_admin = SuperAdmin(
+                    username=user.username,
+                    email=user.email,
+                    fname=user.fname,
+                    lname=user.lname,
+                    address=user.address,
+                    city=user.city,
+                    state=user.state,
+                    zip=user.zip
+                )
+                new_super_admin.password = user.password
+                db.session.delete(user)
+                db.session.flush()
+                db.session.add(new_super_admin)
             db.session.commit()
 
     def create_user(self, user_data):
