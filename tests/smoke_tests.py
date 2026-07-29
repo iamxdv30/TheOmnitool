@@ -7,7 +7,7 @@ Designed to catch critical issues quickly without comprehensive test coverage.
 Features:
 - HTTP endpoint tests (homepage, login, health checks)
 - Database connectivity verification
-- Static asset loading tests
+- Next.js static asset loading tests
 - Error log monitoring
 - Fast execution (< 30 seconds)
 
@@ -27,6 +27,7 @@ Usage:
 
 import argparse
 import logging
+import re
 import sys
 import time
 from typing import Dict, List, Tuple
@@ -108,72 +109,76 @@ def test_login_page_loads(base_url: str, session: requests.Session) -> Tuple[boo
 
 def test_health_endpoint(base_url: str, session: requests.Session) -> Tuple[bool, str]:
     """
-    Test: Health check endpoint (if exists)
+    Test: Flask and Next.js health endpoints
 
-    Note: Not all apps have a health endpoint, so this may be skipped
+    Verifies both the Flask /health/ping endpoint and the Next.js /api/health route.
     """
-    logger.info("Testing health endpoint...")
+    logger.info("Testing health endpoints...")
 
-    try:
-        response = session.get(f"{base_url}/health", timeout=10)
+    endpoints = [
+        ("Flask health", f"{base_url}/health/ping"),
+        ("Next.js health", f"{base_url}/api/health"),
+    ]
 
-        if response.status_code == 200:
-            logger.info("✓ Health endpoint returns 200")
+    failed = []
 
-            # Try to parse JSON response
-            try:
-                data = response.json()
-                if data.get("status") == "ok":
-                    return True, "Health endpoint reports OK"
-                else:
-                    return False, f"Health endpoint reports: {data}"
-            except ValueError:
-                # Not JSON, but 200 is good enough
-                return True, "Health endpoint returns 200"
+    for name, url in endpoints:
+        try:
+            response = session.get(url, timeout=10)
 
-        elif response.status_code == 404:
-            logger.info("⚠️  No health endpoint (404) - skipping")
-            return True, "Health endpoint not implemented (skipped)"
-        else:
-            return False, f"Health endpoint returned {response.status_code}"
+            if response.status_code == 200:
+                logger.info(f"✓ {name} returns 200")
+            else:
+                failed.append(f"{name} ({response.status_code})")
+                logger.warning(f"⚠️  {name} returned {response.status_code}")
 
-    except requests.RequestException as e:
-        logger.warning(f"Health endpoint unreachable: {e}")
-        return True, "Health endpoint not implemented (skipped)"
+        except requests.RequestException as e:
+            failed.append(f"{name} ({e})")
+            logger.warning(f"Request to {name} failed: {e}")
+
+    if failed:
+        return False, f"Health endpoint(s) failed: {', '.join(failed)}"
+
+    return True, "Health endpoints return 200"
 
 def test_static_assets_load(base_url: str, session: requests.Session) -> Tuple[bool, str]:
     """
-    Test: Static CSS/JS files load
+    Test: Next.js static assets are built and served
 
-    Verifies static file serving is working
+    Verifies the homepage references at least one `/_next/static/` asset and that
+    the asset can be fetched successfully.
     """
-    logger.info("Testing static assets load...")
+    logger.info("Testing Next.js static assets...")
 
-    # Common static file paths (files that actually exist)
-    static_files = [
-        "/static/css/base.css",
-        "/static/js/utils/theme.js"
-    ]
+    try:
+        response = session.get(base_url, timeout=10)
 
-    failed_assets = []
+        if response.status_code != 200:
+            return False, f"Homepage returned {response.status_code}"
 
-    for asset_path in static_files:
-        try:
-            response = session.get(f"{base_url}{asset_path}", timeout=10)
+        html = response.text
 
-            if response.status_code == 200:
-                logger.debug(f"✓ {asset_path} loads")
-            else:
-                failed_assets.append(f"{asset_path} ({response.status_code})")
+        # Find hashed _next/static CSS/JS references
+        next_static_pattern = re.compile(r'(?:src|href)="(/_next/static/[^"]+)"')
+        matches = next_static_pattern.findall(html)
 
-        except requests.RequestException as e:
-            failed_assets.append(f"{asset_path} ({e})")
+        if not matches:
+            logger.warning("⚠️  No _next/static assets found in homepage HTML")
+            # App Router output may not include inline links; accept a 200 homepage as fallback
+            return True, "Homepage loads, no inline static asset links found"
 
-    if failed_assets:
-        return False, f"Static assets failed: {', '.join(failed_assets)}"
-    else:
-        logger.info(f"✓ Static assets load ({len(static_files)} checked)")
-        return True, "All static assets load successfully"
+        # Try to fetch the first asset to confirm static file serving works
+        asset_url = f"{base_url}{matches[0]}"
+        asset_response = session.get(asset_url, timeout=10)
+
+        if asset_response.status_code == 200:
+            logger.info(f"✓ Next.js static asset loads ({matches[0]})")
+            return True, "Next.js static assets load successfully"
+        else:
+            return False, f"Next.js static asset {matches[0]} returned {asset_response.status_code}"
+
+    except requests.RequestException as e:
+        return False, f"Next.js static asset test failed: {e}"
 
 def test_database_connectivity(base_url: str, session: requests.Session) -> Tuple[bool, str]:
     """
@@ -221,7 +226,9 @@ def test_no_recent_errors(base_url: str, session: requests.Session) -> Tuple[boo
     test_urls = [
         base_url,
         f"{base_url}/login",
-        f"{base_url}/about" if base_url else None  # May not exist
+        f"{base_url}/about",
+        f"{base_url}/health/ping",
+        f"{base_url}/api/health",
     ]
 
     test_urls = [url for url in test_urls if url]  # Filter None

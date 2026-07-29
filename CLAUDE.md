@@ -436,7 +436,10 @@ npm run lint
 #### Production Deployment (Heroku)
 ```bash
 # Dual-stack architecture: Flask + Next.js on single dyno
+# Stack: heroku-24 (heroku-22 is EOL April 2027)
 # Startup script: scripts/start-production.sh
+# Python version: .python-version (3.12)
+# Node build shim: package.json (root) -> runs build inside frontend/
 
 # Health check endpoints
 curl https://your-app.herokuapp.com/health/ping      # Flask health
@@ -447,8 +450,13 @@ heroku buildpacks:add heroku/python
 heroku buildpacks:add heroku/nodejs
 
 # Required environment variables (set via CI/CD)
-FLASK_API_URL=http://127.0.0.1:5000
+# Build-time vars (must be set before git push to be baked into the Next.js bundle)
 NEXT_PUBLIC_APP_URL=https://your-app.herokuapp.com
+NEXT_PUBLIC_RECAPTCHA_SITE_KEY=...
+
+# Runtime vars (Flask + Next.js server-side route handlers)
+FLASK_API_URL=http://127.0.0.1:5000
+FLASK_BACKEND_URL=http://127.0.0.1:5000
 SESSION_COOKIE_SECURE=true
 SESSION_COOKIE_SAMESITE=Lax
 SESSION_COOKIE_HTTPONLY=true

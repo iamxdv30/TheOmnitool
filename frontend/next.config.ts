@@ -33,12 +33,16 @@ const nextConfig: NextConfig = {
     "@react-three/rapier",
   ],
 
-  // API proxy rewrites to Flask backend
+  // Proxy rewrites to Flask backend (running on port 5000 on the dyno)
   async rewrites() {
     return [
       {
         source: "/api/:path*",
         destination: "http://127.0.0.1:5000/api/:path*",
+      },
+      {
+        source: "/health/:path*",
+        destination: "http://127.0.0.1:5000/health/:path*",
       },
     ];
   },

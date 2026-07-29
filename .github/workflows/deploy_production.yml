@@ -67,7 +67,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.12.0'
+          python-version: '3.12'
           cache: 'pip'
 
       - name: Install Dependencies
@@ -181,6 +181,22 @@ jobs:
           echo "Using dev_tool_access.json (tested in staging) for production import"
           echo "=========================================="
 
+      - name: Set Heroku Stack
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          echo "Ensuring production is on heroku-24 stack..."
+          heroku stack:set heroku-24 -a omnitool-by-xdv
+
+      - name: Configure Build-Time Heroku Config
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          echo "Setting build-time config vars before slug compilation..."
+          heroku config:set NEXT_PUBLIC_APP_URL="https://omnitool-by-xdv-85a1bde25ad1.herokuapp.com" -a omnitool-by-xdv
+          heroku config:set NEXT_PUBLIC_RECAPTCHA_SITE_KEY="${{ secrets.RECAPTCHA_SITE_KEY }}" -a omnitool-by-xdv
+          echo "Build-time config set"
+
       # Deploy code to Heroku
       - name: Deploy to Heroku Production
         env:
@@ -216,7 +232,7 @@ jobs:
 
           # Frontend integration configuration
           heroku config:set FLASK_API_URL="http://127.0.0.1:5000" -a omnitool-by-xdv
-          heroku config:set NEXT_PUBLIC_APP_URL="https://omnitool-by-xdv-85a1bde25ad1.herokuapp.com" -a omnitool-by-xdv
+          heroku config:set FLASK_BACKEND_URL="http://127.0.0.1:5000" -a omnitool-by-xdv
 
           # Session cookie settings (CRITICAL for production security)
           heroku config:set SESSION_COOKIE_SECURE="true" -a omnitool-by-xdv

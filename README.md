@@ -201,12 +201,14 @@ Test fixtures (`tests/conftest.py`) spin up an isolated in-memory SQLite app via
 
 ## Deployment
 
-Deployed to Heroku using a **dual-stack architecture** — Flask (Gunicorn) runs as a background process while Next.js serves as the foreground process on Heroku's assigned `$PORT`, with Next.js rewriting `/api/*` requests to the Flask backend.
+Deployed to Heroku using a **dual-stack architecture** on the `heroku-24` stack — Flask (Gunicorn) runs as a background process while Next.js serves as the foreground process on Heroku's assigned `$PORT`, with Next.js rewriting `/api/*` and `/health/*` requests to the Flask backend.
 
 ```bash
 heroku buildpacks:add heroku/python   # order matters
 heroku buildpacks:add heroku/nodejs
 ```
+
+**Build shim:** The root `package.json` exists only so Heroku's Node buildpack detects a Node app. It runs `npm ci --include=dev && npm run build` inside `frontend/` during `heroku-postbuild`. Python version is declared in `.python-version` (`3.12`), and `runtime.txt` is no longer used.
 
 CI/CD (`.github/workflows/`) runs on every push to staging/production branches:
 1. Full PostgreSQL backup before any migration runs
