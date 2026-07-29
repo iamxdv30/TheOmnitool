@@ -206,7 +206,9 @@ jobs:
           echo "🚀 DEPLOYING CODE TO PRODUCTION"
           echo "=========================================="
 
-          git push heroku main:main
+          # Force push is required when the Heroku remote's main has commits
+          # not present in the GitHub checkout (e.g. previous non-FF deploys)
+          git push heroku main:main --force
 
           echo "✅ Code deployed to production"
           echo "=========================================="
