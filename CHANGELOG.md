@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 
 
+## [1.5.1] - 2026-07-31
+### 📝 Landing Page Honesty & Copy Fixes
+
+Copy-only patch removing unsupported marketing claims and a broken contact channel from the public Next.js pages. No routes, auth, or data touched.
+
+### 🐛 Fixed
+- Removed fabricated "join thousands of users" social-proof claim from the landing CTA
+- Corrected contact page email from a non-existent `support@omnitool.app` to the real `info@theomnitools.com` mailbox
+
+### 📝 Changed
+- Rewrote hero tagline to name actual product capabilities instead of unsupported "high-performance / 3D visualization" claims
+- Replaced unsupported feature-card claims ("Lightning Fast", "Real-time Analytics") with verified capabilities (concrete tools, security measures, dashboard search/favorites/history)
+- Softened about-page "all-in-one productivity toolkit" positioning to match the real, honest growth story
+
+**Developer**: Xyrus De Vera
+
+
 ## [1.5.0] - 2026-07-20
 ### 🚀 Tools Discovery Dashboard & API Security Hardening
 

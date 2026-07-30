@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-MyTools (The Omnitool) is a Flask-based web application providing various utility tools (tax calculators, character counter, email templates, etc.) with role-based access control. Current version: 1.5.0
+MyTools (The Omnitool) is a Flask-based web application providing various utility tools (tax calculators, character counter, email templates, etc.) with role-based access control. Current version: 1.5.1
 
 ## Frontend Design System (Production — Authoritative)
 
