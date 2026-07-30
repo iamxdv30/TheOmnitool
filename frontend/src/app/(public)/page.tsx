@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui";
 import { Footer } from "@/components/layout";
-import { ArrowRight, Zap, Shield, Gauge } from "lucide-react";
+import { ArrowRight, Wrench, Shield, LayoutDashboard } from "lucide-react";
 
 // Dynamically import SceneView to avoid SSR issues
 const SceneView = dynamic(
@@ -14,19 +14,22 @@ const SceneView = dynamic(
 
 const features = [
   {
-    icon: Zap,
-    title: "Lightning Fast",
-    description: "Optimized for performance with lazy loading and on-demand rendering.",
+    icon: Wrench,
+    title: "Everyday Tools",
+    description:
+      "Tax calculators for US, Canada, and VAT, a character counter, and reusable email templates — with more on the way.",
   },
   {
     icon: Shield,
     title: "Secure by Design",
-    description: "Role-based access control and enterprise-grade security features.",
+    description:
+      "Verified accounts, CSRF-protected requests, bcrypt-hashed passwords, and role-based access control.",
   },
   {
-    icon: Gauge,
-    title: "Real-time Analytics",
-    description: "Monitor usage and performance with built-in analytics dashboard.",
+    icon: LayoutDashboard,
+    title: "Your Tools, Organized",
+    description:
+      "Search, favorites synced across devices, and a recent-activity feed so you can pick up where you left off.",
   },
 ];
 
@@ -69,11 +72,11 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="font-display text-3xl md:text-4xl font-bold text-text-high mb-4">
-              Built for Performance
+              Why The Omnitool
             </h2>
             <p className="text-text-muted max-w-2xl mx-auto">
-              Every feature is designed with performance in mind, ensuring a smooth
-              experience across all devices.
+              Everyday utilities in one place, so you stop hopping between
+              ten different single-purpose sites.
             </p>
           </div>
 
