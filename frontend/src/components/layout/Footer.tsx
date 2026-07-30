@@ -49,7 +49,7 @@ export function Footer() {
               The Omnitool
             </Link>
             <p className="mt-4 text-text-muted text-sm">
-              A high-performance utility toolkit with 3D visualization.
+              Simple tools, smarter workflows.
             </p>
             {/* Social Links */}
             <div className="flex gap-4 mt-6">
