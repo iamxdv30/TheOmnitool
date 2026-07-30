@@ -45,8 +45,8 @@ export default function Home() {
             <span className="text-primary-glow">Omnitool</span>
           </h1>
           <p className="text-text-muted text-lg md:text-xl max-w-2xl mx-auto mb-8">
-            A high-performance utility toolkit with 3D visualization.
-            Built for speed, designed for the future.
+            Simple tools, smarter workflows. Tax calculators, email templates,
+            and everyday utilities — free, in one place.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/register">
