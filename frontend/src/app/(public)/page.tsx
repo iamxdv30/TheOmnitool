@@ -102,7 +102,7 @@ export default function Home() {
                 Ready to Get Started?
               </h2>
               <p className="text-text-muted max-w-xl mx-auto mb-8">
-                Join thousands of users who trust The Omnitool for their daily tasks.
+                Free to use, no ads, no distractions — built by a support engineer, for people who just want the tool to work.
               </p>
               <Link href="/register">
                 <Button variant="glow" size="lg">
