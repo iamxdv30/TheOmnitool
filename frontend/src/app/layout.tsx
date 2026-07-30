@@ -18,7 +18,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "The Omnitool",
-  description: "A high-performance utility toolkit with 3D visualization",
+  description: "Simple tools, smarter workflows — tax calculators, email templates, and everyday utilities, free in one place.",
 };
 
 export default function RootLayout({
