@@ -45,7 +45,8 @@ export default function AboutPage() {
           About <span className="text-primary">OmniTool</span>
         </h1>
         <p className="mt-4 text-lg text-text-muted">
-          Your all-in-one productivity toolkit, built with love.
+          A growing collection of free utility tools, built by a support
+          engineer who needed them.
         </p>
       </div>
 
