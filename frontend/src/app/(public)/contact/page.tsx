@@ -191,10 +191,10 @@ export default function ContactPage() {
         <p>
           You can also reach us at{" "}
           <a
-            href="mailto:support@omnitool.app"
+            href="mailto:info@theomnitools.com"
             className="text-primary hover:underline"
           >
-            support@omnitool.app
+            info@theomnitools.com
           </a>
         </p>
       </div>
