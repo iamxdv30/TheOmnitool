@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 
 
+## [1.5.3] - 2026-08-09
+### 🔧 Deploy Pipeline: Fix Argument Passing to `heroku run`
+
+Follow-up to v1.5.2. The v1.5.2 production deploy shipped successfully (app deployed, migrations applied, smoke tests green) but the pipeline then reported **failure** at "Verify Migration" — a third instance of the same class of bug, revealed only because v1.5.2 made `heroku run` failures visible for the first time.
+
+### 🐛 Fixed
+- **`heroku run` swallowed script arguments**: in `heroku run --exit-code python scripts/verify_migration.py --env production -a omnitool-by-xdv`, the Heroku CLI parsed `--env production` as its *own* flag (it warns `env flag production appears invalid`) instead of passing it to the script. `verify_migration.py` then fell back to its `--env local` default, tried to open a nonexistent SQLite file on the dyno, and reported failures that had nothing to do with production
+- All `heroku run` invocations in both workflows now use the `-a <app> --exit-code -- <command>` form, where `--` ends CLI flag parsing. This idiom was already used correctly at one call site in `deploy_production.yml`; it is now applied consistently to the migrate, import, and verify steps
+- Staging was affected identically — its verify step passed bogus args too, but the failure was masked by a `|| echo "[WARNING]"` fallback, so staging verification had been silently meaningless
+
+Verified against live production with the corrected command: **8 passed, 0 warnings, 0 failed**. No application code changed in this release.
+
+**Developer**: Xyrus De Vera
+
+
 ## [1.5.2] - 2026-08-09
 ### 🚑 Production Outage Repair, Deploy Pipeline Fix & Security Dependency Updates
 
