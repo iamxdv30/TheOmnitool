@@ -94,7 +94,7 @@ pip install psycopg2-binary
 # DATABASE_URL='postgresql://omnitool:omnitool_dev@localhost:5432/omnitool_dev'
 
 # 4. Create schema (empty tables)
-python migrate_db.py
+python scripts/migrate_db.py
 
 # 5. (Optional) Migrate existing SQLite data
 python scripts/migrate_sqlite_to_postgres.py --export
@@ -105,7 +105,7 @@ python scripts/migrate_sqlite_to_postgres.py --verify
 **Daily Database Operations**:
 *   **Apply Migrations:** `flask db upgrade`
 *   **Create Migration:** `flask db migrate -m "message"`
-*   **Safe Migration Wrapper (Recommended):** `python migrate_db.py` (Performs backup -> migrate -> upgrade)
+*   **Safe Migration Wrapper (Recommended):** `python scripts/migrate_db.py` (Performs backup -> migrate -> upgrade)
 *   **Restore Backup:** `python restore_backup.py`
 *   **Export Data (JSON):** `python scripts/export_all_data.py --output data/backups/backup.json`
 *   **Import Data (JSON):** `python scripts/import_all_data.py --source data/backups/backup.json`
@@ -399,7 +399,7 @@ python -c "import os; print(os.environ.get('DATABASE_URL', 'NOT SET'))"
 **Temporary Workaround:**
 ```bash
 export DATABASE_URL='postgresql://omnitool:omnitool_dev@localhost:5432/omnitool_dev'
-python migrate_db.py
+python scripts/migrate_db.py
 ```
 
 **Root Cause:** Python's `python-dotenv` library doesn't override existing environment variables. System environment variables always take precedence over `.env` file.
@@ -429,7 +429,7 @@ docker logs omnitool-postgres
 
 # Reset if corrupted (WARNING: destroys data)
 .\scripts\docker-db.ps1 reset
-python migrate_db.py
+python scripts/migrate_db.py
 ```
 
 ---
@@ -439,7 +439,7 @@ python migrate_db.py
 
 **Solution:**
 ```bash
-python migrate_db.py
+python scripts/migrate_db.py
 ```
 
 This creates all required tables via Alembic migrations.

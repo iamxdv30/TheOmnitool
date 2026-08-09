@@ -2,8 +2,8 @@
 Database Migration Script using Flask-Migrate (Alembic)
 
 Usage:
-    Local: python migrate_db.py
-    Heroku: python migrate_db.py
+    Local: python scripts/migrate_db.py
+    Heroku: python scripts/migrate_db.py
 
 This script applies pending migration scripts to the database.
 It is safe for both SQLite (Development) and PostgreSQL (Staging/Production).

@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 
 
+## [1.5.2] - 2026-08-09
+### 🚑 Production Outage Repair, Deploy Pipeline Fix & Security Dependency Updates
+
+Emergency maintenance release. Production and staging dashboards were empty for every user because the v1.5.0 database migrations had silently never been applied on Heroku — the deploy pipeline's migration step pointed at a moved script and `heroku run` swallowed the failure, so CI stayed green while the schema drifted behind the code. No data was lost.
+
+### 🐛 Fixed
+- **Production/staging schema drift**: both databases were re-stamped to the squashed migration baseline (`67f370c787fd`) and upgraded to current (`010860a68cea`), then re-seeded (`seed_phase1_dashboard_data.py`) and re-synced (`sync_tools.py`). Dashboards and tool access restored for all roles
+- **Deploy workflows** now run `scripts/migrate_db.py` (correct path) with `heroku run --exit-code` on the migrate/import/verify steps, so a failed remote command actually fails the pipeline instead of reporting success
+- **`utils/db_safety.py`**: `check_postgresql_health()` crashed with an unbound `ctx` variable when called without an app instance, forcing every health check to report `critical` and aborting `migrate_db.py` — the second reason deploys could never migrate
+
+### 🔐 Security (Dependabot triage — 26 alerts resolved, 10 high)
+- **Python**: Flask 3.0.3→3.1.3, Jinja2 3.1.4→3.1.6, marshmallow 4.0.1→4.1.2, requests 2.32.5→2.33.0, cryptography 49.0.0→50.0.0 (Bleichenbacher-oracle fix; pyOpenSSL 26.4.0 and authlib 1.7.2 bumped for compatibility)
+- **Removed Flask-Cors** entirely — it was never imported anywhere in the codebase (3 open alerts on an unused dependency)
+- **npm**: Next.js 16.2.11→16.3.0 (resolves bundled postcss/sharp/nanoid highs) plus lockfile-level fixes for js-yaml, minimatch, brace-expansion, picomatch, ajv, @babel/core; `npm audit` now reports 0 vulnerabilities
+
+### 📝 Changed
+- CLAUDE.md, Gemini.md, and README now reference `scripts/migrate_db.py` (the old root path was stale) and document the orphaned-Alembic-revision gotcha introduced by the migration-history squash
+
+**Developer**: Xyrus De Vera
+
+
 ## [1.5.1] - 2026-07-31
 ### 📝 Landing Page Honesty & Copy Fixes
 
