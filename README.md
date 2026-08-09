@@ -1,8 +1,8 @@
 # The Omnitool (MyTools)
 
-[![Version](https://img.shields.io/badge/version-1.5.1-blue.svg)](https://github.com/iamxdv30/TheOmnitool/releases)
+[![Version](https://img.shields.io/badge/version-1.5.2-blue.svg)](https://github.com/iamxdv30/TheOmnitool/releases)
 [![Python](https://img.shields.io/badge/python-3.x-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
-[![Flask](https://img.shields.io/badge/Flask-3.0.3-000000.svg?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
+[![Flask](https://img.shields.io/badge/Flask-3.1.3-000000.svg?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000.svg?logo=next.js&logoColor=white)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB.svg?logo=react&logoColor=black)](https://react.dev/)
 [![Tests](https://img.shields.io/badge/tests-147%20backend%20%7C%2039%20frontend-brightgreen.svg)](#testing)
@@ -149,7 +149,7 @@ cp .env.example .env   # then fill in SECRET_KEY, SECURITY_PASSWORD_SALT, etc.
 ./scripts/docker-db.sh start    # Linux/Mac
 
 # 4. Run database migrations (creates schema, auto-backs-up first)
-python migrate_db.py
+python scripts/migrate_db.py
 
 # 5. Seed default tools and dashboard data
 python tool_management.py
