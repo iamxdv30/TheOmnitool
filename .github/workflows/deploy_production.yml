@@ -46,6 +46,15 @@ jobs:
       # This creates a manual approval gate in GitHub
       # Requires repository settings: Settings > Environments > production > Required reviewers
 
+    # Shares the `heroku-one-off-dyno` group with deploy-to-staging in
+    # deploy.yml. Concurrency groups are repository-scoped, so naming the same
+    # group in both workflows makes them queue behind each other instead of
+    # competing for the single Eco-tier one-off dyno. Never cancel in progress:
+    # aborting mid-migration is the failure mode we are protecting against.
+    concurrency:
+      group: heroku-one-off-dyno
+      cancel-in-progress: false
+
     steps:
       - name: Production Deployment Notice
         run: |

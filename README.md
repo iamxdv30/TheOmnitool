@@ -1,6 +1,6 @@
 # The Omnitool (MyTools)
 
-[![Version](https://img.shields.io/badge/version-1.5.3-blue.svg)](https://github.com/iamxdv30/TheOmnitool/releases)
+[![Version](https://img.shields.io/badge/version-1.5.4-blue.svg)](https://github.com/iamxdv30/TheOmnitool/releases)
 [![Python](https://img.shields.io/badge/python-3.x-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-3.1.3-000000.svg?logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000.svg?logo=next.js&logoColor=white)](https://nextjs.org/)

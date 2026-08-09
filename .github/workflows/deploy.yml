@@ -94,6 +94,16 @@ jobs:
     needs: test
     environment: staging
 
+    # Serialized against deploy-to-production via a shared, repository-scoped
+    # concurrency group. The Heroku account is Eco tier, which permits only one
+    # one-off dyno at a time across ALL apps, so overlapping deploys make the
+    # second one's `heroku run` steps die with "Cannot run more than 1 Eco size
+    # dynos". Queue instead of cancelling - a half-finished deploy is worse than
+    # a slow one. Scoped to this job so `test` still runs in parallel.
+    concurrency:
+      group: heroku-one-off-dyno
+      cancel-in-progress: false
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
