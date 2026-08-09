@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-MyTools (The Omnitool) is a Flask-based web application providing various utility tools (tax calculators, character counter, email templates, etc.) with role-based access control. Current version: 1.5.2
+MyTools (The Omnitool) is a Flask-based web application providing various utility tools (tax calculators, character counter, email templates, etc.) with role-based access control. Current version: 1.5.3
 
 ## Frontend Design System (Production — Authoritative)
 
@@ -769,6 +769,7 @@ The CI/CD pipeline (`.github/workflows/deploy.yml`) implements automatic rollbac
 5. **Template loading**: Both `templates/` and `Tools/templates/` are searched via ChoiceLoader
 6. **Role spelling mismatch**: The backend stores/serializes the SuperAdmin role as the SQLAlchemy polymorphic identity `"super_admin"` (underscore, see `model/users.py`), but the frontend's role union and every UI check use `"superadmin"` (no underscore). If you add a new place that reads `user.role` from the API, normalize it — see `to_frontend_role`/`to_backend_role` in `services/admin_service.py` (backend) and `normalizeUser` in `frontend/src/lib/api/auth.ts` (frontend). Skipping this makes SuperAdmin-only UI silently fail to render, since `role === "superadmin"` is always `false` for the raw API value.
 7. **Orphaned Alembic revisions after the history squash**: The migration history was squashed into `67f370c787fd_initial_schema` (Jan 2026). Any database whose `alembic_version` still points at a pre-squash revision (e.g. `a1b2c3d4e5f6`) makes **every** Alembic command fail with "Can't locate revision" — including `flask db stamp`, so the only fix is a raw-SQL re-stamp: `UPDATE alembic_version SET version_num='67f370c787fd'` (verify the actual schema matches that baseline first), then `flask db upgrade`. This silently broke prod/staging deploys for months (v1.5.2 outage) because the workflows also ran `heroku run` without `--exit-code`, which always exits 0. Keep `--exit-code` on every `heroku run` step whose failure should fail CI.
+8. **`heroku run` eats your script's flags**: always write `heroku run -a <app> --exit-code -- python scripts/foo.py --env production`. Without the `--` separator the Heroku CLI claims flags it recognizes (`--env`, `--app`, `--size`…) for itself and never passes them to your script, which then silently runs with its *default* arguments. This made `verify_migration.py` run with `--env local` on a production dyno, check a nonexistent SQLite file, and fail a green deploy (v1.5.3).
 
 # Agent Context & Tooling
 

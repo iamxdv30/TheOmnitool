@@ -256,7 +256,7 @@ jobs:
           # Run migrate_db.py which includes:
           # 1. Schema migrations (Flask-Migrate)
           # 2. Tool synchronization (sync_tools.py)
-          heroku run --exit-code python scripts/migrate_db.py -a omnitool-by-xdv
+          heroku run -a omnitool-by-xdv --exit-code -- python scripts/migrate_db.py
 
           echo "✅ Database migrations completed"
           echo "=========================================="
@@ -273,10 +273,10 @@ jobs:
           # Use the dev export (which was tested in staging)
           # In production, we import in MERGE mode (never overwrite)
           if [ -f "data/tool_access_exports/dev_tool_access.json" ]; then
-            heroku run --exit-code python scripts/import_tool_access.py \
+            heroku run -a omnitool-by-xdv --exit-code -- \
+              python scripts/import_tool_access.py \
               --source data/tool_access_exports/dev_tool_access.json \
-              --mode merge \
-              -a omnitool-by-xdv
+              --mode merge
 
             echo "✅ Tool access permissions imported (merge mode)"
           else
@@ -297,7 +297,7 @@ jobs:
           echo "=========================================="
 
           # Run verification checks
-          heroku run --exit-code python scripts/verify_migration.py --env production -a omnitool-by-xdv || {
+          heroku run -a omnitool-by-xdv --exit-code -- python scripts/verify_migration.py --env production || {
             echo "❌ VERIFICATION FAILED"
             echo "⚠️  Production may have issues - investigate immediately"
             echo "Rollback command: python scripts/rollback_migration.py --env production"
