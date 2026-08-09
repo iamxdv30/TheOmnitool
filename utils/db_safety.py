@@ -140,6 +140,7 @@ class DatabaseSafety:
             from model import db
 
             # Get the app context
+            ctx = None
             if app:
                 ctx = app.app_context()
                 ctx.push()
@@ -481,7 +482,7 @@ def validate_database_on_startup(app):
     if not success:
         logger.error(f"DATABASE HEALTH CHECK FAILED: {message}")
         logger.error("Application may not function correctly!")
-        logger.error("Run 'python migrate_db.py' to initialize the database")
+        logger.error("Run 'python scripts/migrate_db.py' to initialize the database")
     else:
         logger.info(f"Database status: {message}")
 
