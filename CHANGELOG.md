@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 
 
+## [1.5.4] - 2026-08-09
+### 🔒 Deploy Pipeline: Serialize Heroku Deploys
+
+Removes the last known source of spurious deploy failures. No application code changed.
+
+### 🐛 Fixed
+- **Overlapping deploys no longer collide over the single Eco one-off dyno.** The Heroku account is Eco tier, which allows only one one-off dyno at a time *across all apps*. When the staging and production pipelines overlapped, the second one's `heroku run` step died with `Cannot run more than 1 Eco size dynos` and failed an otherwise-healthy deploy (observed on the v1.5.3 staging run, which passed on a serial re-run)
+- `deploy-to-staging` and `deploy-to-production` now share the repository-scoped concurrency group `heroku-one-off-dyno`, so one queues behind the other instead of competing. `cancel-in-progress: false` — a deploy interrupted mid-migration is precisely the failure this guards against, so runs wait rather than being killed
+- The guard is scoped to the deploy jobs, not the workflows, so the `test` job still runs in parallel with a production deploy
+
+### ⚠️ Known limitation
+The guard covers GitHub Actions runs only. A manual `heroku run` issued while a deploy is in its migrate/verify phase will still contend for the same dyno — avoid this, or upgrade off Eco dynos to remove the constraint entirely.
+
+**Developer**: Xyrus De Vera
+
+
 ## [1.5.3] - 2026-08-09
 ### 🔧 Deploy Pipeline: Fix Argument Passing to `heroku run`
 
